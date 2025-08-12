@@ -1,0 +1,64 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isValidImageFile() {
+      return resource.contentType.matches('image/.*') &&
+             resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+    
+    function isValidVideoFile() {
+      return resource.contentType.matches('video/.*') &&
+             resource.size < 50 * 1024 * 1024; // 50MB limit
+    }
+
+    // User profile images
+    match /users/{userId}/profile/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == userId &&
+                      isValidImageFile();
+      allow delete: if isAuthenticated() && 
+                       (request.auth.uid == userId || isAdmin());
+    }
+
+    // Post media files
+    match /posts/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      (isValidImageFile() || isValidVideoFile());
+      allow delete: if isAuthenticated();
+    }
+
+    // Test uploads (development only)
+    match /test/{path=**} {
+      allow read, write, delete: if isAuthenticated() && 
+                                    (isValidImageFile() || isValidVideoFile());
+    }
+
+    // Icon images (admin only)
+    match /icons/{fileName} {
+      allow read: if true;
+      allow write, delete: if isAdmin() && isValidImageFile();
+    }
+
+    // Temporary uploads (for processing)
+    match /temp/{userId}/{fileName} {
+      allow read, write: if isAuthenticated() && 
+                            request.auth.uid == userId &&
+                            (isValidImageFile() || isValidVideoFile());
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid == userId;
+    }
+  }
+}
