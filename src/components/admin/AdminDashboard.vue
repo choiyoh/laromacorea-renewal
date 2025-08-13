@@ -163,7 +163,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { AdminService } from '@/services/admin'
+import { adminService } from '@/services/admin'
 
 // 이벤트 정의
 const emit = defineEmits(['change-tab'])
@@ -193,7 +193,7 @@ const snackbar = reactive({
 const loadStats = async () => {
   loading.value = true
   try {
-    const dashboardStats = await AdminService.getDashboardStats()
+    const dashboardStats = await adminService.getDashboardStats()
 
     Object.assign(stats, dashboardStats)
 

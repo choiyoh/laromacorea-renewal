@@ -1,339 +1,728 @@
 <template>
-  <v-card>
-    <v-card-title class="d-flex align-center">
-      <v-icon class="me-2">mdi-bullhorn</v-icon>
-      공지사항 관리
-    </v-card-title>
+  <div class="notice-manager-container">
+    <!-- 공지사항 작성 -->
+    <v-row class="mb-6">
+      <v-col cols="12">
+        <v-card variant="outlined" class="pa-4">
+          <v-card-title class="d-flex align-center">
+            <v-icon icon="mdi-plus-circle" class="mr-2" />
+            새 공지사항 작성
+          </v-card-title>
+          <v-card-text>
+            <v-form @submit.prevent="createNotice">
+              <v-row>
+                <v-col cols="12" md="8">
+                  <v-text-field
+                    v-model="newNotice.title"
+                    label="공지사항 제목"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="2">
+                  <v-select
+                    v-model="newNotice.type"
+                    label="유형"
+                    :items="noticeTypeOptions"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="2">
+                  <v-select
+                    v-model="newNotice.priority"
+                    label="우선순위"
+                    :items="priorityOptions"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+              </v-row>
 
-    <v-card-text>
-      <!-- 새 공지사항 작성 버튼 -->
-      <div class="mb-4">
-        <v-btn color="primary" @click="openCreateDialog">
-          <v-icon start>mdi-plus</v-icon>
-          새 공지사항 작성
+              <v-textarea
+                v-model="newNotice.content"
+                label="공지사항 내용"
+                variant="outlined"
+                rows="6"
+                class="mb-3"
+                required
+              />
+
+              <v-row>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="newNotice.startDate"
+                    label="시작일"
+                    type="datetime-local"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="newNotice.endDate"
+                    label="종료일"
+                    type="datetime-local"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="12" md="4" class="d-flex align-center">
+                  <v-switch
+                    v-model="newNotice.isPinned"
+                    label="상단 고정"
+                    color="warning"
+                    class="mr-4"
+                  />
+                  <v-switch v-model="newNotice.isPopup" label="팝업 표시" color="error" />
+                </v-col>
+              </v-row>
+
+              <div class="d-flex justify-end">
+                <v-btn type="submit" color="primary" variant="elevated" :loading="createLoading">
+                  <v-icon icon="mdi-bullhorn" class="mr-2" />
+                  공지사항 등록
+                </v-btn>
+              </div>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 필터 및 검색 -->
+    <v-row class="mb-4">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="searchTerm"
+          label="공지사항 검색"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          clearable
+        />
+      </v-col>
+      <v-col cols="12" md="3">
+        <v-select
+          v-model="typeFilter"
+          label="유형 필터"
+          :items="typeFilterOptions"
+          variant="outlined"
+          density="compact"
+        />
+      </v-col>
+      <v-col cols="12" md="3">
+        <v-select
+          v-model="statusFilter"
+          label="상태 필터"
+          :items="statusOptions"
+          variant="outlined"
+          density="compact"
+        />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-btn color="primary" variant="elevated" @click="loadNotices" :loading="loading" block>
+          새로고침
         </v-btn>
-      </div>
+      </v-col>
+    </v-row>
 
-      <!-- 공지사항 목록 -->
-      <v-data-table
-        :headers="headers"
-        :items="notices"
-        :loading="loading"
-        item-value="id"
-        class="elevation-1"
-      >
-        <template #item.title="{ item }">
-          <div class="d-flex align-center">
-            <v-chip
-              v-if="item.isPinned"
-              color="warning"
-              variant="outlined"
-              size="x-small"
-              class="me-2"
-            >
-              고정
-            </v-chip>
-            <span>{{ item.title }}</span>
-          </div>
-        </template>
+    <!-- 공지사항 목록 -->
+    <v-card variant="outlined">
+      <v-card-title class="d-flex align-center">
+        <v-icon icon="mdi-bullhorn" class="mr-2" />
+        공지사항 관리
+        <v-spacer />
+        <v-chip color="info" variant="elevated"> 총 {{ filteredNotices.length }}개 </v-chip>
+      </v-card-title>
 
-        <template #item.authorName="{ item }">
-          <div class="d-flex align-center">
-            <v-avatar size="24" class="me-2">
-              <v-img v-if="item.authorIcon" :src="item.authorIcon" />
-              <v-icon v-else size="16">mdi-account</v-icon>
-            </v-avatar>
-            {{ item.authorName }}
-          </div>
-        </template>
+      <v-card-text>
+        <v-list v-if="filteredNotices.length > 0" class="notice-list">
+          <v-list-item v-for="notice in filteredNotices" :key="notice.id" class="notice-item">
+            <template #prepend>
+              <v-avatar :color="getTypeColor(notice.type)" size="40">
+                <v-icon :icon="getTypeIcon(notice.type)" />
+              </v-avatar>
+            </template>
 
-        <template #item.createdAt="{ item }">
-          {{ formatDateTime(item.createdAt) }}
-        </template>
+            <v-list-item-title class="d-flex align-center">
+              <div class="d-flex align-center flex-wrap gap-2 mb-1">
+                <v-chip v-if="notice.isPinned" color="warning" size="small" variant="elevated">
+                  고정
+                </v-chip>
+                <v-chip v-if="notice.isPopup" color="error" size="small" variant="elevated">
+                  팝업
+                </v-chip>
+                <v-chip :color="getPriorityColor(notice.priority)" size="small" variant="outlined">
+                  {{ getPriorityText(notice.priority) }}
+                </v-chip>
+              </div>
+              <span class="font-weight-bold">{{ notice.title }}</span>
+            </v-list-item-title>
 
-        <template #item.viewCount="{ item }">
-          {{ item.viewCount.toLocaleString() }}
-        </template>
+            <v-list-item-subtitle class="mt-2">
+              <div class="notice-content">
+                {{ notice.content.substring(0, 100) }}{{ notice.content.length > 100 ? '...' : '' }}
+              </div>
+              <div class="d-flex align-center justify-space-between mt-2">
+                <div class="text-caption text-medium-emphasis">
+                  {{ formatDate(notice.createdAt) }} • 조회 {{ notice.views || 0 }}회
+                </div>
+                <v-chip
+                  :color="notice.isActive ? 'success' : 'error'"
+                  size="x-small"
+                  variant="elevated"
+                >
+                  {{ notice.isActive ? '활성' : '비활성' }}
+                </v-chip>
+              </div>
+            </v-list-item-subtitle>
 
-        <template #item.actions="{ item }">
-          <v-btn
-            icon="mdi-pin"
-            size="small"
-            variant="text"
-            :color="item.isPinned ? 'warning' : 'grey'"
-            @click="togglePin(item)"
-          />
-          <v-btn
-            icon="mdi-pencil"
-            size="small"
-            variant="text"
-            color="primary"
-            @click="openEditDialog(item)"
-          />
-          <v-btn
-            icon="mdi-delete"
-            size="small"
-            variant="text"
-            color="error"
-            @click="confirmDelete(item)"
-          />
-        </template>
-      </v-data-table>
-    </v-card-text>
+            <template #append>
+              <v-menu>
+                <template #activator="{ props }">
+                  <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" />
+                </template>
+                <v-list>
+                  <v-list-item @click="viewNotice(notice)">
+                    <template #prepend>
+                      <v-icon icon="mdi-eye" />
+                    </template>
+                    <v-list-item-title>보기</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="editNotice(notice)">
+                    <template #prepend>
+                      <v-icon icon="mdi-pencil" />
+                    </template>
+                    <v-list-item-title>편집</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="toggleNoticeStatus(notice)">
+                    <template #prepend>
+                      <v-icon :icon="notice.isActive ? 'mdi-eye-off' : 'mdi-eye'" />
+                    </template>
+                    <v-list-item-title>
+                      {{ notice.isActive ? '비활성화' : '활성화' }}
+                    </v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="deleteNotice(notice)" class="text-error">
+                    <template #prepend>
+                      <v-icon icon="mdi-delete" />
+                    </template>
+                    <v-list-item-title>삭제</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </template>
+          </v-list-item>
+        </v-list>
 
-    <!-- 공지사항 작성/수정 다이얼로그 -->
-    <v-dialog v-model="dialog" max-width="800px" persistent>
-      <v-card>
-        <v-card-title>
-          {{ editingNotice ? '공지사항 수정' : '새 공지사항 작성' }}
+        <div v-else class="text-center py-8">
+          <v-icon icon="mdi-bullhorn-outline" size="64" color="grey" class="mb-4" />
+          <p class="text-h6 text-medium-emphasis">공지사항이 없습니다</p>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <!-- 공지사항 상세/편집 다이얼로그 -->
+    <v-dialog v-model="detailDialog" max-width="800" scrollable>
+      <v-card v-if="selectedNotice">
+        <v-card-title class="d-flex align-center">
+          <v-icon icon="mdi-bullhorn" class="mr-2" />
+          {{ isEditing ? '공지사항 편집' : '공지사항 상세' }}
+          <v-spacer />
+          <v-btn v-if="!isEditing" icon="mdi-pencil" variant="text" @click="startEdit" />
+          <v-btn icon="mdi-close" variant="text" @click="closeDialog" />
         </v-card-title>
 
-        <v-card-text>
-          <v-form ref="form" v-model="valid">
-            <v-text-field v-model="noticeForm.title" label="제목" :rules="titleRules" required />
+        <v-divider />
+
+        <v-card-text class="pa-6">
+          <v-form v-if="isEditing" @submit.prevent="saveNotice">
+            <v-text-field
+              v-model="selectedNotice.title"
+              label="제목"
+              variant="outlined"
+              class="mb-3"
+            />
+
+            <v-row class="mb-3">
+              <v-col cols="6">
+                <v-select
+                  v-model="selectedNotice.type"
+                  label="유형"
+                  :items="noticeTypeOptions"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-select
+                  v-model="selectedNotice.priority"
+                  label="우선순위"
+                  :items="priorityOptions"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
 
             <v-textarea
-              v-model="noticeForm.content"
+              v-model="selectedNotice.content"
               label="내용"
-              :rules="contentRules"
-              required
-              rows="10"
+              variant="outlined"
+              rows="8"
+              class="mb-3"
             />
 
-            <v-switch
-              v-model="noticeForm.isPinned"
-              label="상단 고정"
-              color="warning"
-              hide-details
-            />
+            <v-row class="mb-3">
+              <v-col cols="6">
+                <v-text-field
+                  v-model="selectedNotice.startDate"
+                  label="시작일"
+                  type="datetime-local"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-model="selectedNotice.endDate"
+                  label="종료일"
+                  type="datetime-local"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+
+            <div class="d-flex gap-4 mb-3">
+              <v-switch v-model="selectedNotice.isPinned" label="상단 고정" color="warning" />
+              <v-switch v-model="selectedNotice.isPopup" label="팝업 표시" color="error" />
+              <v-switch v-model="selectedNotice.isActive" label="활성 상태" color="success" />
+            </div>
           </v-form>
+
+          <div v-else>
+            <div class="mb-4">
+              <h3 class="text-h5 mb-2">{{ selectedNotice.title }}</h3>
+              <div class="d-flex align-center flex-wrap gap-2 mb-3">
+                <v-chip :color="getTypeColor(selectedNotice.type)" size="small" variant="elevated">
+                  {{ getTypeText(selectedNotice.type) }}
+                </v-chip>
+                <v-chip
+                  :color="getPriorityColor(selectedNotice.priority)"
+                  size="small"
+                  variant="outlined"
+                >
+                  {{ getPriorityText(selectedNotice.priority) }}
+                </v-chip>
+                <v-chip
+                  v-if="selectedNotice.isPinned"
+                  color="warning"
+                  size="small"
+                  variant="elevated"
+                >
+                  고정
+                </v-chip>
+                <v-chip v-if="selectedNotice.isPopup" color="error" size="small" variant="elevated">
+                  팝업
+                </v-chip>
+              </div>
+              <div class="text-caption text-medium-emphasis mb-3">
+                작성일: {{ formatDate(selectedNotice.createdAt) }} • 조회:
+                {{ selectedNotice.views || 0 }}회
+              </div>
+            </div>
+
+            <div class="notice-content-detail">
+              {{ selectedNotice.content }}
+            </div>
+
+            <v-divider class="my-4" />
+
+            <div class="d-flex align-center justify-space-between">
+              <div>
+                <div v-if="selectedNotice.startDate" class="text-caption">
+                  시작일: {{ formatDate(selectedNotice.startDate) }}
+                </div>
+                <div v-if="selectedNotice.endDate" class="text-caption">
+                  종료일: {{ formatDate(selectedNotice.endDate) }}
+                </div>
+              </div>
+              <v-chip :color="selectedNotice.isActive ? 'success' : 'error'" variant="elevated">
+                {{ selectedNotice.isActive ? '활성' : '비활성' }}
+              </v-chip>
+            </div>
+          </div>
         </v-card-text>
 
-        <v-card-actions>
+        <v-card-actions v-if="isEditing">
           <v-spacer />
-          <v-btn variant="text" @click="closeDialog">취소</v-btn>
-          <v-btn color="primary" :loading="saving" :disabled="!valid" @click="saveNotice">
-            {{ editingNotice ? '수정' : '작성' }}
-          </v-btn>
+          <v-btn @click="cancelEdit">취소</v-btn>
+          <v-btn color="primary" @click="saveNotice" :loading="saveLoading">저장</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <!-- 삭제 확인 다이얼로그 -->
-    <v-dialog v-model="deleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title>공지사항 삭제</v-card-title>
-        <v-card-text>
-          정말로 이 공지사항을 삭제하시겠습니까?
-          <br />
-          <strong>{{ deletingNotice?.title }}</strong>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">취소</v-btn>
-          <v-btn color="error" :loading="deleting" @click="deleteNotice">삭제</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 스낵바 -->
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">
-      {{ snackbar.message }}
-    </v-snackbar>
-  </v-card>
+  </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { AdminService } from '@/services/admin'
-import { postService } from '@/services/database'
+import { ref, computed, onMounted } from 'vue'
+import { adminService } from '@/services/admin'
 import { useUserStore } from '@/stores/user'
 
+const emit = defineEmits(['notice-updated'])
+
 const userStore = useUserStore()
-
-// 상태
 const loading = ref(false)
+const createLoading = ref(false)
+const saveLoading = ref(false)
 const notices = ref([])
-const dialog = ref(false)
-const deleteDialog = ref(false)
-const valid = ref(false)
-const saving = ref(false)
-const deleting = ref(false)
+const searchTerm = ref('')
+const typeFilter = ref('all')
+const statusFilter = ref('all')
 
-// 편집 상태
-const editingNotice = ref(null)
-const deletingNotice = ref(null)
+// 다이얼로그 상태
+const detailDialog = ref(false)
+const selectedNotice = ref(null)
+const isEditing = ref(false)
 
-// 폼 데이터
-const noticeForm = reactive({
+// 새 공지사항 데이터
+const newNotice = ref({
   title: '',
   content: '',
-  isPinned: true,
+  type: 'general',
+  priority: 'normal',
+  startDate: '',
+  endDate: '',
+  isPinned: false,
+  isPopup: false,
 })
 
-// 스낵바
-const snackbar = reactive({
-  show: false,
-  message: '',
-  color: 'success',
+// 옵션들
+const noticeTypeOptions = [
+  { title: '일반', value: 'general' },
+  { title: '업데이트', value: 'update' },
+  { title: '이벤트', value: 'event' },
+  { title: '점검', value: 'maintenance' },
+  { title: '긴급', value: 'urgent' },
+]
+
+const typeFilterOptions = [{ title: '전체', value: 'all' }, ...noticeTypeOptions]
+
+const priorityOptions = [
+  { title: '낮음', value: 'low' },
+  { title: '보통', value: 'normal' },
+  { title: '높음', value: 'high' },
+  { title: '긴급', value: 'urgent' },
+]
+
+const statusOptions = [
+  { title: '전체', value: 'all' },
+  { title: '활성', value: 'active' },
+  { title: '비활성', value: 'inactive' },
+]
+
+// 필터링된 공지사항 목록
+const filteredNotices = computed(() => {
+  let filtered = notices.value
+
+  // 검색어 필터
+  if (searchTerm.value) {
+    const term = searchTerm.value.toLowerCase()
+    filtered = filtered.filter(
+      (notice) =>
+        notice.title?.toLowerCase().includes(term) || notice.content?.toLowerCase().includes(term),
+    )
+  }
+
+  // 유형 필터
+  if (typeFilter.value !== 'all') {
+    filtered = filtered.filter((notice) => notice.type === typeFilter.value)
+  }
+
+  // 상태 필터
+  if (statusFilter.value !== 'all') {
+    const isActive = statusFilter.value === 'active'
+    filtered = filtered.filter((notice) => notice.isActive === isActive)
+  }
+
+  return filtered.sort((a, b) => {
+    // 고정된 공지사항을 먼저 표시
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+
+    // 우선순위 순으로 정렬
+    const priorityOrder = { urgent: 4, high: 3, normal: 2, low: 1 }
+    const aPriority = priorityOrder[a.priority] || 2
+    const bPriority = priorityOrder[b.priority] || 2
+
+    if (aPriority !== bPriority) return bPriority - aPriority
+
+    // 생성일 순으로 정렬
+    return new Date(b.createdAt) - new Date(a.createdAt)
+  })
 })
 
-// 테이블 헤더
-const headers = [
-  { title: '제목', key: 'title', width: '40%' },
-  { title: '작성자', key: 'authorName', width: '15%' },
-  { title: '작성일', key: 'createdAt', width: '15%' },
-  { title: '조회수', key: 'viewCount', width: '10%' },
-  { title: '작업', key: 'actions', width: '20%', sortable: false },
-]
+// 유형 색상
+const getTypeColor = (type) => {
+  switch (type) {
+    case 'urgent':
+      return 'error'
+    case 'maintenance':
+      return 'warning'
+    case 'event':
+      return 'success'
+    case 'update':
+      return 'info'
+    default:
+      return 'primary'
+  }
+}
 
-// 유효성 검사 규칙
-const titleRules = [
-  (v) => !!v || '제목을 입력해주세요.',
-  (v) => v.length <= 100 || '제목은 100자 이하로 입력해주세요.',
-]
+// 유형 아이콘
+const getTypeIcon = (type) => {
+  switch (type) {
+    case 'urgent':
+      return 'mdi-alert'
+    case 'maintenance':
+      return 'mdi-wrench'
+    case 'event':
+      return 'mdi-calendar-star'
+    case 'update':
+      return 'mdi-update'
+    default:
+      return 'mdi-information'
+  }
+}
 
-const contentRules = [
-  (v) => !!v || '내용을 입력해주세요.',
-  (v) => v.length >= 10 || '내용은 최소 10자 이상 입력해주세요.',
-]
+// 유형 텍스트
+const getTypeText = (type) => {
+  const option = noticeTypeOptions.find((opt) => opt.value === type)
+  return option ? option.title : '일반'
+}
+
+// 우선순위 색상
+const getPriorityColor = (priority) => {
+  switch (priority) {
+    case 'urgent':
+      return 'error'
+    case 'high':
+      return 'warning'
+    case 'normal':
+      return 'info'
+    case 'low':
+      return 'success'
+    default:
+      return 'grey'
+  }
+}
+
+// 우선순위 텍스트
+const getPriorityText = (priority) => {
+  const option = priorityOptions.find((opt) => opt.value === priority)
+  return option ? option.title : '보통'
+}
+
+// 날짜 포맷팅
+const formatDate = (timestamp) => {
+  if (!timestamp) return '-'
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+  return date.toLocaleString('ko-KR')
+}
 
 // 공지사항 목록 로드
 const loadNotices = async () => {
   loading.value = true
   try {
-    notices.value = await postService.getPosts('notice', null, 100)
+    notices.value = await adminService.getNotices({ includeInactive: true })
   } catch (error) {
-    console.error('공지사항 로드 실패:', error)
-    showSnackbar('공지사항을 불러올 수 없습니다.', 'error')
+    console.error('Failed to load notices:', error)
+    // 임시 데이터
+    notices.value = [
+      {
+        id: '1',
+        title: '시스템 점검 안내',
+        content:
+          '2025년 1월 15일 오전 2시부터 4시까지 시스템 점검이 진행됩니다. 점검 시간 동안 서비스 이용이 제한될 수 있습니다.',
+        type: 'maintenance',
+        priority: 'high',
+        isPinned: true,
+        isPopup: false,
+        isActive: true,
+        views: 150,
+        createdAt: new Date(),
+        startDate: '2025-01-15T02:00',
+        endDate: '2025-01-15T04:00',
+      },
+      {
+        id: '2',
+        title: '새로운 아이콘 추가',
+        content: 'AS 로마 관련 새로운 아이콘들이 추가되었습니다. 아이콘 상점에서 확인해보세요!',
+        type: 'update',
+        priority: 'normal',
+        isPinned: false,
+        isPopup: true,
+        isActive: true,
+        views: 89,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+      },
+    ]
   } finally {
     loading.value = false
   }
 }
 
-// 새 공지사항 작성 다이얼로그 열기
-const openCreateDialog = () => {
-  editingNotice.value = null
-  noticeForm.title = ''
-  noticeForm.content = ''
-  noticeForm.isPinned = true
-  dialog.value = true
+// 공지사항 생성
+const createNotice = async () => {
+  createLoading.value = true
+  try {
+    await adminService.createNotice(newNotice.value, userStore.user.uid)
+
+    // 폼 초기화
+    newNotice.value = {
+      title: '',
+      content: '',
+      type: 'general',
+      priority: 'normal',
+      startDate: '',
+      endDate: '',
+      isPinned: false,
+      isPopup: false,
+    }
+
+    // 목록 새로고침
+    loadNotices()
+    emit('notice-updated')
+  } catch (error) {
+    console.error('Failed to create notice:', error)
+  } finally {
+    createLoading.value = false
+  }
 }
 
-// 공지사항 수정 다이얼로그 열기
-const openEditDialog = (notice) => {
-  editingNotice.value = notice
-  noticeForm.title = notice.title
-  noticeForm.content = notice.content
-  noticeForm.isPinned = notice.isPinned
-  dialog.value = true
+// 공지사항 보기
+const viewNotice = (notice) => {
+  selectedNotice.value = { ...notice }
+  isEditing.value = false
+  detailDialog.value = true
 }
 
-// 다이얼로그 닫기
-const closeDialog = () => {
-  dialog.value = false
-  editingNotice.value = null
+// 공지사항 편집 시작
+const editNotice = (notice) => {
+  selectedNotice.value = { ...notice }
+  isEditing.value = true
+  detailDialog.value = true
+}
+
+const startEdit = () => {
+  isEditing.value = true
+}
+
+const cancelEdit = () => {
+  isEditing.value = false
 }
 
 // 공지사항 저장
 const saveNotice = async () => {
-  if (!valid.value) return
-
-  saving.value = true
+  saveLoading.value = true
   try {
-    const noticeData = {
-      title: noticeForm.title,
-      content: noticeForm.content,
-      isPinned: noticeForm.isPinned,
-      authorId: userStore.user.uid,
-      authorName: userStore.userDisplayName,
-      authorIcon: userStore.userIcon,
+    // 실제 구현에서는 공지사항 업데이트 API 호출
+    console.log('Save notice:', selectedNotice.value)
+
+    // 로컬 상태 업데이트
+    const index = notices.value.findIndex((n) => n.id === selectedNotice.value.id)
+    if (index !== -1) {
+      notices.value[index] = { ...selectedNotice.value }
     }
 
-    if (editingNotice.value) {
-      // 수정
-      await AdminService.updateNotice(userStore.user.uid, editingNotice.value.id, noticeData)
-      showSnackbar('공지사항이 수정되었습니다.', 'success')
-    } else {
-      // 새 작성
-      await AdminService.createNotice(userStore.user.uid, noticeData)
-      showSnackbar('공지사항이 작성되었습니다.', 'success')
-    }
-
-    closeDialog()
-    loadNotices()
+    isEditing.value = false
+    emit('notice-updated')
   } catch (error) {
-    console.error('공지사항 저장 실패:', error)
-    showSnackbar(error.message || '공지사항 저장에 실패했습니다.', 'error')
+    console.error('Failed to save notice:', error)
   } finally {
-    saving.value = false
+    saveLoading.value = false
   }
 }
 
-// 고정 토글
-const togglePin = async (notice) => {
+// 공지사항 상태 토글
+const toggleNoticeStatus = async (notice) => {
   try {
-    await AdminService.toggleNoticePin(userStore.user.uid, notice.id, !notice.isPinned)
-    showSnackbar(`공지사항이 ${!notice.isPinned ? '고정' : '고정 해제'}되었습니다.`, 'success')
-    loadNotices()
-  } catch (error) {
-    console.error('고정 설정 실패:', error)
-    showSnackbar(error.message || '고정 설정에 실패했습니다.', 'error')
-  }
-}
+    // 실제 구현에서는 공지사항 상태 업데이트 API 호출
+    const newStatus = !notice.isActive
 
-// 삭제 확인
-const confirmDelete = (notice) => {
-  deletingNotice.value = notice
-  deleteDialog.value = true
+    // 로컬 상태 업데이트
+    const index = notices.value.findIndex((n) => n.id === notice.id)
+    if (index !== -1) {
+      notices.value[index].isActive = newStatus
+    }
+
+    emit('notice-updated')
+  } catch (error) {
+    console.error('Failed to toggle notice status:', error)
+  }
 }
 
 // 공지사항 삭제
-const deleteNotice = async () => {
-  if (!deletingNotice.value) return
+const deleteNotice = async (notice) => {
+  if (confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+    try {
+      // 실제 구현에서는 공지사항 삭제 API 호출
 
-  deleting.value = true
-  try {
-    await AdminService.deleteNotice(userStore.user.uid, deletingNotice.value.id)
-    showSnackbar('공지사항이 삭제되었습니다.', 'success')
-    deleteDialog.value = false
-    deletingNotice.value = null
-    loadNotices()
-  } catch (error) {
-    console.error('공지사항 삭제 실패:', error)
-    showSnackbar(error.message || '공지사항 삭제에 실패했습니다.', 'error')
-  } finally {
-    deleting.value = false
+      // 로컬 상태에서 제거
+      const index = notices.value.findIndex((n) => n.id === notice.id)
+      if (index !== -1) {
+        notices.value.splice(index, 1)
+      }
+
+      emit('notice-updated')
+    } catch (error) {
+      console.error('Failed to delete notice:', error)
+    }
   }
 }
 
-// 유틸리티 함수
-const formatDateTime = (date) => {
-  if (!date) return ''
-  const targetDate = date instanceof Date ? date : new Date(date.seconds * 1000)
-  return targetDate.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+// 다이얼로그 닫기
+const closeDialog = () => {
+  detailDialog.value = false
+  isEditing.value = false
+  selectedNotice.value = null
 }
 
-const showSnackbar = (message, color = 'success') => {
-  snackbar.message = message
-  snackbar.color = color
-  snackbar.show = true
-}
-
-// 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
   loadNotices()
 })
 </script>
 
 <style scoped>
-.v-data-table {
+.notice-manager-container {
+  max-width: 100%;
+}
+
+.notice-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.notice-item {
   border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+}
+
+.notice-item:hover {
+  background-color: rgba(var(--v-theme-primary), 0.05);
+}
+
+.notice-content {
+  line-height: 1.4;
+  color: rgba(var(--v-theme-on-surface), 0.8);
+}
+
+.notice-content-detail {
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background-color: rgba(var(--v-theme-surface), 0.5);
+  border: 1px solid rgba(var(--v-border-color), 0.12);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.text-medium-emphasis {
+  opacity: 0.7;
 }
 </style>

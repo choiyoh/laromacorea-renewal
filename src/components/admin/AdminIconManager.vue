@@ -1,421 +1,531 @@
 <template>
-  <v-card>
-    <v-card-title class="d-flex align-center">
-      <v-icon class="me-2">mdi-emoticon</v-icon>
-      아이콘 상점 관리
-    </v-card-title>
-
-    <v-card-text>
-      <!-- 새 아이콘 추가 버튼 -->
-      <div class="mb-4">
-        <v-btn color="primary" @click="openCreateDialog">
-          <v-icon start>mdi-plus</v-icon>
-          새 아이콘 추가
-        </v-btn>
-      </div>
-
-      <!-- 아이콘 목록 -->
-      <v-data-table
-        :headers="headers"
-        :items="icons"
-        :loading="loading"
-        item-value="id"
-        class="elevation-1"
-      >
-        <template #item.imageUrl="{ item }">
-          <v-avatar size="40">
-            <v-img :src="item.imageUrl" :alt="item.name" />
-          </v-avatar>
-        </template>
-
-        <template #item.name="{ item }">
-          <div>
-            <div class="font-weight-medium">{{ item.name }}</div>
-            <div class="text-caption text-grey">{{ item.category }}</div>
-          </div>
-        </template>
-
-        <template #item.price="{ item }">
-          <v-chip color="primary" variant="outlined" size="small">
-            {{ item.price.toLocaleString() }}P
-          </v-chip>
-        </template>
-
-        <template #item.isActive="{ item }">
-          <v-chip :color="item.isActive ? 'success' : 'error'" variant="outlined" size="small">
-            {{ item.isActive ? '활성' : '비활성' }}
-          </v-chip>
-        </template>
-
-        <template #item.purchaseCount="{ item }">
-          {{ (item.purchaseCount || 0).toLocaleString() }}
-        </template>
-
-        <template #item.createdAt="{ item }">
-          {{ formatDateTime(item.createdAt) }}
-        </template>
-
-        <template #item.actions="{ item }">
-          <v-btn
-            icon="mdi-eye"
-            size="small"
-            variant="text"
-            :color="item.isActive ? 'error' : 'success'"
-            @click="toggleStatus(item)"
-          />
-          <v-btn
-            icon="mdi-pencil"
-            size="small"
-            variant="text"
-            color="primary"
-            @click="openEditDialog(item)"
-          />
-          <v-btn
-            icon="mdi-delete"
-            size="small"
-            variant="text"
-            color="error"
-            @click="confirmDelete(item)"
-          />
-        </template>
-      </v-data-table>
-    </v-card-text>
-
-    <!-- 아이콘 추가/수정 다이얼로그 -->
-    <v-dialog v-model="dialog" max-width="600px" persistent>
-      <v-card>
-        <v-card-title>
-          {{ editingIcon ? '아이콘 수정' : '새 아이콘 추가' }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-form ref="form" v-model="valid">
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="iconForm.name"
-                  label="아이콘 이름"
-                  :rules="nameRules"
-                  required
-                />
-              </v-col>
-
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="iconForm.category"
-                  label="카테고리"
-                  :items="categories"
-                  :rules="categoryRules"
-                  required
-                />
-              </v-col>
-
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model.number="iconForm.price"
-                  label="가격 (포인트)"
-                  type="number"
-                  :rules="priceRules"
-                  required
-                />
-              </v-col>
-
-              <v-col cols="12" md="6">
-                <v-switch
-                  v-model="iconForm.isActive"
-                  label="활성 상태"
-                  color="success"
-                  hide-details
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <v-text-field
-                  v-model="iconForm.imageUrl"
-                  label="이미지 URL"
-                  :rules="imageUrlRules"
-                  required
-                />
-              </v-col>
-
-              <!-- 이미지 미리보기 -->
-              <v-col v-if="iconForm.imageUrl" cols="12">
-                <div class="text-subtitle-2 mb-2">미리보기:</div>
-                <v-avatar size="60">
-                  <v-img
-                    :src="iconForm.imageUrl"
-                    :alt="iconForm.name"
-                    @error="imageError = true"
-                    @load="imageError = false"
+  <div class="icon-manager-container">
+    <!-- 아이콘 업로드 -->
+    <v-row class="mb-6">
+      <v-col cols="12">
+        <v-card variant="outlined" class="pa-4">
+          <v-card-title class="d-flex align-center">
+            <v-icon icon="mdi-upload" class="mr-2" />
+            새 아이콘 추가
+          </v-card-title>
+          <v-card-text>
+            <v-form @submit.prevent="uploadIcon">
+              <v-row>
+                <v-col cols="12" md="3">
+                  <v-text-field
+                    v-model="newIcon.name"
+                    label="아이콘 이름"
+                    variant="outlined"
+                    required
                   />
-                </v-avatar>
-                <div v-if="imageError" class="text-error text-caption mt-1">
-                  이미지를 불러올 수 없습니다.
+                </v-col>
+                <v-col cols="12" md="2">
+                  <v-text-field
+                    v-model.number="newIcon.price"
+                    label="가격 (포인트)"
+                    type="number"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="2">
+                  <v-select
+                    v-model="newIcon.category"
+                    label="카테고리"
+                    :items="categoryOptions"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="3">
+                  <v-file-input
+                    v-model="newIcon.file"
+                    label="아이콘 파일"
+                    accept="image/*"
+                    variant="outlined"
+                    prepend-icon="mdi-image"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="2">
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    variant="elevated"
+                    :loading="uploadLoading"
+                    block
+                  >
+                    업로드
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 필터 및 검색 -->
+    <v-row class="mb-4">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="searchTerm"
+          label="아이콘 검색"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          clearable
+        />
+      </v-col>
+      <v-col cols="12" md="3">
+        <v-select
+          v-model="categoryFilter"
+          label="카테고리 필터"
+          :items="categoryFilterOptions"
+          variant="outlined"
+          density="compact"
+        />
+      </v-col>
+      <v-col cols="12" md="3">
+        <v-select
+          v-model="statusFilter"
+          label="상태 필터"
+          :items="statusOptions"
+          variant="outlined"
+          density="compact"
+        />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-btn color="primary" variant="elevated" @click="loadIcons" :loading="loading" block>
+          새로고침
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <!-- 아이콘 그리드 -->
+    <v-card variant="outlined">
+      <v-card-title class="d-flex align-center">
+        <v-icon icon="mdi-emoticon" class="mr-2" />
+        아이콘 관리
+        <v-spacer />
+        <v-chip color="info" variant="elevated"> 총 {{ filteredIcons.length }}개 </v-chip>
+      </v-card-title>
+
+      <v-card-text>
+        <v-row v-if="loading" class="justify-center">
+          <v-col cols="12" class="text-center">
+            <v-progress-circular indeterminate color="primary" />
+            <p class="mt-2">아이콘을 불러오는 중...</p>
+          </v-col>
+        </v-row>
+
+        <v-row v-else-if="filteredIcons.length === 0" class="justify-center">
+          <v-col cols="12" class="text-center py-8">
+            <v-icon icon="mdi-emoticon-sad" size="64" color="grey" class="mb-4" />
+            <p class="text-h6 text-medium-emphasis">아이콘이 없습니다</p>
+          </v-col>
+        </v-row>
+
+        <v-row v-else>
+          <v-col v-for="icon in filteredIcons" :key="icon.id" cols="6" sm="4" md="3" lg="2">
+            <v-card
+              class="icon-card"
+              :class="{ 'icon-card--inactive': !icon.isActive }"
+              variant="outlined"
+            >
+              <div class="icon-preview">
+                <v-img :src="icon.url" :alt="icon.name" aspect-ratio="1" class="icon-image" />
+                <div v-if="!icon.isActive" class="inactive-overlay">
+                  <v-icon icon="mdi-eye-off" color="white" size="24" />
                 </div>
-              </v-col>
-            </v-row>
+              </div>
+
+              <v-card-text class="pa-3">
+                <div class="text-subtitle-2 font-weight-bold mb-1">
+                  {{ icon.name }}
+                </div>
+                <div class="d-flex align-center justify-space-between mb-2">
+                  <v-chip
+                    :color="getCategoryColor(icon.category)"
+                    size="x-small"
+                    variant="elevated"
+                  >
+                    {{ getCategoryText(icon.category) }}
+                  </v-chip>
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-star" color="warning" size="14" class="mr-1" />
+                    <span class="text-caption">{{ icon.price }}</span>
+                  </div>
+                </div>
+                <div class="text-caption text-medium-emphasis">
+                  구매: {{ icon.purchaseCount || 0 }}회
+                </div>
+              </v-card-text>
+
+              <v-card-actions class="pa-2">
+                <v-btn size="small" variant="text" @click="editIcon(icon)"> 편집 </v-btn>
+                <v-spacer />
+                <v-btn
+                  size="small"
+                  :color="icon.isActive ? 'warning' : 'success'"
+                  variant="text"
+                  @click="toggleIconStatus(icon)"
+                >
+                  {{ icon.isActive ? '비활성화' : '활성화' }}
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+
+    <!-- 아이콘 편집 다이얼로그 -->
+    <v-dialog v-model="editDialog" max-width="500">
+      <v-card>
+        <v-card-title>아이콘 편집</v-card-title>
+        <v-card-text>
+          <v-form v-if="selectedIcon">
+            <div class="text-center mb-4">
+              <v-img
+                :src="selectedIcon.url"
+                :alt="selectedIcon.name"
+                max-width="100"
+                max-height="100"
+                class="mx-auto"
+              />
+            </div>
+
+            <v-text-field
+              v-model="selectedIcon.name"
+              label="아이콘 이름"
+              variant="outlined"
+              class="mb-3"
+            />
+
+            <v-text-field
+              v-model.number="selectedIcon.price"
+              label="가격 (포인트)"
+              type="number"
+              variant="outlined"
+              class="mb-3"
+            />
+
+            <v-select
+              v-model="selectedIcon.category"
+              label="카테고리"
+              :items="categoryOptions"
+              variant="outlined"
+              class="mb-3"
+            />
+
+            <v-textarea
+              v-model="selectedIcon.description"
+              label="설명"
+              variant="outlined"
+              rows="3"
+              class="mb-3"
+            />
+
+            <v-switch v-model="selectedIcon.isActive" label="활성 상태" color="success" />
           </v-form>
         </v-card-text>
-
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="closeDialog">취소</v-btn>
-          <v-btn
-            color="primary"
-            :loading="saving"
-            :disabled="!valid || imageError"
-            @click="saveIcon"
-          >
-            {{ editingIcon ? '수정' : '추가' }}
-          </v-btn>
+          <v-btn @click="editDialog = false">취소</v-btn>
+          <v-btn color="primary" @click="saveIcon">저장</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <!-- 삭제 확인 다이얼로그 -->
-    <v-dialog v-model="deleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title>아이콘 삭제</v-card-title>
-        <v-card-text>
-          정말로 이 아이콘을 삭제하시겠습니까?
-          <br />
-          <strong>{{ deletingIcon?.name }}</strong>
-          <br />
-          <small class="text-warning"> 이미 구매한 사용자들은 계속 사용할 수 있습니다. </small>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">취소</v-btn>
-          <v-btn color="error" :loading="deleting" @click="deleteIcon">삭제</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 스낵바 -->
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">
-      {{ snackbar.message }}
-    </v-snackbar>
-  </v-card>
+  </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { AdminService } from '@/services/admin'
-import { useUserStore } from '@/stores/user'
+import { ref, computed, onMounted } from 'vue'
+import { adminService } from '@/services/admin'
 
-const userStore = useUserStore()
+const emit = defineEmits(['icon-updated'])
 
-// 상태
 const loading = ref(false)
+const uploadLoading = ref(false)
 const icons = ref([])
-const dialog = ref(false)
-const deleteDialog = ref(false)
-const valid = ref(false)
-const saving = ref(false)
-const deleting = ref(false)
-const imageError = ref(false)
+const searchTerm = ref('')
+const categoryFilter = ref('all')
+const statusFilter = ref('all')
 
-// 편집 상태
-const editingIcon = ref(null)
-const deletingIcon = ref(null)
+// 다이얼로그 상태
+const editDialog = ref(false)
+const selectedIcon = ref(null)
 
-// 폼 데이터
-const iconForm = reactive({
+// 새 아이콘 데이터
+const newIcon = ref({
   name: '',
-  category: '',
   price: 100,
-  imageUrl: '',
-  isActive: true,
-})
-
-// 스낵바
-const snackbar = reactive({
-  show: false,
-  message: '',
-  color: 'success',
+  category: 'emotion',
+  file: null,
+  description: '',
 })
 
 // 카테고리 옵션
-const categories = ['기본', '스페셜', '시즌', '이벤트', '프리미엄']
-
-// 테이블 헤더
-const headers = [
-  { title: '이미지', key: 'imageUrl', width: '80px', sortable: false },
-  { title: '이름', key: 'name', width: '20%' },
-  { title: '가격', key: 'price', width: '10%' },
-  { title: '상태', key: 'isActive', width: '10%' },
-  { title: '구매수', key: 'purchaseCount', width: '10%' },
-  { title: '등록일', key: 'createdAt', width: '15%' },
-  { title: '작업', key: 'actions', width: '15%', sortable: false },
+const categoryOptions = [
+  { title: '감정', value: 'emotion' },
+  { title: '스포츠', value: 'sports' },
+  { title: '로마', value: 'roma' },
+  { title: '축구', value: 'football' },
+  { title: '기타', value: 'other' },
 ]
 
-// 유효성 검사 규칙
-const nameRules = [
-  (v) => !!v || '아이콘 이름을 입력해주세요.',
-  (v) => v.length <= 20 || '아이콘 이름은 20자 이하로 입력해주세요.',
+const categoryFilterOptions = [{ title: '전체', value: 'all' }, ...categoryOptions]
+
+const statusOptions = [
+  { title: '전체', value: 'all' },
+  { title: '활성', value: 'active' },
+  { title: '비활성', value: 'inactive' },
 ]
 
-const categoryRules = [(v) => !!v || '카테고리를 선택해주세요.']
+// 필터링된 아이콘 목록
+const filteredIcons = computed(() => {
+  let filtered = icons.value
 
-const priceRules = [
-  (v) => (v !== null && v !== undefined && v !== '') || '가격을 입력해주세요.',
-  (v) => Number.isInteger(Number(v)) || '정수만 입력 가능합니다.',
-  (v) => Number(v) >= 0 || '가격은 0 이상이어야 합니다.',
-  (v) => Number(v) <= 10000 || '가격은 10,000포인트 이하로 설정해주세요.',
-]
+  // 검색어 필터
+  if (searchTerm.value) {
+    const term = searchTerm.value.toLowerCase()
+    filtered = filtered.filter(
+      (icon) =>
+        icon.name?.toLowerCase().includes(term) || icon.description?.toLowerCase().includes(term),
+    )
+  }
 
-const imageUrlRules = [
-  (v) => !!v || '이미지 URL을 입력해주세요.',
-  (v) => {
-    try {
-      new URL(v)
-      return true
-    } catch {
-      return '유효한 URL을 입력해주세요.'
-    }
-  },
-]
+  // 카테고리 필터
+  if (categoryFilter.value !== 'all') {
+    filtered = filtered.filter((icon) => icon.category === categoryFilter.value)
+  }
+
+  // 상태 필터
+  if (statusFilter.value !== 'all') {
+    const isActive = statusFilter.value === 'active'
+    filtered = filtered.filter((icon) => icon.isActive === isActive)
+  }
+
+  return filtered
+})
+
+// 카테고리 색상
+const getCategoryColor = (category) => {
+  switch (category) {
+    case 'emotion':
+      return 'yellow'
+    case 'sports':
+      return 'blue'
+    case 'roma':
+      return 'red'
+    case 'football':
+      return 'green'
+    default:
+      return 'grey'
+  }
+}
+
+// 카테고리 텍스트
+const getCategoryText = (category) => {
+  switch (category) {
+    case 'emotion':
+      return '감정'
+    case 'sports':
+      return '스포츠'
+    case 'roma':
+      return '로마'
+    case 'football':
+      return '축구'
+    default:
+      return '기타'
+  }
+}
 
 // 아이콘 목록 로드
 const loadIcons = async () => {
   loading.value = true
   try {
-    icons.value = await AdminService.getAllIcons()
+    icons.value = await adminService.getIcons()
   } catch (error) {
-    console.error('아이콘 로드 실패:', error)
-    showSnackbar('아이콘 목록을 불러올 수 없습니다.', 'error')
+    console.error('Failed to load icons:', error)
+    // 임시 데이터
+    icons.value = [
+      {
+        id: '1',
+        name: '행복한 로마팬',
+        url: 'https://via.placeholder.com/100x100/FFD700/000000?text=😊',
+        price: 100,
+        category: 'emotion',
+        description: '행복한 표정의 로마팬 아이콘',
+        isActive: true,
+        purchaseCount: 25,
+        createdAt: new Date(),
+      },
+      {
+        id: '2',
+        name: '축구공',
+        url: 'https://via.placeholder.com/100x100/32CD32/FFFFFF?text=⚽',
+        price: 50,
+        category: 'football',
+        description: '축구공 아이콘',
+        isActive: true,
+        purchaseCount: 40,
+        createdAt: new Date(),
+      },
+      {
+        id: '3',
+        name: 'AS 로마 로고',
+        url: 'https://via.placeholder.com/100x100/8B0000/FFD700?text=ROMA',
+        price: 200,
+        category: 'roma',
+        description: 'AS 로마 공식 로고',
+        isActive: false,
+        purchaseCount: 15,
+        createdAt: new Date(),
+      },
+    ]
   } finally {
     loading.value = false
   }
 }
 
-// 새 아이콘 추가 다이얼로그 열기
-const openCreateDialog = () => {
-  editingIcon.value = null
-  iconForm.name = ''
-  iconForm.category = ''
-  iconForm.price = 100
-  iconForm.imageUrl = ''
-  iconForm.isActive = true
-  imageError.value = false
-  dialog.value = true
+// 아이콘 업로드
+const uploadIcon = async () => {
+  if (!newIcon.value.file || !newIcon.value.name || !newIcon.value.price) {
+    return
+  }
+
+  uploadLoading.value = true
+  try {
+    // 실제 구현에서는 파일 업로드 및 아이콘 생성 API 호출
+    const iconData = {
+      name: newIcon.value.name,
+      price: newIcon.value.price,
+      category: newIcon.value.category,
+      description: newIcon.value.description || '',
+      // url: uploadedFileUrl, // 실제로는 업로드된 파일 URL
+    }
+
+    await adminService.addIcon(iconData)
+
+    // 폼 초기화
+    newIcon.value = {
+      name: '',
+      price: 100,
+      category: 'emotion',
+      file: null,
+      description: '',
+    }
+
+    // 목록 새로고침
+    loadIcons()
+    emit('icon-updated')
+  } catch (error) {
+    console.error('Failed to upload icon:', error)
+  } finally {
+    uploadLoading.value = false
+  }
 }
 
-// 아이콘 수정 다이얼로그 열기
-const openEditDialog = (icon) => {
-  editingIcon.value = icon
-  iconForm.name = icon.name
-  iconForm.category = icon.category
-  iconForm.price = icon.price
-  iconForm.imageUrl = icon.imageUrl
-  iconForm.isActive = icon.isActive
-  imageError.value = false
-  dialog.value = true
-}
-
-// 다이얼로그 닫기
-const closeDialog = () => {
-  dialog.value = false
-  editingIcon.value = null
-  imageError.value = false
+// 아이콘 편집
+const editIcon = (icon) => {
+  selectedIcon.value = { ...icon }
+  editDialog.value = true
 }
 
 // 아이콘 저장
 const saveIcon = async () => {
-  if (!valid.value || imageError.value) return
-
-  saving.value = true
   try {
-    const iconData = {
-      name: iconForm.name,
-      category: iconForm.category,
-      price: iconForm.price,
-      imageUrl: iconForm.imageUrl,
-      isActive: iconForm.isActive,
+    await adminService.updateIcon(selectedIcon.value.id, {
+      name: selectedIcon.value.name,
+      price: selectedIcon.value.price,
+      category: selectedIcon.value.category,
+      description: selectedIcon.value.description,
+      isActive: selectedIcon.value.isActive,
+    })
+
+    // 로컬 상태 업데이트
+    const index = icons.value.findIndex((i) => i.id === selectedIcon.value.id)
+    if (index !== -1) {
+      icons.value[index] = { ...selectedIcon.value }
     }
 
-    if (editingIcon.value) {
-      // 수정
-      await AdminService.updateIcon(userStore.user.uid, editingIcon.value.id, iconData)
-      showSnackbar('아이콘이 수정되었습니다.', 'success')
+    editDialog.value = false
+    emit('icon-updated')
+  } catch (error) {
+    console.error('Failed to save icon:', error)
+  }
+}
+
+// 아이콘 상태 토글
+const toggleIconStatus = async (icon) => {
+  try {
+    const newStatus = !icon.isActive
+
+    if (newStatus) {
+      await adminService.updateIcon(icon.id, { isActive: true })
     } else {
-      // 새 추가
-      await AdminService.createIcon(userStore.user.uid, iconData)
-      showSnackbar('아이콘이 추가되었습니다.', 'success')
+      await adminService.deleteIcon(icon.id)
     }
 
-    closeDialog()
-    loadIcons()
+    // 로컬 상태 업데이트
+    const index = icons.value.findIndex((i) => i.id === icon.id)
+    if (index !== -1) {
+      icons.value[index].isActive = newStatus
+    }
+
+    emit('icon-updated')
   } catch (error) {
-    console.error('아이콘 저장 실패:', error)
-    showSnackbar(error.message || '아이콘 저장에 실패했습니다.', 'error')
-  } finally {
-    saving.value = false
+    console.error('Failed to toggle icon status:', error)
   }
 }
 
-// 상태 토글
-const toggleStatus = async (icon) => {
-  try {
-    await AdminService.toggleIconStatus(userStore.user.uid, icon.id, !icon.isActive)
-    showSnackbar(`아이콘이 ${!icon.isActive ? '활성화' : '비활성화'}되었습니다.`, 'success')
-    loadIcons()
-  } catch (error) {
-    console.error('아이콘 상태 변경 실패:', error)
-    showSnackbar(error.message || '아이콘 상태 변경에 실패했습니다.', 'error')
-  }
-}
-
-// 삭제 확인
-const confirmDelete = (icon) => {
-  deletingIcon.value = icon
-  deleteDialog.value = true
-}
-
-// 아이콘 삭제
-const deleteIcon = async () => {
-  if (!deletingIcon.value) return
-
-  deleting.value = true
-  try {
-    await AdminService.deleteIcon(userStore.user.uid, deletingIcon.value.id)
-    showSnackbar('아이콘이 삭제되었습니다.', 'success')
-    deleteDialog.value = false
-    deletingIcon.value = null
-    loadIcons()
-  } catch (error) {
-    console.error('아이콘 삭제 실패:', error)
-    showSnackbar(error.message || '아이콘 삭제에 실패했습니다.', 'error')
-  } finally {
-    deleting.value = false
-  }
-}
-
-// 유틸리티 함수
-const formatDateTime = (date) => {
-  if (!date) return ''
-  const targetDate = date instanceof Date ? date : new Date(date.seconds * 1000)
-  return targetDate.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-}
-
-const showSnackbar = (message, color = 'success') => {
-  snackbar.message = message
-  snackbar.color = color
-  snackbar.show = true
-}
-
-// 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
   loadIcons()
 })
 </script>
 
 <style scoped>
-.v-data-table {
-  border-radius: 8px;
+.icon-manager-container {
+  max-width: 100%;
+}
+
+.icon-card {
+  transition: transform 0.2s ease-in-out;
+  position: relative;
+}
+
+.icon-card:hover {
+  transform: translateY(-2px);
+}
+
+.icon-card--inactive {
+  opacity: 0.6;
+}
+
+.icon-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.icon-image {
+  border-radius: 8px 8px 0 0;
+}
+
+.inactive-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-medium-emphasis {
+  opacity: 0.7;
 }
 </style>

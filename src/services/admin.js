@@ -21,11 +21,11 @@ import {
 import { db } from './firebase'
 import { collections } from './database'
 
-export class AdminService {
+export const adminService = {
   /**
    * 관리자 권한 확인
    */
-  static async checkAdminPermission(userId) {
+  async checkAdminPermission(userId) {
     try {
       const userDoc = await getDoc(doc(db, collections.users, userId))
       if (!userDoc.exists()) {
@@ -38,12 +38,12 @@ export class AdminService {
       console.error('관리자 권한 확인 실패:', error)
       throw error
     }
-  }
+  },
 
   /**
    * Notice 게시판 관리
    */
-  static async createNotice(adminUserId, noticeData) {
+  async createNotice(adminUserId, noticeData) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -68,9 +68,9 @@ export class AdminService {
       console.error('공지사항 작성 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async updateNotice(adminUserId, postId, updateData) {
+  async updateNotice(adminUserId, postId, updateData) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -89,9 +89,9 @@ export class AdminService {
       console.error('공지사항 수정 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async deleteNotice(adminUserId, postId) {
+  async deleteNotice(adminUserId, postId) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -110,9 +110,9 @@ export class AdminService {
       console.error('공지사항 삭제 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async toggleNoticePin(adminUserId, postId, isPinned) {
+  async toggleNoticePin(adminUserId, postId, isPinned) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -131,12 +131,12 @@ export class AdminService {
       console.error('공지사항 고정 설정 실패:', error)
       throw error
     }
-  }
+  },
 
   /**
    * 아이콘 상점 관리
    */
-  static async getAllIcons() {
+  async getAllIcons() {
     try {
       const q = query(
         collection(db, collections.icons),
@@ -150,9 +150,9 @@ export class AdminService {
       console.error('아이콘 목록 조회 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async createIcon(adminUserId, iconData) {
+  async createIcon(adminUserId, iconData) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -174,9 +174,9 @@ export class AdminService {
       console.error('아이콘 생성 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async updateIcon(adminUserId, iconId, updateData) {
+  async updateIcon(adminUserId, iconId, updateData) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -196,9 +196,9 @@ export class AdminService {
       console.error('아이콘 수정 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async toggleIconStatus(adminUserId, iconId, isActive) {
+  async toggleIconStatus(adminUserId, iconId, isActive) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -218,9 +218,9 @@ export class AdminService {
       console.error('아이콘 상태 변경 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async deleteIcon(adminUserId, iconId) {
+  async deleteIcon(adminUserId, iconId) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -236,12 +236,12 @@ export class AdminService {
       console.error('아이콘 삭제 실패:', error)
       throw error
     }
-  }
+  },
 
   /**
    * 사용자 관리
    */
-  static async getAllUsers(limitCount = 50) {
+  async getAllUsers(limitCount = 50) {
     try {
       const q = query(
         collection(db, collections.users),
@@ -255,9 +255,9 @@ export class AdminService {
       console.error('사용자 목록 조회 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async updateUserRole(adminUserId, targetUserId, newRole) {
+  async updateUserRole(adminUserId, targetUserId, newRole) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -281,9 +281,9 @@ export class AdminService {
       console.error('사용자 역할 변경 실패:', error)
       throw error
     }
-  }
+  },
 
-  static async toggleUserStatus(adminUserId, targetUserId, isActive) {
+  async toggleUserStatus(adminUserId, targetUserId, isActive) {
     try {
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId)
@@ -303,12 +303,12 @@ export class AdminService {
       console.error('사용자 상태 변경 실패:', error)
       throw error
     }
-  }
+  },
 
   /**
    * 통계 및 대시보드
    */
-  static async getDashboardStats() {
+  async getDashboardStats() {
     try {
       const stats = {
         totalUsers: 0,
@@ -357,5 +357,124 @@ export class AdminService {
       console.error('대시보드 통계 조회 실패:', error)
       throw error
     }
-  }
+  },
+
+  // 시스템 통계 조회 (AdminView에서 사용)
+  async getSystemStats() {
+    return this.getDashboardStats()
+  },
+
+  // 사용자 목록 조회 (AdminUserManager에서 사용)
+  async getUsers(options = {}) {
+    return this.getAllUsers(options.limitCount || 50)
+  },
+
+  // 사용자 검색
+  async searchUsers(searchTerm) {
+    try {
+      const users = await this.getAllUsers(100)
+      return users.filter(
+        (user) =>
+          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    } catch (error) {
+      console.error('사용자 검색 실패:', error)
+      throw error
+    }
+  },
+
+  // 사용자 상태 업데이트
+  async updateUserStatus(userId, status) {
+    // 현재 관리자 ID는 임시로 'admin'으로 설정
+    return this.toggleUserStatus('admin', userId, status)
+  },
+
+  // 사용자 역할 업데이트
+  async updateUserRole(userId, role) {
+    return this.updateUserRole('admin', userId, role)
+  },
+
+  // 포인트 조정 (임시 구현)
+  async adjustUserPoints(userId, points, reason, adminId) {
+    console.log('포인트 조정:', { userId, points, reason, adminId })
+    // 실제 구현에서는 포인트 시스템 연동
+    return true
+  },
+
+  // 게시글 목록 조회
+  async getPosts(options = {}) {
+    try {
+      const q = query(
+        collection(db, collections.posts),
+        orderBy('createdAt', 'desc'),
+        limit(options.limitCount || 50),
+      )
+
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('게시글 목록 조회 실패:', error)
+      throw error
+    }
+  },
+
+  // 게시글 고정/해제
+  async togglePostPinned(postId, isPinned) {
+    return this.toggleNoticePin('admin', postId, isPinned)
+  },
+
+  // 게시글 삭제/복원
+  async togglePostDeleted(postId, isDeleted) {
+    if (isDeleted) {
+      return this.deleteNotice('admin', postId)
+    } else {
+      // 복원 로직 (실제 구현 필요)
+      const postRef = doc(db, collections.posts, postId)
+      await updateDoc(postRef, {
+        isDeleted: false,
+        updatedAt: serverTimestamp(),
+      })
+      return true
+    }
+  },
+
+  // 아이콘 관리
+  async getIcons() {
+    return this.getAllIcons()
+  },
+
+  async addIcon(iconData) {
+    return this.createIcon('admin', iconData)
+  },
+
+  async updateIcon(iconId, iconData) {
+    return this.updateIcon('admin', iconId, iconData)
+  },
+
+  async deleteIcon(iconId) {
+    return this.deleteIcon('admin', iconId)
+  },
+
+  // 공지사항 관리
+  async getNotices(options = {}) {
+    try {
+      const q = query(
+        collection(db, collections.posts),
+        where('boardType', '==', 'notice'),
+        orderBy('createdAt', 'desc'),
+        limit(options.limitCount || 20),
+      )
+
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('공지사항 목록 조회 실패:', error)
+      throw error
+    }
+  },
+
+  async createNotice(noticeData, adminId) {
+    return this.createNotice(adminId, noticeData)
+  },
 }

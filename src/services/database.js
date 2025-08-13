@@ -42,6 +42,40 @@ export const userService = {
     return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null
   },
 
+  // 아이디로 사용자 조회
+  async getUserByUsername(username) {
+    const q = query(collection(db, collections.users), where('username', '==', username), limit(1))
+    const snapshot = await getDocs(q)
+    return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() }
+  },
+
+  // 아이디 중복 체크
+  async checkUsernameAvailability(username) {
+    const q = query(collection(db, collections.users), where('username', '==', username), limit(1))
+    const snapshot = await getDocs(q)
+    return snapshot.empty
+  },
+
+  // 닉네임 중복 체크
+  async checkDisplayNameAvailability(displayName) {
+    const q = query(
+      collection(db, collections.users),
+      where('displayName', '==', displayName),
+      limit(1),
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.empty
+  },
+
+  // 사용자 프로필 업데이트
+  async updateUserProfile(uid, profileData) {
+    const userRef = doc(db, collections.users, uid)
+    await updateDoc(userRef, {
+      ...profileData,
+      updatedAt: serverTimestamp(),
+    })
+  },
+
   // 사용자 정보 업데이트
   async updateUser(uid, userData) {
     const userRef = doc(db, collections.users, uid)
@@ -504,4 +538,25 @@ export const boardService = {
     const boardDoc = await getDoc(doc(db, collections.boards, boardId))
     return boardDoc.exists() ? { id: boardDoc.id, ...boardDoc.data() } : null
   },
+}
+
+/**
+ * 통합 데이터베이스 서비스
+ * 모든 서비스를 하나의 객체로 통합
+ */
+export const databaseService = {
+  // 사용자 관련
+  ...userService,
+
+  // 게시글 관련
+  ...postService,
+
+  // 댓글 관련
+  ...commentService,
+
+  // 아이콘 관련
+  ...iconService,
+
+  // 게시판 관련
+  ...boardService,
 }
