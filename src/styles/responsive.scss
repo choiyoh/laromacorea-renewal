@@ -1,0 +1,382 @@
+// Responsive Design Utilities
+// AS Roma Korea Community - Mobile-first responsive design
+
+// Breakpoints (following Vuetify 3 breakpoints)
+$breakpoints: (
+  xs: 0,
+  sm: 600px,
+  md: 960px,
+  lg: 1280px,
+  xl: 1920px,
+  xxl: 2560px,
+);
+
+// Media query mixins
+@mixin mobile-only {
+  @media (max-width: #{map-get($breakpoints, sm) - 1px}) {
+    @content;
+  }
+}
+
+@mixin tablet-only {
+  @media (min-width: #{map-get($breakpoints, sm)}) and (max-width: #{map-get($breakpoints, md) - 1px}) {
+    @content;
+  }
+}
+
+@mixin mobile-tablet {
+  @media (max-width: #{map-get($breakpoints, md) - 1px}) {
+    @content;
+  }
+}
+
+@mixin desktop-only {
+  @media (min-width: #{map-get($breakpoints, md)}) {
+    @content;
+  }
+}
+
+@mixin large-desktop {
+  @media (min-width: #{map-get($breakpoints, lg)}) {
+    @content;
+  }
+}
+
+@mixin extra-large-desktop {
+  @media (min-width: #{map-get($breakpoints, xl)}) {
+    @content;
+  }
+}
+
+// Touch-friendly utilities
+@mixin touch-friendly {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+
+  @include mobile-only {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px 20px;
+  }
+}
+
+@mixin touch-target {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+
+    @include mobile-only {
+      min-width: 48px;
+      min-height: 48px;
+    }
+  }
+}
+
+// Container utilities
+@mixin container-responsive {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+
+  @include mobile-only {
+    padding: 0 12px;
+  }
+
+  @include tablet-only {
+    padding: 0 24px;
+  }
+
+  @include desktop-only {
+    max-width: 1200px;
+    padding: 0 32px;
+  }
+
+  @include large-desktop {
+    max-width: 1400px;
+  }
+}
+
+// Typography responsive utilities
+@mixin responsive-text($mobile-size, $desktop-size) {
+  font-size: $mobile-size;
+
+  @include desktop-only {
+    font-size: $desktop-size;
+  }
+}
+
+// Spacing utilities
+@mixin responsive-spacing($property, $mobile-value, $desktop-value) {
+  #{$property}: $mobile-value;
+
+  @include desktop-only {
+    #{$property}: $desktop-value;
+  }
+}
+
+// Grid utilities
+@mixin responsive-grid($mobile-cols: 1, $tablet-cols: 2, $desktop-cols: 3) {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat($mobile-cols, 1fr);
+
+  @include tablet-only {
+    grid-template-columns: repeat($tablet-cols, 1fr);
+    gap: 20px;
+  }
+
+  @include desktop-only {
+    grid-template-columns: repeat($desktop-cols, 1fr);
+    gap: 24px;
+  }
+}
+
+// Flexbox utilities
+@mixin flex-responsive($mobile-direction: column, $desktop-direction: row) {
+  display: flex;
+  flex-direction: $mobile-direction;
+
+  @include desktop-only {
+    flex-direction: $desktop-direction;
+  }
+}
+
+// Image responsive utilities
+@mixin responsive-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+
+  &.contain {
+    object-fit: contain;
+  }
+
+  &.cover {
+    object-fit: cover;
+  }
+}
+
+// Card responsive utilities
+@mixin responsive-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+
+  @include mobile-only {
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    @include mobile-only {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+// Button responsive utilities
+@mixin responsive-button {
+  @include touch-friendly;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  @include mobile-only {
+    border-radius: 8px;
+    font-size: 16px; // Prevent zoom on iOS
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v-theme-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Form input responsive utilities
+@mixin responsive-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 16px; // Prevent zoom on iOS
+  transition: all 0.2s ease;
+
+  @include mobile-only {
+    padding: 14px 16px;
+    border-radius: 8px;
+  }
+
+  &:focus {
+    outline: 2px solid var(--v-theme-primary);
+    outline-offset: 1px;
+  }
+}
+
+// Navigation responsive utilities
+@mixin responsive-nav {
+  @include mobile-tablet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  @include desktop-only {
+    position: relative;
+    box-shadow: none;
+  }
+}
+
+// Utility classes
+.responsive-hide-mobile {
+  @include mobile-only {
+    display: none !important;
+  }
+}
+
+.responsive-hide-tablet {
+  @include tablet-only {
+    display: none !important;
+  }
+}
+
+.responsive-hide-desktop {
+  @include desktop-only {
+    display: none !important;
+  }
+}
+
+.responsive-show-mobile {
+  display: none !important;
+
+  @include mobile-only {
+    display: block !important;
+  }
+}
+
+.responsive-show-tablet {
+  display: none !important;
+
+  @include tablet-only {
+    display: block !important;
+  }
+}
+
+.responsive-show-desktop {
+  display: none !important;
+
+  @include desktop-only {
+    display: block !important;
+  }
+}
+
+// Touch-friendly utility classes
+.touch-friendly {
+  @include touch-friendly;
+}
+
+.touch-target {
+  @include touch-target;
+}
+
+// Container utility classes
+.container-responsive {
+  @include container-responsive;
+}
+
+// Cross-browser compatibility fixes
+@mixin cross-browser-fixes {
+  // iOS Safari fixes
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
+
+  // Prevent text size adjust on orientation change
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+
+  // Fix for iOS Safari viewport units
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+// Print styles
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]:after {
+    content: ' (' attr(href) ')';
+  }
+
+  abbr[title]:after {
+    content: ' (' attr(title) ')';
+  }
+
+  .ir a:after,
+  a[href^='javascript:']:after,
+  a[href^='#']:after {
+    content: '';
+  }
+
+  pre,
+  blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+}

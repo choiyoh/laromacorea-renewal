@@ -2,8 +2,12 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { AuthService } from '@/services/auth'
+import { useErrorStore } from '@/stores/error'
 
 export const useUserStore = defineStore('user', () => {
+  // Get error store instance
+  const errorStore = useErrorStore()
+
   // State
   const user = ref(null)
   const loading = ref(false)
@@ -22,7 +26,7 @@ export const useUserStore = defineStore('user', () => {
 
   // Actions
   async function signIn(email, password) {
-    loading.value = true
+    errorStore.setLoading('auth-signin', true)
     error.value = null
 
     try {
@@ -43,14 +47,15 @@ export const useUserStore = defineStore('user', () => {
       return user.value
     } catch (err) {
       error.value = err.message
+      errorStore.handleFirebaseError(err, 'User Sign In')
       throw err
     } finally {
-      loading.value = false
+      errorStore.setLoading('auth-signin', false)
     }
   }
 
   async function signUp(email, password, displayName = null) {
-    loading.value = true
+    errorStore.setLoading('auth-signup', true)
     error.value = null
 
     try {
@@ -71,14 +76,15 @@ export const useUserStore = defineStore('user', () => {
       return user.value
     } catch (err) {
       error.value = err.message
+      errorStore.handleFirebaseError(err, 'User Sign Up')
       throw err
     } finally {
-      loading.value = false
+      errorStore.setLoading('auth-signup', false)
     }
   }
 
   async function signOut() {
-    loading.value = true
+    errorStore.setLoading('auth-signout', true)
     error.value = null
 
     try {
@@ -86,9 +92,10 @@ export const useUserStore = defineStore('user', () => {
       user.value = null
     } catch (err) {
       error.value = err.message
+      errorStore.handleFirebaseError(err, 'User Sign Out')
       throw err
     } finally {
-      loading.value = false
+      errorStore.setLoading('auth-signout', false)
     }
   }
 
@@ -183,13 +190,24 @@ export const useUserStore = defineStore('user', () => {
 
   // Initialize auth state listener
   function initializeAuth() {
+    console.log('Initializing auth state listener...')
+
     return AuthService.onAuthStateChanged(async (firebaseUser) => {
-      loading.value = true
+      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out')
+      errorStore.setLoading('auth-init', true)
 
       try {
         if (firebaseUser) {
+          console.log('Firebase user:', {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            emailVerified: firebaseUser.emailVerified,
+          })
+
           // Get user data from Firestore
           const userData = await AuthService.getUserDocument(firebaseUser.uid)
+          console.log('Firestore user data:', userData)
 
           user.value = {
             uid: firebaseUser.uid,
@@ -199,15 +217,20 @@ export const useUserStore = defineStore('user', () => {
             emailVerified: firebaseUser.emailVerified,
             ...userData, // Merge Firestore data
           }
+
+          console.log('User store updated:', user.value)
         } else {
+          console.log('No user, clearing user store')
           user.value = null
         }
       } catch (err) {
         console.error('Error initializing auth:', err)
+        errorStore.handleFirebaseError(err, 'Auth Initialization')
         user.value = null
       } finally {
-        loading.value = false
+        errorStore.setLoading('auth-init', false)
         authInitialized.value = true
+        console.log('Auth initialization completed, authInitialized:', authInitialized.value)
       }
     })
   }

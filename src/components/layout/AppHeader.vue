@@ -1,13 +1,18 @@
 <template>
   <v-app-bar color="secondary" dark app elevation="2">
     <!-- Mobile Menu Button -->
-    <v-app-bar-nav-icon v-if="mobile" @click="$emit('toggle-drawer')" class="d-md-none" />
+    <v-app-bar-nav-icon
+      v-if="mobile"
+      @click="$emit('toggle-drawer')"
+      class="d-md-none touch-friendly"
+      size="large"
+    />
 
     <!-- Logo -->
     <v-app-bar-title class="d-flex align-center">
       <router-link to="/" class="text-decoration-none text-black d-flex align-center">
         <v-img src="/favicon.ico" alt="AS Roma Logo" width="32" height="32" class="me-2" />
-        <span class="font-weight-bold">AS 로마 코리아</span>
+        <span class="font-weight-bold">La Roma Corea</span>
       </router-link>
     </v-app-bar-title>
 
@@ -18,8 +23,9 @@
         :key="board.key"
         :to="`/board/${board.key}`"
         variant="text"
-        class="text-black mx-1"
+        class="text-black mx-1 touch-friendly"
         :class="{ 'v-btn--active': $route.params.boardType === board.key }"
+        min-width="60"
       >
         {{ board.name }}
       </v-btn>
@@ -38,8 +44,8 @@
       <!-- User Profile Menu -->
       <v-menu offset-y>
         <template v-slot:activator="{ props }">
-          <v-btn icon v-bind="props" class="me-2">
-            <v-avatar size="32">
+          <v-btn icon v-bind="props" class="me-2 touch-friendly" size="large">
+            <v-avatar :size="mobile ? 36 : 32">
               <v-img
                 v-if="userStore.user?.photoURL"
                 :src="userStore.user.photoURL"
@@ -75,7 +81,15 @@
 
     <!-- Login Button for non-authenticated users -->
     <div v-else>
-      <v-btn variant="outlined" color="black" @click="$router.push('/auth')"> 로그인 </v-btn>
+      <v-btn
+        variant="outlined"
+        color="black"
+        class="touch-friendly"
+        :size="mobile ? 'large' : 'default'"
+        @click="$router.push('/auth')"
+      >
+        로그인
+      </v-btn>
     </div>
   </v-app-bar>
 </template>
@@ -84,12 +98,14 @@
 import { computed } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useUserStore } from '@/stores/user'
+import { useResponsive } from '@/composables/useResponsive'
 
 // Emits
 defineEmits(['toggle-drawer'])
 
 // Composables
 const { mobile } = useDisplay()
+const { isTouchDevice } = useResponsive()
 const userStore = useUserStore()
 
 // Board navigation items
@@ -111,5 +127,38 @@ const boards = [
 
 .roma-yellow {
   color: #fbba00 !important;
+}
+
+.touch-friendly {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 599px) {
+  .touch-friendly {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Improve touch targets on mobile */
+.v-app-bar {
+  padding: 0 8px;
+}
+
+@media (max-width: 599px) {
+  .v-app-bar {
+    padding: 0 4px;
+  }
+
+  .v-app-bar-title {
+    font-size: 1.1rem;
+  }
+}
+
+/* Focus styles for keyboard navigation */
+.v-btn:focus-visible {
+  outline: 2px solid var(--v-theme-primary);
+  outline-offset: 2px;
 }
 </style>

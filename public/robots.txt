@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and auth pages
+Disallow: /admin
+Disallow: /auth
+Disallow: /test
+
+# Allow specific board types
+Allow: /board/notice
+Allow: /board/squad
+Allow: /board/match
+Allow: /board/calcio
+Allow: /board/free
+Allow: /board/special
+Allow: /board/media
+
+# Sitemap location
+Sitemap: https://laromacorea.com/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1

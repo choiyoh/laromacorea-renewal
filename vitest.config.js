@@ -11,6 +11,7 @@ export default mergeConfig(
       root: fileURLToPath(new URL('./', import.meta.url)),
       css: true,
       globals: true,
+      setupFiles: ['src/__tests__/setup.js'],
     },
   }),
 )

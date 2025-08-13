@@ -2,9 +2,14 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { ApiService } from '@/services/api'
+import { postService } from '@/services/database-simple'
 import { orderBy, where, limit } from 'firebase/firestore'
+import { useErrorStore } from '@/stores/error'
 
 export const useBoardsStore = defineStore('boards', () => {
+  // Get error store instance
+  const errorStore = useErrorStore()
+
   // State
   const posts = ref([])
   const currentPost = ref(null)
@@ -33,28 +38,37 @@ export const useBoardsStore = defineStore('boards', () => {
 
   // Actions
   async function fetchPosts(boardType = null, limitCount = 20) {
-    loading.value = true
+    const loadingKey = `fetch-posts-${boardType || 'all'}`
+    errorStore.setLoading(loadingKey, true)
     error.value = null
 
     try {
-      const constraints = [orderBy('createdAt', 'desc'), limit(limitCount)]
+      const constraints = [
+        where('isDeleted', '==', false),
+        orderBy('isPinned', 'desc'),
+        orderBy('createdAt', 'desc'),
+        limit(limitCount),
+      ]
 
       if (boardType) {
-        constraints.unshift(where('boardType', '==', boardType))
+        constraints.splice(1, 0, where('boardType', '==', boardType))
       }
 
-      const fetchedPosts = await ApiService.getDocuments('posts', constraints)
+      // 임시로 간단한 서비스 사용 (인덱스 생성 대기 중)
+      const fetchedPosts = await postService.getPosts(boardType, { limitCount })
       posts.value = fetchedPosts
     } catch (err) {
       error.value = err.message
+      errorStore.handleFirebaseError(err, `Fetch Posts - ${boardType || 'All'}`)
       console.error('Error fetching posts:', err)
     } finally {
-      loading.value = false
+      errorStore.setLoading(loadingKey, false)
     }
   }
 
   async function fetchPost(postId) {
-    loading.value = true
+    const loadingKey = `fetch-post-${postId}`
+    errorStore.setLoading(loadingKey, true)
     error.value = null
 
     try {
@@ -63,10 +77,11 @@ export const useBoardsStore = defineStore('boards', () => {
       return post
     } catch (err) {
       error.value = err.message
+      errorStore.handleFirebaseError(err, `Fetch Post - ${postId}`)
       console.error('Error fetching post:', err)
       throw err
     } finally {
-      loading.value = false
+      errorStore.setLoading(loadingKey, false)
     }
   }
 

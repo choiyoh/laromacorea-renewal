@@ -1,11 +1,19 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useResponsive } from '@/composables/useResponsive'
+import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppNavigation from '@/components/layout/AppNavigation.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import ErrorNotification from '@/components/common/ErrorNotification.vue'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 
 const userStore = useUserStore()
+const { responsiveClasses, isMobile } = useResponsive()
+
+// Initialize network monitoring
+useNetworkStatus()
 
 // Mobile drawer state
 const drawer = ref(false)
@@ -13,29 +21,72 @@ const drawer = ref(false)
 // Initialize authentication state listener
 onMounted(() => {
   userStore.initializeAuth()
+
+  // Add responsive classes to document (with safety check)
+  nextTick(() => {
+    try {
+      const classes = responsiveClasses.value
+      if (classes && classes.length > 0) {
+        document.documentElement.classList.add(...classes)
+      }
+    } catch (error) {
+      console.warn('Failed to add responsive classes:', error)
+    }
+  })
+
+  // Handle drawer auto-close on desktop (with safety check)
+  nextTick(() => {
+    try {
+      if (!isMobile.value) {
+        drawer.value = false
+      }
+    } catch (error) {
+      console.warn('Failed to handle drawer state:', error)
+    }
+  })
+})
+
+onUnmounted(() => {
+  // Clean up responsive classes
+  document.documentElement.classList.remove(...responsiveClasses.value)
 })
 
 // Methods
 const toggleDrawer = () => {
   drawer.value = !drawer.value
 }
+
+// Close drawer when clicking outside (mobile only)
+const handleDrawerOverlayClick = () => {
+  if (isMobile.value) {
+    drawer.value = false
+  }
+}
 </script>
 
 <template>
-  <v-app>
+  <v-app class="responsive-app">
     <!-- Header -->
     <AppHeader @toggle-drawer="toggleDrawer" />
 
     <!-- Mobile Navigation Drawer -->
-    <AppNavigation v-model="drawer" />
+    <AppNavigation v-model="drawer" @click:outside="handleDrawerOverlayClick" />
 
     <!-- Main Content -->
-    <v-main>
-      <router-view />
+    <v-main class="responsive-main">
+      <div class="main-content-wrapper">
+        <router-view />
+      </div>
     </v-main>
 
     <!-- Footer -->
     <AppFooter />
+
+    <!-- Global Error Notifications -->
+    <ErrorNotification />
+
+    <!-- Global Loading Overlay -->
+    <LoadingOverlay />
   </v-app>
 </template>
 
@@ -43,6 +94,8 @@ const toggleDrawer = () => {
 /* Global styles */
 .v-application {
   font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* AS Roma brand colors */
@@ -52,5 +105,76 @@ const toggleDrawer = () => {
 
 .roma-yellow {
   color: #fbba00 !important;
+}
+
+/* Responsive app styles */
+.responsive-app {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+.responsive-main {
+  min-height: calc(100vh - 64px - 120px); /* Header height - Footer height */
+  min-height: calc(calc(var(--vh, 1vh) * 100) - 64px - 120px);
+}
+
+.main-content-wrapper {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+@media (max-width: 599px) {
+  .main-content-wrapper {
+    padding: 0 12px;
+  }
+
+  .responsive-main {
+    min-height: calc(100vh - 56px - 100px); /* Mobile header - Mobile footer */
+    min-height: calc(calc(var(--vh, 1vh) * 100) - 56px - 100px);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  .main-content-wrapper {
+    padding: 0 24px;
+  }
+}
+
+@media (min-width: 960px) {
+  .main-content-wrapper {
+    padding: 0 32px;
+  }
+}
+
+/* Touch-friendly focus styles */
+.touch-device *:focus-visible {
+  outline: 2px solid var(--v-theme-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduce motion for users who prefer it */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* No animations for IE */
+.no-animations * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Safe area support for devices with notches */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .responsive-app {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 </style>

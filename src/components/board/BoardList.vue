@@ -65,14 +65,17 @@
         />
       </div>
 
-      <!-- 페이지네이션 -->
-      <div class="pagination-wrapper mt-6">
-        <v-pagination
-          v-model="currentPage"
-          :length="totalPages"
-          :total-visible="7"
-          @update:model-value="handlePageChange"
-        />
+      <!-- 더 보기 버튼 (검색이 아닐 때만) -->
+      <div v-if="hasMore && !isSearchActive" class="load-more-section text-center mt-6">
+        <v-btn
+          :loading="loading"
+          color="primary"
+          variant="outlined"
+          size="large"
+          @click="handleLoadMore"
+        >
+          더 보기
+        </v-btn>
       </div>
     </div>
 
@@ -102,19 +105,6 @@
           글쓰기
         </v-btn>
       </div>
-    </div>
-
-    <!-- 더 보기 버튼 -->
-    <div v-if="hasMore && !isSearchActive" class="load-more-section text-center mt-6">
-      <v-btn
-        :loading="loading"
-        color="primary"
-        variant="outlined"
-        size="large"
-        @click="handleLoadMore"
-      >
-        더 보기
-      </v-btn>
     </div>
   </div>
 </template>

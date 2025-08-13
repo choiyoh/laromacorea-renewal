@@ -175,8 +175,10 @@ export function useSearch(boardType) {
 
   watch(
     boardType,
-    () => {
-      clearSearch()
+    (newBoardType, oldBoardType) => {
+      if (oldBoardType) {
+        clearSearch()
+      }
       loadPopularTags()
     },
     { immediate: true },

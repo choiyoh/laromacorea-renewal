@@ -1,0 +1,154 @@
+// Network status monitoring composable
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useErrorStore } from '@/stores/error'
+
+export function useNetworkStatus() {
+  const errorStore = useErrorStore()
+
+  const isOnline = ref(navigator.onLine)
+  const connectionType = ref(null)
+  const effectiveType = ref(null)
+  const downlink = ref(null)
+  const rtt = ref(null)
+
+  // Update network information
+  const updateNetworkInfo = () => {
+    if ('connection' in navigator) {
+      const connection =
+        navigator.connection || navigator.mozConnection || navigator.webkitConnection
+      if (connection) {
+        connectionType.value = connection.type
+        effectiveType.value = connection.effectiveType
+        downlink.value = connection.downlink
+        rtt.value = connection.rtt
+      }
+    }
+  }
+
+  // Handle online/offline events
+  const handleOnline = () => {
+    isOnline.value = true
+    errorStore.setOfflineStatus(false)
+    updateNetworkInfo()
+    console.log('Network: Back online')
+  }
+
+  const handleOffline = () => {
+    isOnline.value = false
+    errorStore.setOfflineStatus(true)
+    console.log('Network: Gone offline')
+  }
+
+  // Handle connection change
+  const handleConnectionChange = () => {
+    updateNetworkInfo()
+    console.log('Network: Connection changed', {
+      type: connectionType.value,
+      effectiveType: effectiveType.value,
+      downlink: downlink.value,
+      rtt: rtt.value,
+    })
+  }
+
+  // Test network connectivity
+  const testConnectivity = async () => {
+    try {
+      const response = await fetch('/favicon.ico', {
+        method: 'HEAD',
+        cache: 'no-cache',
+      })
+      return response.ok
+    } catch (error) {
+      return false
+    }
+  }
+
+  // Check if connection is slow
+  const isSlowConnection = () => {
+    if (!effectiveType.value) return false
+    return ['slow-2g', '2g'].includes(effectiveType.value)
+  }
+
+  // Get connection quality
+  const getConnectionQuality = () => {
+    if (!effectiveType.value) return 'unknown'
+
+    switch (effectiveType.value) {
+      case 'slow-2g':
+        return 'poor'
+      case '2g':
+        return 'poor'
+      case '3g':
+        return 'good'
+      case '4g':
+        return 'excellent'
+      default:
+        return 'unknown'
+    }
+  }
+
+  // Monitor network with periodic checks
+  const startNetworkMonitoring = () => {
+    const checkInterval = setInterval(async () => {
+      if (isOnline.value) {
+        const isConnected = await testConnectivity()
+        if (!isConnected && isOnline.value) {
+          // Browser thinks we're online but we can't reach the server
+          errorStore.setNetworkError('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.')
+        }
+      }
+    }, 30000) // Check every 30 seconds
+
+    return () => clearInterval(checkInterval)
+  }
+
+  onMounted(() => {
+    // Set initial network status
+    errorStore.setOfflineStatus(!isOnline.value)
+    updateNetworkInfo()
+
+    // Add event listeners
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    // Listen for connection changes
+    if ('connection' in navigator) {
+      const connection =
+        navigator.connection || navigator.mozConnection || navigator.webkitConnection
+      if (connection) {
+        connection.addEventListener('change', handleConnectionChange)
+      }
+    }
+
+    // Start monitoring
+    const stopMonitoring = startNetworkMonitoring()
+
+    // Cleanup function
+    onUnmounted(() => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+
+      if ('connection' in navigator) {
+        const connection =
+          navigator.connection || navigator.mozConnection || navigator.webkitConnection
+        if (connection) {
+          connection.removeEventListener('change', handleConnectionChange)
+        }
+      }
+
+      stopMonitoring()
+    })
+  })
+
+  return {
+    isOnline,
+    connectionType,
+    effectiveType,
+    downlink,
+    rtt,
+    testConnectivity,
+    isSlowConnection,
+    getConnectionQuality,
+    updateNetworkInfo,
+  }
+}

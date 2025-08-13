@@ -231,11 +231,20 @@ function getMatchStatusText(status) {
 .post-list-item {
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 44px; /* Touch-friendly minimum height */
 }
 
 .post-list-item:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) {
+  .post-list-item:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .pinned-post {
@@ -246,6 +255,7 @@ function getMatchStatusText(status) {
 .post-title {
   line-height: 1.3;
   cursor: pointer;
+  font-size: 1rem;
 }
 
 .post-preview {
@@ -276,18 +286,84 @@ function getMatchStatusText(status) {
   gap: 4px;
 }
 
-@media (max-width: 768px) {
+/* Mobile optimizations */
+@media (max-width: 599px) {
+  .post-list-item {
+    min-height: 48px; /* Larger touch target on mobile */
+  }
+
   .post-list-item .v-card-text {
-    padding: 12px;
+    padding: 16px 12px;
+  }
+
+  .post-title {
+    font-size: 1.1rem;
+    line-height: 1.4;
   }
 
   .post-meta {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px;
+    font-size: 0.8rem;
   }
 
   .post-meta > div {
     margin-right: 0 !important;
+  }
+
+  .post-thumbnail {
+    width: 80px;
+    height: 80px;
+  }
+
+  .post-tags .v-chip {
+    font-size: 0.7rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 600px) and (max-width: 959px) {
+  .post-list-item .v-card-text {
+    padding: 14px;
+  }
+
+  .post-title {
+    font-size: 1.05rem;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 960px) {
+  .post-list-item .v-card-text {
+    padding: 16px;
+  }
+}
+
+/* Focus styles for keyboard navigation */
+.post-list-item:focus-visible {
+  outline: 2px solid var(--v-theme-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .post-list-item {
+    border: 2px solid;
+  }
+
+  .pinned-post {
+    border-color: var(--v-theme-primary);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .post-list-item {
+    transition: none;
+  }
+
+  .post-list-item:hover {
+    transform: none;
   }
 }
 </style>
