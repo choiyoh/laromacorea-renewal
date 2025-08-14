@@ -139,7 +139,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { postService } from '@/services/database'
 import { storageService } from '@/services/storage'
-import { matchService, createSampleMatchData } from '@/services/match'
+import { matchService } from '@/services/match'
 import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
 import MediaPreview from '../common/MediaPreview.vue'
@@ -425,14 +425,14 @@ async function loadAvailableMatches() {
 
     // If still no matches, create sample data for demo
     if (matches.length === 0) {
-      matches = createSampleMatchData()
+      matches = matchService.getMockMatches()
     }
 
     availableMatches.value = matches
   } catch (error) {
     console.error('Error loading matches:', error)
     // Fallback to sample data
-    availableMatches.value = createSampleMatchData()
+    availableMatches.value = matchService.getMockMatches()
   }
 }
 

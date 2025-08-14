@@ -127,7 +127,7 @@ const handleDrawerOverlayClick = () => {
 
 @media (max-width: 599px) {
   .main-content-wrapper {
-    padding: 0 12px;
+    padding: 0;
   }
 
   .responsive-main {

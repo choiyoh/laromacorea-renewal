@@ -9,13 +9,35 @@ import {
   sendEmailVerification,
   updatePassword,
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+  query,
+  collection,
+  where,
+  getDocs,
+  limit,
+} from 'firebase/firestore'
 import { auth, db } from './firebase'
 
 export class AuthService {
-  // Sign in with email and password
-  static async signIn(email, password) {
+  // Sign in with username or email and password
+  static async signIn(usernameOrEmail, password) {
     try {
+      let email = usernameOrEmail
+
+      // 이메일 형식이 아닌 경우 아이디로 간주하고 사용자 찾기
+      if (!usernameOrEmail.includes('@')) {
+        const userInfo = await this.getUserByUsername(usernameOrEmail)
+        if (!userInfo) {
+          throw new Error('존재하지 않는 아이디입니다.')
+        }
+        email = userInfo.tempEmail || userInfo.email
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
       // Update last login time
@@ -29,10 +51,51 @@ export class AuthService {
     }
   }
 
-  // Create new user account
-  static async signUp(email, password, displayName = null) {
+  // Get user by username
+  static async getUserByUsername(username) {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const q = query(collection(db, 'users'), where('username', '==', username), limit(1))
+      const snapshot = await getDocs(q)
+
+      if (snapshot.empty) {
+        return null
+      }
+
+      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() }
+    } catch (error) {
+      console.error('Error getting user by username:', error)
+      return null
+    }
+  }
+
+  // Check username availability
+  static async checkUsernameAvailability(username) {
+    try {
+      const q = query(collection(db, 'users'), where('username', '==', username), limit(1))
+      const snapshot = await getDocs(q)
+      return snapshot.empty
+    } catch (error) {
+      console.error('Error checking username availability:', error)
+      return false
+    }
+  }
+
+  // Check display name availability
+  static async checkDisplayNameAvailability(displayName) {
+    try {
+      const q = query(collection(db, 'users'), where('displayName', '==', displayName), limit(1))
+      const snapshot = await getDocs(q)
+      return snapshot.empty
+    } catch (error) {
+      console.error('Error checking display name availability:', error)
+      return false
+    }
+  }
+
+  // Create new user account with username
+  static async signUp(tempEmail, password, displayName, username, realEmail) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, tempEmail, password)
       const user = userCredential.user
 
       // Update user profile if displayName provided
@@ -40,11 +103,11 @@ export class AuthService {
         await updateProfile(user, { displayName })
       }
 
-      // Create user document in Firestore
-      await this.createUserDocument(user, displayName)
+      // Create user document in Firestore with username and real email
+      await this.createUserDocument(user, displayName, username, realEmail, tempEmail)
 
-      // Send email verification
-      await sendEmailVerification(user)
+      // Note: Email verification is skipped for username-based accounts
+      // as they use temporary emails
 
       return user
     } catch (error) {
@@ -106,21 +169,30 @@ export class AuthService {
   }
 
   // Create user document in Firestore
-  static async createUserDocument(user, displayName = null) {
+  static async createUserDocument(
+    user,
+    displayName = null,
+    username = null,
+    realEmail = null,
+    tempEmail = null,
+  ) {
     try {
       const userRef = doc(db, 'users', user.uid)
       const userData = {
         uid: user.uid,
-        email: user.email,
+        email: realEmail || user.email, // 실제 이메일 저장
+        tempEmail: tempEmail || user.email, // Firebase Auth용 임시 이메일
+        username: username || null, // 아이디
         displayName: displayName || user.displayName || user.email.split('@')[0],
         photoURL: user.photoURL || null,
         selectedIcon: null,
         points: 100, // Initial points for new users
         role: 'user',
+        authMethod: username ? 'username' : 'email', // 인증 방식
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
         isActive: true,
-        emailVerified: user.emailVerified,
+        emailVerified: username ? true : user.emailVerified, // 아이디 기반은 이메일 인증 생략
       }
 
       await setDoc(userRef, userData)

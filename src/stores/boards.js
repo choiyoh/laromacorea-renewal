@@ -19,10 +19,10 @@ export const useBoardsStore = defineStore('boards', () => {
   // Board types configuration
   const boardTypes = ref([
     { id: 'notice', name: 'Notice', icon: 'mdi-bullhorn', adminOnly: true },
-    { id: 'squad', name: 'Squad', icon: 'mdi-account-group', adminOnly: false },
-    { id: 'match', name: 'Match', icon: 'mdi-soccer', adminOnly: false },
     { id: 'calcio', name: 'Calcio', icon: 'mdi-newspaper', adminOnly: false },
     { id: 'free', name: 'Free', icon: 'mdi-chat', adminOnly: false },
+    { id: 'match', name: 'Match', icon: 'mdi-soccer', adminOnly: false },
+    { id: 'squad', name: 'Squad', icon: 'mdi-account-group', adminOnly: false },
     { id: 'special', name: 'Special', icon: 'mdi-star', adminOnly: false },
     { id: 'media', name: 'Media', icon: 'mdi-play-circle', adminOnly: false },
   ])

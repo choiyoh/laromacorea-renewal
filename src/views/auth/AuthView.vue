@@ -17,7 +17,7 @@
                 <!-- 아이디 입력 -->
                 <v-text-field
                   v-model="username"
-                  label="아이디"
+                  :label="isSignUp ? '아이디' : '아이디 또는 이메일'"
                   variant="outlined"
                   class="mb-3"
                   :rules="usernameRules"
@@ -170,7 +170,6 @@ import { useRouter } from 'vue-router'
 import { AuthService } from '@/services/auth'
 import { useUserStore } from '@/stores/user'
 import { useErrorStore } from '@/stores/error'
-import { databaseService } from '@/services/database'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -202,8 +201,22 @@ const resetLoading = ref(false)
 const usernameRules = [
   (v) => !!v || '아이디를 입력해주세요',
   (v) => (v && v.length >= 3) || '아이디는 3자 이상이어야 합니다',
-  (v) => (v && v.length <= 20) || '아이디는 20자 이하여야 합니다',
-  (v) => /^[a-zA-Z0-9_]+$/.test(v) || '아이디는 영문, 숫자, 언더스코어(_)만 사용 가능합니다',
+  (v) => {
+    // 로그인 시에는 이메일도 허용 (기존 계정 호환성)
+    if (!isSignUp.value) {
+      return (v && v.length <= 50) || '아이디/이메일은 50자 이하여야 합니다'
+    }
+    // 회원가입 시에는 20자 제한
+    return (v && v.length <= 20) || '아이디는 20자 이하여야 합니다'
+  },
+  (v) => {
+    // 로그인 시에는 이메일 형식도 허용
+    if (!isSignUp.value) {
+      return /^[a-zA-Z0-9_@.]+$/.test(v) || '아이디 또는 이메일을 입력해주세요'
+    }
+    // 회원가입 시에는 아이디 형식만 허용
+    return /^[a-zA-Z0-9_]+$/.test(v) || '아이디는 영문, 숫자, 언더스코어(_)만 사용 가능합니다'
+  },
   () => !isSignUp.value || usernameAvailable.value === true || '이미 사용 중인 아이디입니다',
 ]
 
@@ -308,7 +321,7 @@ const checkUsernameAvailability = async () => {
 
   checkingUsername.value = true
   try {
-    const isAvailable = await databaseService.checkUsernameAvailability(username.value)
+    const isAvailable = await AuthService.checkUsernameAvailability(username.value)
     usernameAvailable.value = isAvailable
   } catch (error) {
     console.error('Username availability check failed:', error)
@@ -327,7 +340,7 @@ const checkDisplayNameAvailability = async () => {
 
   checkingDisplayName.value = true
   try {
-    const isAvailable = await databaseService.checkDisplayNameAvailability(displayName.value)
+    const isAvailable = await AuthService.checkDisplayNameAvailability(displayName.value)
     displayNameAvailable.value = isAvailable
   } catch (error) {
     console.error('Display name availability check failed:', error)
@@ -356,8 +369,8 @@ const handleSubmit = async () => {
 
       // 최종 중복 체크
       const [usernameCheck, displayNameCheck] = await Promise.all([
-        databaseService.checkUsernameAvailability(username.value),
-        databaseService.checkDisplayNameAvailability(displayName.value),
+        AuthService.checkUsernameAvailability(username.value),
+        AuthService.checkDisplayNameAvailability(displayName.value),
       ])
 
       if (!usernameCheck) {
@@ -372,16 +385,13 @@ const handleSubmit = async () => {
 
       // 회원가입 진행 - 아이디 기반으로 임시 이메일 생성
       const tempEmail = `${username.value}@laromacorea.temp`
-      const user = await AuthService.signUp(tempEmail, password.value, displayName.value)
-
-      // 사용자 정보에 실제 이메일과 아이디 저장
-      await databaseService.updateUserProfile(user.uid, {
-        username: username.value,
-        email: email.value,
-        displayName: displayName.value,
-        tempEmail: tempEmail,
-        authMethod: 'username',
-      })
+      const user = await AuthService.signUp(
+        tempEmail,
+        password.value,
+        displayName.value,
+        username.value,
+        email.value,
+      )
 
       console.log('Sign up successful:', user)
       successMessage.value = '회원가입이 완료되었습니다!'
@@ -395,15 +405,8 @@ const handleSubmit = async () => {
     } else {
       console.log('Attempting sign in with username...')
 
-      // 아이디로 사용자 찾기
-      const userInfo = await databaseService.getUserByUsername(username.value)
-      if (!userInfo) {
-        errorMessage.value = '존재하지 않는 아이디입니다.'
-        return
-      }
-
-      // 임시 이메일로 로그인
-      const user = await AuthService.signIn(userInfo.tempEmail, password.value)
+      // AuthService에서 아이디/이메일 자동 판별하여 로그인
+      const user = await AuthService.signIn(username.value, password.value)
       console.log('Sign in successful:', user)
 
       // Wait for user store to update

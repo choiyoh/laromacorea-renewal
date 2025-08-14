@@ -111,10 +111,10 @@ const userStore = useUserStore()
 // Board navigation items
 const boards = [
   { key: 'notice', name: 'Notice' },
-  { key: 'squad', name: 'Squad' },
-  { key: 'match', name: 'Match' },
   { key: 'calcio', name: 'Calcio' },
   { key: 'free', name: 'Free' },
+  { key: 'match', name: 'Match' },
+  { key: 'squad', name: 'Squad' },
   { key: 'special', name: 'Special' },
   { key: 'media', name: 'Media' },
 ]

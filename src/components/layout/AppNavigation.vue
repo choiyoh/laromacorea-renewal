@@ -130,11 +130,11 @@ const drawer = computed({
 // Board navigation items with icons
 const boards = [
   { key: 'notice', name: 'Notice', icon: 'mdi-bullhorn' },
-  { key: 'squad', name: 'Squad', icon: 'mdi-account-group' },
-  { key: 'match', name: 'Match', icon: 'mdi-soccer' },
   { key: 'calcio', name: 'Calcio', icon: 'mdi-newspaper' },
   { key: 'free', name: 'Free', icon: 'mdi-chat' },
+  { key: 'match', name: 'Match', icon: 'mdi-soccer' },
   { key: 'special', name: 'Special', icon: 'mdi-star' },
+  { key: 'squad', name: 'Squad', icon: 'mdi-account-group' },
   { key: 'media', name: 'Media', icon: 'mdi-play-circle' },
 ]
 

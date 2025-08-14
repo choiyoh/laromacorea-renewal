@@ -1,38 +1,22 @@
 <template>
-  <v-footer color="primary" dark app class="pa-4">
+  <v-footer color="primary" dark app class="pa-2">
     <v-container>
       <!-- Desktop Footer -->
       <v-row class="d-none d-md-flex justify-space-between">
         <!-- Logo and Description -->
         <v-col cols="12" md="4">
-          <div class="d-flex align-center mb-3">
-            <v-img src="/favicon.ico" alt="AS Roma Logo" width="24" height="24" class="me-2" />
-            <span class="text-h6 font-weight-bold">La Roma Corea</span>
-          </div>
-          <p class="text-body-2 mb-0 text-center">
-            AS 로마를 사랑하는 한국 팬들의 커뮤니티입니다.<br />
-            함께 응원하고 소통하는 공간을 만들어가요.
-          </p>
-        </v-col>
-
-        <!-- Quick Links
-        <v-col cols="12" md="4">
-          <h3 class="text-subtitle-1 font-weight-bold mb-3">빠른 링크</h3>
-          <div class="d-flex flex-column">
-            <router-link
-              v-for="link in quickLinks"
-              :key="link.to"
-              :to="link.to"
-              class="text-white text-decoration-none mb-1 text-body-2"
+          <div class="d-flex align-center mb-2">
+            <span class="text-subtitle-1 font-weight-bold"
+              ><v-img src="/favicon.ico" alt="AS Roma Logo" width="20" height="20" class="me-2" />La
+              Roma Corea</span
             >
-              {{ link.name }}
-            </router-link>
           </div>
-        </v-col> -->
+          <p class="text-caption mb-0">AS 로마를 사랑하는 한국 팬들의 커뮤니티</p>
+        </v-col>
 
         <!-- Social Links -->
         <v-col cols="12" md="4">
-          <h3 class="text-subtitle-1 font-weight-bold mb-3">Social Media</h3>
+          <h3 class="text-body-2 font-weight-bold mb-1">Social Media</h3>
           <div class="d-flex">
             <v-btn
               v-for="social in socialLinks"
@@ -41,15 +25,14 @@
               target="_blank"
               icon
               variant="text"
-              class="me-2"
-              size="small"
+              class="me-1"
+              size="x-small"
             >
-              <v-icon>{{ social.icon }}</v-icon>
+              <v-icon size="16">{{ social.icon }}</v-icon>
             </v-btn>
           </div>
-          <div class="mt-3">
-            <p class="text-caption mb-1">
-              공식 AS 로마 웹사이트:
+          <div>
+            <p class="text-caption mb-0">
               <a href="https://www.asroma.com" target="_blank" class="text-white"> asroma.com </a>
             </p>
           </div>
@@ -81,14 +64,11 @@
       </div>
 
       <!-- Copyright -->
-      <v-divider class="my-3" />
+      <v-divider class="my-2" />
       <v-row>
-        <v-col cols="12" class="text-center">
-          <p class="text-caption mb-0">
-            © {{ currentYear }} La Roma Corea. All rights reserved.
-            <span class="d-none d-sm-inline">
-              | 이 사이트는 팬 커뮤니티 사이트이며 AS 로마와 공식적인 관련이 없습니다.
-            </span>
+        <v-col cols="12" class="text-center py-1">
+          <p class="text-caption mt-1">
+            © {{ currentYear }} www.laromacorea.com All Rights reserved.
           </p>
         </v-col>
       </v-row>
