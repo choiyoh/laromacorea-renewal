@@ -348,44 +348,72 @@ export const postService = {
 export const commentService = {
   // 게시글의 댓글 목록 조회
   async getComments(postId) {
-    const q = query(
-      collection(db, collections.comments),
-      where('postId', '==', postId),
-      where('isDeleted', '==', false),
-      orderBy('createdAt', 'asc'),
-    )
+    try {
+      const q = query(
+        collection(db, collections.comments),
+        where('postId', '==', postId),
+        where('isDeleted', '==', false),
+        orderBy('createdAt', 'asc'),
+      )
 
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      const snapshot = await getDocs(q)
+      const comments = snapshot.docs.map((doc) => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          ...data,
+          // 타임스탬프 정규화
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+        }
+      })
+
+      console.log(`Loaded ${comments.length} comments for post ${postId}`)
+      return comments
+    } catch (error) {
+      console.error('Error fetching comments:', error)
+      throw error
+    }
   },
 
   // 댓글 작성
   async createComment(commentData) {
-    const batch = writeBatch(db)
+    try {
+      const batch = writeBatch(db)
 
-    // 댓글 생성
-    const commentRef = doc(collection(db, collections.comments))
-    batch.set(commentRef, {
-      ...commentData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      likeCount: 0,
-      isDeleted: false,
-      level: commentData.parentId ? 1 : 0,
-    })
+      // 댓글 생성
+      const commentRef = doc(collection(db, collections.comments))
+      batch.set(commentRef, {
+        ...commentData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        likeCount: 0,
+        isDeleted: false,
+        level: commentData.parentId ? 1 : 0,
+      })
 
-    // 게시글 댓글 수 증가
-    const postRef = doc(db, collections.posts, commentData.postId)
-    batch.update(postRef, {
-      commentCount: increment(1),
-    })
+      // 게시글 댓글 수 증가
+      const postRef = doc(db, collections.posts, commentData.postId)
+      batch.update(postRef, {
+        commentCount: increment(1),
+      })
 
-    await batch.commit()
+      await batch.commit()
 
-    // 작성자에게 포인트 지급
-    await pointsService.autoAwardPoints(commentData.authorId, 'COMMENT_CREATED', commentRef.id)
+      console.log(`Comment created with ID: ${commentRef.id}`)
 
-    return commentRef.id
+      // 작성자에게 포인트 지급
+      try {
+        await pointsService.autoAwardPoints(commentData.authorId, 'COMMENT_CREATED', commentRef.id)
+      } catch (pointsError) {
+        console.warn('Failed to award points for comment:', pointsError)
+      }
+
+      return commentRef.id
+    } catch (error) {
+      console.error('Error creating comment:', error)
+      throw error
+    }
   },
 
   // 댓글 수정

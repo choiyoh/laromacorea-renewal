@@ -159,6 +159,7 @@
         @comment-added="handleCommentAdded"
         @comment-updated="handleCommentUpdated"
         @comment-deleted="handleCommentDeleted"
+        @refresh-comments="fetchComments"
       />
     </div>
 
@@ -260,11 +261,16 @@ async function fetchPost() {
 }
 
 async function fetchComments() {
-  if (!props.postId) return
+  if (!props.postId) {
+    console.warn('No postId provided for fetchComments')
+    return
+  }
 
+  console.log('Fetching comments for post:', props.postId)
   commentsLoading.value = true
   try {
     const fetchedComments = await commentService.getComments(props.postId)
+    console.log('Fetched comments:', fetchedComments)
     comments.value = fetchedComments
   } catch (err) {
     console.error('Error fetching comments:', err)

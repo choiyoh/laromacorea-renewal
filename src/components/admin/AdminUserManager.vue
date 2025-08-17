@@ -94,11 +94,17 @@
               <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" />
             </template>
             <v-list>
+              <v-list-item @click="openUserDetail(item)">
+                <template #prepend>
+                  <v-icon icon="mdi-account-details" />
+                </template>
+                <v-list-item-title>상세 관리</v-list-item-title>
+              </v-list-item>
               <v-list-item @click="editUser(item)">
                 <template #prepend>
                   <v-icon icon="mdi-pencil" />
                 </template>
-                <v-list-item-title>편집</v-list-item-title>
+                <v-list-item-title>기본 편집</v-list-item-title>
               </v-list-item>
               <v-list-item @click="adjustPoints(item)">
                 <template #prepend>
@@ -184,6 +190,239 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 사용자 상세 관리 다이얼로그 -->
+    <v-dialog v-model="userDetailDialog" max-width="800" scrollable>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-avatar size="40" class="mr-3">
+            <v-img v-if="selectedUser?.photoURL" :src="selectedUser.photoURL" />
+            <v-icon v-else icon="mdi-account" />
+          </v-avatar>
+          <div>
+            <div class="text-h6">{{ selectedUser?.displayName || '이름 없음' }}</div>
+            <div class="text-caption text-medium-emphasis">{{ selectedUser?.email }}</div>
+          </div>
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="userDetailDialog = false" />
+        </v-card-title>
+
+        <v-divider />
+
+        <v-card-text class="pa-0">
+          <v-container>
+            <!-- 기본 정보 섹션 -->
+            <v-row>
+              <v-col cols="12">
+                <div class="text-h6 mb-3">기본 정보</div>
+                <v-card variant="outlined" class="mb-4">
+                  <v-card-text>
+                    <v-row>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="userDetailForm.displayName"
+                          label="닉네임"
+                          variant="outlined"
+                          density="compact"
+                          :readonly="!isEditingBasicInfo"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          :value="selectedUser?.email"
+                          label="이메일"
+                          variant="outlined"
+                          density="compact"
+                          readonly
+                        />
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-select
+                          v-model="userDetailForm.role"
+                          label="권한"
+                          :items="detailedRoleOptions"
+                          variant="outlined"
+                          density="compact"
+                          :readonly="!isEditingRole"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-select
+                          v-model="userDetailForm.status"
+                          label="계정 상태"
+                          :items="statusDetailOptions"
+                          variant="outlined"
+                          density="compact"
+                          :readonly="!isEditingStatus"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- 관리 액션 섹션 -->
+            <v-row>
+              <v-col cols="12">
+                <div class="text-h6 mb-3">관리 액션</div>
+                <v-card variant="outlined" class="mb-4">
+                  <v-card-text>
+                    <v-row>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-btn
+                          block
+                          color="primary"
+                          variant="outlined"
+                          prepend-icon="mdi-account-edit"
+                          @click="toggleEditBasicInfo"
+                        >
+                          {{ isEditingBasicInfo ? '저장' : '닉네임 변경' }}
+                        </v-btn>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-btn
+                          block
+                          color="warning"
+                          variant="outlined"
+                          prepend-icon="mdi-shield-account"
+                          @click="toggleEditRole"
+                        >
+                          {{ isEditingRole ? '저장' : '권한 변경' }}
+                        </v-btn>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-btn
+                          block
+                          color="error"
+                          variant="outlined"
+                          prepend-icon="mdi-key-variant"
+                          @click="resetPassword"
+                        >
+                          비밀번호 초기화
+                        </v-btn>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-btn
+                          block
+                          color="success"
+                          variant="outlined"
+                          prepend-icon="mdi-coin"
+                          @click="openPointsManagement"
+                        >
+                          포인트 관리
+                        </v-btn>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-btn
+                          block
+                          :color="selectedUser?.isActive ? 'error' : 'success'"
+                          variant="outlined"
+                          :prepend-icon="
+                            selectedUser?.isActive ? 'mdi-account-cancel' : 'mdi-account-check'
+                          "
+                          @click="toggleEditStatus"
+                        >
+                          {{ selectedUser?.isActive ? '계정 정지' : '계정 활성화' }}
+                        </v-btn>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-btn
+                          block
+                          color="info"
+                          variant="outlined"
+                          prepend-icon="mdi-history"
+                          @click="viewUserHistory"
+                        >
+                          변경 이력
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- 활동 통계 섹션 -->
+            <v-row>
+              <v-col cols="12">
+                <div class="text-h6 mb-3">활동 통계</div>
+                <v-card variant="outlined">
+                  <v-card-text>
+                    <v-row>
+                      <v-col cols="6" md="3">
+                        <div class="text-center">
+                          <div class="text-h4 text-primary">
+                            {{ selectedUser?.stats?.posts || 0 }}
+                          </div>
+                          <div class="text-caption">게시글</div>
+                        </div>
+                      </v-col>
+                      <v-col cols="6" md="3">
+                        <div class="text-center">
+                          <div class="text-h4 text-success">
+                            {{ selectedUser?.stats?.comments || 0 }}
+                          </div>
+                          <div class="text-caption">댓글</div>
+                        </div>
+                      </v-col>
+                      <v-col cols="6" md="3">
+                        <div class="text-center">
+                          <div class="text-h4 text-warning">{{ selectedUser?.points || 0 }}</div>
+                          <div class="text-caption">포인트</div>
+                        </div>
+                      </v-col>
+                      <v-col cols="6" md="3">
+                        <div class="text-center">
+                          <div class="text-h4 text-error">
+                            {{ selectedUser?.stats?.likes || 0 }}
+                          </div>
+                          <div class="text-caption">받은 좋아요</div>
+                        </div>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- 비밀번호 초기화 확인 다이얼로그 -->
+    <v-dialog v-model="passwordResetDialog" max-width="500">
+      <v-card>
+        <v-card-title class="text-error">
+          <v-icon icon="mdi-alert" class="mr-2" />
+          비밀번호 초기화 확인
+        </v-card-title>
+        <v-card-text>
+          <div class="mb-4">
+            <strong>{{ selectedUser?.displayName }}</strong
+            >님의 비밀번호를 초기화하시겠습니까?
+          </div>
+          <v-alert type="warning" variant="tonal" class="mb-4">
+            비밀번호가 <strong>qwer1234</strong>로 초기화되며, 사용자는 다음 로그인 시 비밀번호
+            변경이 필요합니다.
+          </v-alert>
+          <v-textarea
+            v-model="passwordResetReason"
+            label="초기화 사유 (필수)"
+            variant="outlined"
+            rows="3"
+            :rules="[(v) => !!v || '초기화 사유를 입력해주세요']"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="passwordResetDialog = false">취소</v-btn>
+          <v-btn color="error" @click="confirmPasswordReset" :disabled="!passwordResetReason">
+            초기화
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -204,9 +443,24 @@ const roleFilter = ref('all')
 // 다이얼로그 상태
 const editDialog = ref(false)
 const pointsDialog = ref(false)
+const userDetailDialog = ref(false)
+const passwordResetDialog = ref(false)
 const selectedUser = ref(null)
 const pointsAdjustment = ref(0)
 const pointsReason = ref('')
+const passwordResetReason = ref('')
+
+// 사용자 상세 관리 폼
+const userDetailForm = ref({
+  displayName: '',
+  role: '',
+  status: '',
+})
+
+// 편집 상태
+const isEditingBasicInfo = ref(false)
+const isEditingRole = ref(false)
+const isEditingStatus = ref(false)
 
 // 테이블 헤더
 const headers = [
@@ -231,6 +485,20 @@ const roleOptions = [
   { title: '사용자', value: 'user' },
   { title: '관리자', value: 'admin' },
   { title: '모더레이터', value: 'moderator' },
+]
+
+// 상세 관리용 옵션들
+const detailedRoleOptions = [
+  { title: '일반 사용자', value: 'user' },
+  { title: '모더레이터', value: 'moderator' },
+  { title: '관리자', value: 'admin' },
+  { title: '최고 관리자', value: 'super_admin' },
+]
+
+const statusDetailOptions = [
+  { title: '정상', value: 'active' },
+  { title: '정지', value: 'suspended' },
+  { title: '탈퇴', value: 'deleted' },
 ]
 
 // 필터링된 사용자 목록
@@ -396,6 +664,156 @@ const toggleUserStatus = async (user) => {
     emit('user-updated')
   } catch (error) {
     console.error('Failed to toggle user status:', error)
+  }
+}
+
+// 사용자 상세 관리 열기
+const openUserDetail = async (user) => {
+  selectedUser.value = user
+  userDetailForm.value = {
+    displayName: user.displayName || '',
+    role: user.role || 'user',
+    status: user.isActive ? 'active' : 'suspended',
+  }
+
+  // 사용자 통계 로드
+  try {
+    const stats = await adminService.getUserStats(user.id)
+    selectedUser.value.stats = stats
+  } catch (error) {
+    console.error('Failed to load user stats:', error)
+    selectedUser.value.stats = { posts: 0, comments: 0, likes: 0 }
+  }
+
+  userDetailDialog.value = true
+}
+
+// 기본 정보 편집 토글
+const toggleEditBasicInfo = async () => {
+  if (isEditingBasicInfo.value) {
+    // 저장
+    try {
+      await adminService.updateUserNickname(
+        selectedUser.value.id,
+        userDetailForm.value.displayName,
+        '관리자에 의한 닉네임 변경',
+      )
+
+      selectedUser.value.displayName = userDetailForm.value.displayName
+
+      // 로컬 상태 업데이트
+      const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+      if (index !== -1) {
+        users.value[index].displayName = userDetailForm.value.displayName
+      }
+
+      isEditingBasicInfo.value = false
+      emit('user-updated')
+    } catch (error) {
+      console.error('Failed to update nickname:', error)
+    }
+  } else {
+    isEditingBasicInfo.value = true
+  }
+}
+
+// 권한 편집 토글
+const toggleEditRole = async () => {
+  if (isEditingRole.value) {
+    // 저장
+    try {
+      await adminService.updateUserRole(
+        selectedUser.value.id,
+        userDetailForm.value.role,
+        '관리자에 의한 권한 변경',
+      )
+
+      selectedUser.value.role = userDetailForm.value.role
+
+      // 로컬 상태 업데이트
+      const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+      if (index !== -1) {
+        users.value[index].role = userDetailForm.value.role
+      }
+
+      isEditingRole.value = false
+      emit('user-updated')
+    } catch (error) {
+      console.error('Failed to update role:', error)
+    }
+  } else {
+    isEditingRole.value = true
+  }
+}
+
+// 상태 편집 토글
+const toggleEditStatus = async () => {
+  if (isEditingStatus.value) {
+    // 저장
+    try {
+      const isActive = userDetailForm.value.status === 'active'
+      await adminService.updateUserStatus(selectedUser.value.id, isActive)
+
+      selectedUser.value.isActive = isActive
+
+      // 로컬 상태 업데이트
+      const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+      if (index !== -1) {
+        users.value[index].isActive = isActive
+      }
+
+      isEditingStatus.value = false
+      emit('user-updated')
+    } catch (error) {
+      console.error('Failed to update status:', error)
+    }
+  } else {
+    isEditingStatus.value = true
+  }
+}
+
+// 비밀번호 초기화
+const resetPassword = () => {
+  passwordResetReason.value = ''
+  passwordResetDialog.value = true
+}
+
+// 비밀번호 초기화 확인
+const confirmPasswordReset = async () => {
+  try {
+    await adminService.resetUserPassword(
+      selectedUser.value.id,
+      'qwer1234',
+      passwordResetReason.value,
+    )
+
+    passwordResetDialog.value = false
+
+    // 성공 알림
+    // TODO: 토스트 알림 추가
+    console.log('비밀번호가 초기화되었습니다.')
+
+    emit('user-updated')
+  } catch (error) {
+    console.error('Failed to reset password:', error)
+  }
+}
+
+// 포인트 관리 열기
+const openPointsManagement = () => {
+  pointsAdjustment.value = 0
+  pointsReason.value = ''
+  pointsDialog.value = true
+}
+
+// 사용자 변경 이력 보기
+const viewUserHistory = async () => {
+  try {
+    const history = await adminService.getUserHistory(selectedUser.value.id)
+    console.log('User history:', history)
+    // TODO: 이력 표시 모달 구현
+  } catch (error) {
+    console.error('Failed to load user history:', error)
   }
 }
 

@@ -193,7 +193,13 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['comment-added', 'comment-updated', 'comment-deleted', 'login-required'])
+const emit = defineEmits([
+  'comment-added',
+  'comment-updated',
+  'comment-deleted',
+  'login-required',
+  'refresh-comments',
+])
 
 // Stores
 const userStore = useUserStore()
@@ -223,7 +229,9 @@ const sortOptions = [
 
 // Computed
 const sortedComments = computed(() => {
+  console.log('CommentSystem - props.comments:', props.comments)
   const topLevelComments = props.comments.filter((comment) => !comment.parentId)
+  console.log('CommentSystem - topLevelComments:', topLevelComments)
 
   switch (sortBy.value) {
     case 'newest':
@@ -258,19 +266,12 @@ async function handleSubmitComment() {
 
     const commentId = await commentService.createComment(commentData)
 
-    // Create the new comment object for immediate UI update
-    const newComment = {
-      id: commentId,
-      ...commentData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      likeCount: 0,
-      isDeleted: false,
-      level: 0,
-    }
-
-    emit('comment-added', newComment)
+    // 댓글 작성 후 댓글 목록을 다시 로드하여 동기화
+    emit('comment-added', { id: commentId, ...commentData })
     newCommentContent.value = ''
+
+    // 댓글 목록 새로고침 요청
+    emit('refresh-comments')
   } catch (err) {
     console.error('Error creating comment:', err)
     // Show error message
@@ -301,21 +302,13 @@ async function handleSubmitReply() {
 
     const replyId = await commentService.createComment(replyData)
 
-    // Create the new reply object for immediate UI update
-    const newReply = {
-      id: replyId,
-      ...replyData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      likeCount: 0,
-      isDeleted: false,
-      level: 1,
-    }
-
-    emit('comment-added', newReply)
+    emit('comment-added', { id: replyId, ...replyData })
     replyDialog.value = false
     replyTarget.value = null
     replyContent.value = ''
+
+    // 댓글 목록 새로고침 요청
+    emit('refresh-comments')
   } catch (err) {
     console.error('Error creating reply:', err)
     // Show error message

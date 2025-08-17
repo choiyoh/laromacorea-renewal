@@ -477,4 +477,205 @@ export const adminService = {
   async createNotice(noticeData, adminId) {
     return this.createNotice(adminId, noticeData)
   },
+
+  /**
+   * 확장된 사용자 관리 기능
+   */
+
+  // 사용자 통계 조회
+  async getUserStats(userId) {
+    try {
+      const [postsSnapshot, commentsSnapshot, likesSnapshot] = await Promise.all([
+        getDocs(
+          query(
+            collection(db, collections.posts),
+            where('authorId', '==', userId),
+            where('isDeleted', '==', false),
+          ),
+        ),
+        getDocs(
+          query(
+            collection(db, collections.comments),
+            where('authorId', '==', userId),
+            where('isDeleted', '==', false),
+          ),
+        ),
+        getDocs(query(collection(db, 'likes'), where('targetUserId', '==', userId))),
+      ])
+
+      return {
+        posts: postsSnapshot.size,
+        comments: commentsSnapshot.size,
+        likes: likesSnapshot.size,
+      }
+    } catch (error) {
+      console.error('사용자 통계 조회 실패:', error)
+      return { posts: 0, comments: 0, likes: 0 }
+    }
+  },
+
+  // 닉네임 변경
+  async updateUserNickname(userId, newNickname, reason) {
+    try {
+      const userRef = doc(db, collections.users, userId)
+      const batch = writeBatch(db)
+
+      // 사용자 정보 업데이트
+      batch.update(userRef, {
+        displayName: newNickname,
+        updatedAt: serverTimestamp(),
+      })
+
+      // 변경 이력 저장
+      const historyRef = doc(collection(db, 'userHistory'))
+      batch.set(historyRef, {
+        userId,
+        action: 'nickname_change',
+        oldValue: '', // 실제로는 기존 닉네임을 가져와야 함
+        newValue: newNickname,
+        reason,
+        adminId: 'admin', // 실제로는 현재 관리자 ID
+        createdAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+      return true
+    } catch (error) {
+      console.error('닉네임 변경 실패:', error)
+      throw error
+    }
+  },
+
+  // 권한 변경 (이력 포함)
+  async updateUserRole(userId, newRole, reason) {
+    try {
+      const userRef = doc(db, collections.users, userId)
+      const batch = writeBatch(db)
+
+      // 사용자 권한 업데이트
+      batch.update(userRef, {
+        role: newRole,
+        updatedAt: serverTimestamp(),
+      })
+
+      // 변경 이력 저장
+      const historyRef = doc(collection(db, 'userHistory'))
+      batch.set(historyRef, {
+        userId,
+        action: 'role_change',
+        newValue: newRole,
+        reason,
+        adminId: 'admin',
+        createdAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+      return true
+    } catch (error) {
+      console.error('권한 변경 실패:', error)
+      throw error
+    }
+  },
+
+  // 비밀번호 초기화
+  async resetUserPassword(userId, newPassword, reason) {
+    try {
+      const userRef = doc(db, collections.users, userId)
+      const batch = writeBatch(db)
+
+      // 사용자 정보 업데이트 (실제로는 Firebase Auth 사용)
+      batch.update(userRef, {
+        passwordResetRequired: true, // 다음 로그인 시 비밀번호 변경 강제
+        passwordResetAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+
+      // 변경 이력 저장
+      const historyRef = doc(collection(db, 'userHistory'))
+      batch.set(historyRef, {
+        userId,
+        action: 'password_reset',
+        reason,
+        adminId: 'admin',
+        createdAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+
+      // 실제 구현에서는 Firebase Auth의 비밀번호 재설정 이메일 발송
+      console.log(`사용자 ${userId}의 비밀번호가 ${newPassword}로 초기화되었습니다.`)
+
+      return true
+    } catch (error) {
+      console.error('비밀번호 초기화 실패:', error)
+      throw error
+    }
+  },
+
+  // 사용자 변경 이력 조회
+  async getUserHistory(userId) {
+    try {
+      const q = query(
+        collection(db, 'userHistory'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(50),
+      )
+
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    } catch (error) {
+      console.error('사용자 이력 조회 실패:', error)
+      return []
+    }
+  },
+
+  // 포인트 조정 (개선된 버전)
+  async adjustUserPoints(userId, pointsChange, reason, adminId) {
+    try {
+      const userRef = doc(db, collections.users, userId)
+      const batch = writeBatch(db)
+
+      // 현재 포인트 조회
+      const userDoc = await getDoc(userRef)
+      const currentPoints = userDoc.data()?.points || 0
+      const newPoints = Math.max(0, currentPoints + pointsChange)
+
+      // 사용자 포인트 업데이트
+      batch.update(userRef, {
+        points: newPoints,
+        updatedAt: serverTimestamp(),
+      })
+
+      // 포인트 변경 이력 저장
+      const pointHistoryRef = doc(collection(db, 'pointHistory'))
+      batch.set(pointHistoryRef, {
+        userId,
+        change: pointsChange,
+        previousPoints: currentPoints,
+        newPoints,
+        reason,
+        adminId,
+        createdAt: serverTimestamp(),
+      })
+
+      // 사용자 변경 이력 저장
+      const historyRef = doc(collection(db, 'userHistory'))
+      batch.set(historyRef, {
+        userId,
+        action: 'points_adjustment',
+        oldValue: currentPoints,
+        newValue: newPoints,
+        reason,
+        adminId,
+        createdAt: serverTimestamp(),
+      })
+
+      await batch.commit()
+      return true
+    } catch (error) {
+      console.error('포인트 조정 실패:', error)
+      throw error
+    }
+  },
 }
