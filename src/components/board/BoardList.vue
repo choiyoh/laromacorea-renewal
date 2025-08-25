@@ -2,7 +2,8 @@
   <div class="board-list">
     <!-- 게시판 헤더 -->
     <div class="board-header mb-4">
-      <div class="d-flex justify-space-between align-center mb-3">
+      <div class="d-flex justify-space-between align-center">
+        <!-- Board Title (Left) -->
         <div class="d-flex align-center">
           <v-icon :icon="boardConfig?.icon" size="large" class="me-2" />
           <h2 class="text-h5">{{ boardConfig?.name }}</h2>
@@ -10,23 +11,26 @@
             {{ totalPosts.toLocaleString() }}개
           </v-chip>
         </div>
-        <v-btn v-if="canWrite" color="primary" prepend-icon="mdi-pencil" @click="handleWritePost">
-          글쓰기
-        </v-btn>
-      </div>
 
-      <!-- 검색 및 필터 -->
-      <SearchFilters
-        v-model:search-query="searchQuery"
-        v-model:selected-tags="selectedTags"
-        v-model:sort-by="sortBy"
-        :popular-tags="popularTags"
-        :sort-options="sortOptions"
-        :loading="loading"
-        @search="handleSearch"
-        @clear="handleClear"
-        @add-tag="handleAddTag"
-      />
+        <!-- Search and Write Button (Right) -->
+        <div class="d-flex align-center" style="width: 400px;">
+          <v-text-field
+            v-model="searchQuery"
+            label="게시글 검색"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-magnify"
+            clearable
+            @keydown.enter="handleSearch"
+            @click:clear="handleClear"
+            @click:prepend-inner="handleSearch"
+          />
+          <v-btn v-if="canWrite" color="primary" class="ms-2 flex-shrink-0" @click="handleWritePost">
+            글쓰기
+          </v-btn>
+        </div>
+      </div>
     </div>
 
     <!-- 로딩 상태 -->
@@ -42,8 +46,20 @@
 
     <!-- 게시글 목록 -->
     <div v-else-if="posts.length > 0">
+       <!-- 게시글 목록 헤더 -->
+      <div class="post-list-header d-none d-md-flex align-center px-3 mb-2">
+        <div class="flex-grow-1">
+          <h4 class="text-subtitle-2 font-weight-medium">제목</h4>
+        </div>
+        <div class="post-meta-header d-flex align-center flex-shrink-0">
+          <div class="me-4" style="width: 140px;"><h4 class="text-subtitle-2 font-weight-medium">글쓴이</h4></div>
+          <div class="me-4" style="width: 100px;"><h4 class="text-subtitle-2 font-weight-medium">등록일</h4></div>
+          <div style="width: 80px;"><h4 class="text-subtitle-2 font-weight-medium">조회수</h4></div>
+        </div>
+      </div>
+
       <!-- 공지사항 (고정 게시글) -->
-      <div v-if="pinnedPosts.length > 0" class="pinned-posts mb-4">
+      <div v-if="pinnedPosts.length > 0" class="pinned-posts mb-1">
         <PostListItem
           v-for="post in pinnedPosts"
           :key="post.id"
@@ -115,7 +131,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useSearch } from '@/composables/useSearch'
 import PostListItem from './PostListItem.vue'
-import SearchFilters from './SearchFilters.vue'
+// SearchFilters is no longer used
 
 const props = defineProps({
   boardType: {
@@ -138,19 +154,13 @@ const router = useRouter()
 const boardTypeRef = ref(props.boardType)
 const {
   searchQuery,
-  selectedTags,
-  sortBy,
   loading,
   error,
   posts,
-  popularTags,
   hasMore,
   isSearchActive,
-  searchSummary,
-  sortOptions,
   fetchPosts,
   searchPosts,
-  addTag,
   clearSearch,
   loadMore,
 } = useSearch(boardTypeRef)
@@ -177,19 +187,14 @@ const regularPosts = computed(() => {
 
 // Methods
 function handleSearch() {
-  if (isSearchActive.value) {
+  // Trigger search only if there is a query
+  if (searchQuery.value.trim()) {
     searchPosts()
-  } else {
-    fetchPosts(true)
   }
 }
 
 function handleClear() {
   clearSearch()
-}
-
-function handleAddTag(tag) {
-  addTag(tag)
 }
 
 function handleLoadMore() {
@@ -256,15 +261,22 @@ onMounted(() => {
   align-items: center;
 }
 
-@media (max-width: 768px) {
-  .board-header .d-flex {
+.post-list-header {
+  font-size: 0.875rem;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  border-bottom: 2px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  padding-bottom: 0.75rem;
+}
+
+@media (max-width: 959px) {
+  .board-header > .d-flex {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
 
-  .load-more-section {
-    padding-top: 1rem;
+  .board-header .d-flex .align-center {
+    width: 100% !important;
   }
 }
 </style>

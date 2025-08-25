@@ -115,7 +115,7 @@
             <div class="text-center">
               <div class="text-caption text-medium-emphasis mb-1">경기까지</div>
               <div class="text-h6 font-weight-bold text-primary">
-                {{ getTimeUntilMatch(nextMatch.utcDate) }}
+                {{ timeUntilMatch }}
               </div>
             </div>
           </div>
@@ -222,7 +222,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { matchService } from '@/services/match'
 
 const loading = ref(false)
@@ -231,6 +231,8 @@ const nextMatch = ref(null)
 const showAllMatches = ref(false)
 const allMatches = ref([])
 const loadingAll = ref(false)
+const timeUntilMatch = ref('')
+let countdownInterval = null
 
 // 경기 일정 로드
 const loadMatches = async () => {
@@ -278,14 +280,17 @@ watch(showAllMatches, (newValue) => {
 // 날짜 포맷팅
 const formatMatchDate = (dateString) => {
   const date = new Date(dateString)
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `${month}/${day}`
+  return date.toLocaleDateString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+  }).replace(/\. /g, '/').replace('.', '')
 }
 
 const formatFullDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('ko-KR', {
+    timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -295,40 +300,72 @@ const formatFullDate = (dateString) => {
 
 const formatTime = (dateString) => {
   const date = new Date(dateString)
-  // UTC 시간을 한국 시간으로 변환
-  const koreaTime = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  return koreaTime.toLocaleTimeString('ko-KR', {
+  return date.toLocaleTimeString('ko-KR', {
+    timeZone: 'Asia/Seoul',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   })
 }
 
-// 경기까지 남은 시간 계산
-const getTimeUntilMatch = (dateString) => {
-  const matchDate = new Date(dateString)
-  const now = new Date()
+// 경기까지 남은 시간 계산 및 업데이트
+const updateCountdown = () => {
+  if (!nextMatch.value) {
+    timeUntilMatch.value = ''
+    return
+  }
+
+  const matchDate = new Date(nextMatch.value.utcDate).getTime()
+  const now = new Date().getTime()
   const diff = matchDate - now
 
   if (diff <= 0) {
-    return '경기 진행중'
+    timeUntilMatch.value = '경기 진행중'
+    if (countdownInterval) {
+      clearInterval(countdownInterval)
+    }
+    return
   }
 
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
+  let countdownString = ''
   if (days > 0) {
-    return `${days}일 ${hours}시간`
+    countdownString = `${days}일 ${hours}시간 남음`
   } else if (hours > 0) {
-    return `${hours}시간 ${minutes}분`
+    countdownString = `${hours}시간 ${minutes}분 남음`
+  } else if (minutes > 0) {
+    countdownString = `${minutes}분 ${seconds}초 남음`
   } else {
-    return `${minutes}분`
+    countdownString = `${seconds}초 남음`
   }
+  timeUntilMatch.value = countdownString
 }
+
+watch(nextMatch, (newMatch) => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+  }
+
+  if (newMatch) {
+    updateCountdown()
+    countdownInterval = setInterval(updateCountdown, 1000)
+  } else {
+    timeUntilMatch.value = ''
+  }
+})
 
 onMounted(() => {
   loadMatches()
+})
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+  }
 })
 </script>
 

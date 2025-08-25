@@ -1,138 +1,51 @@
 <template>
   <v-card
-    class="post-list-item mb-2"
+    class="post-list-item"
     :class="{ 'pinned-post': isPinned }"
-    variant="outlined"
-    hover
+    variant="text"
     @click="$emit('click')"
   >
-    <v-card-text class="pa-3">
-      <div class="d-flex align-start">
-        <!-- 게시글 정보 -->
-        <div class="flex-grow-1">
-          <!-- 제목 및 태그 -->
-          <div class="d-flex align-center mb-1">
-            <v-chip v-if="isPinned" size="small" color="error" variant="flat" class="me-2">
-              공지
-            </v-chip>
-            <h3
-              class="post-title text-subtitle-1 font-weight-medium"
-              :class="{ 'text-primary': isPinned }"
-            >
-              {{ post.title }}
-            </h3>
-            <v-chip
-              v-if="post.commentCount > 0"
-              size="small"
-              color="primary"
-              variant="outlined"
-              class="ms-2"
-            >
-              {{ post.commentCount }}
-            </v-chip>
-          </div>
-
-          <!-- 태그 -->
-          <div v-if="post.tags && post.tags.length > 0" class="post-tags mb-2">
-            <v-chip
-              v-for="tag in post.tags.slice(0, 3)"
-              :key="tag"
-              size="x-small"
-              variant="outlined"
-              color="primary"
-              class="me-1"
-            >
-              {{ tag }}
-            </v-chip>
-            <span v-if="post.tags.length > 3" class="text-caption text-grey">
-              +{{ post.tags.length - 3 }}개
-            </span>
-          </div>
-
-          <!-- Match 정보 (Match 게시판용) -->
-          <div v-if="showMatchInfo && post.matchData" class="match-summary mb-2">
-            <v-card variant="tonal" class="pa-2">
-              <div class="d-flex align-center justify-space-between">
-                <div class="d-flex align-center">
-                  <v-avatar size="20" class="me-2">
-                    <v-img :src="post.matchData.homeTeam.logo" />
-                  </v-avatar>
-                  <span class="text-caption font-weight-medium">{{
-                    post.matchData.homeTeam.name
-                  }}</span>
-
-                  <div class="mx-2">
-                    <span
-                      v-if="
-                        post.matchData.status === 'finished' || post.matchData.status === 'live'
-                      "
-                      class="text-caption font-weight-bold"
-                    >
-                      {{ post.matchData.score.home }} - {{ post.matchData.score.away }}
-                    </span>
-                    <span v-else class="text-caption">vs</span>
-                  </div>
-
-                  <span class="text-caption font-weight-medium">{{
-                    post.matchData.awayTeam.name
-                  }}</span>
-                  <v-avatar size="20" class="ms-2">
-                    <v-img :src="post.matchData.awayTeam.logo" />
-                  </v-avatar>
-                </div>
-
-                <v-chip
-                  :color="getMatchStatusColor(post.matchData.status)"
-                  size="x-small"
-                  variant="flat"
-                >
-                  {{ getMatchStatusText(post.matchData.status) }}
-                </v-chip>
-              </div>
-            </v-card>
-          </div>
-
-          <!-- 게시글 미리보기 -->
-          <p
-            v-if="post.content && !isMobile"
-            class="post-preview text-body-2 text-grey-darken-1 mb-2"
+    <v-card-text class="py-2 px-3">
+      <div class="d-flex align-center">
+        <!-- Title and Badges -->
+        <div class="flex-grow-1 d-flex align-center me-4" style="min-width: 0;">
+          <v-chip v-if="isPinned" size="small" color="primary" variant="flat" class="me-2 flex-shrink-0">
+            공지
+          </v-chip>
+          <h3 class="post-title text-subtitle-1 font-weight-regular text-truncate">
+            {{ post.title }}
+          </h3>
+          <v-chip
+            v-if="post.commentCount > 0"
+            size="small"
+            color="primary"
+            variant="tonal"
+            class="ms-2 flex-shrink-0"
           >
-            {{ getPreviewText(post.content) }}
-          </p>
-
-          <!-- 메타 정보 -->
-          <div class="post-meta d-flex align-center text-caption text-grey">
-            <!-- 작성자 -->
-            <div class="d-flex align-center me-3">
-              <v-avatar v-if="post.authorIcon" size="16" class="me-1">
-                <v-img :src="post.authorIcon" />
-              </v-avatar>
-              <span>{{ post.authorName }}</span>
-            </div>
-
-            <!-- 작성일 -->
-            <div class="me-3">
-              <v-icon icon="mdi-clock-outline" size="12" class="me-1" />
-              {{ formatDate(post.createdAt) }}
-            </div>
-
-            <!-- 조회수 -->
-            <div class="me-3">
-              <v-icon icon="mdi-eye-outline" size="12" class="me-1" />
-              {{ post.viewCount || 0 }}
-            </div>
-
-            <!-- 추천수 -->
-            <div v-if="post.likeCount > 0" class="me-3">
-              <v-icon icon="mdi-thumb-up-outline" size="12" class="me-1" />
-              {{ post.likeCount }}
-            </div>
-          </div>
+            {{ post.commentCount }}
+          </v-chip>
         </div>
 
-        <!-- 썸네일 (미디어가 있는 경우) -->
-        <div v-if="post.mediaUrls && post.mediaUrls.length > 0" class="post-thumbnail ms-3">
-          <v-img :src="post.mediaUrls[0]" width="60" height="60" cover class="rounded" />
+        <!-- Meta Info -->
+        <div class="post-meta d-none d-md-flex align-center flex-shrink-0">
+          <!-- Author -->
+          <div class="d-flex align-center me-4" style="width: 140px;">
+            <v-avatar v-if="post.authorIcon" size="24" class="me-2">
+              <v-img :src="post.authorIcon" />
+            </v-avatar>
+            <span class="text-truncate">{{ post.authorName }}</span>
+          </div>
+
+          <!-- Date -->
+          <div class="me-4 text-no-wrap" style="width: 100px;">
+            {{ formatDate(post.createdAt) }}
+          </div>
+
+          <!-- Views -->
+          <div class="text-no-wrap" style="width: 80px;">
+            <v-icon icon="mdi-eye-outline" size="16" class="me-1" />
+            {{ (post.viewCount || 0).toLocaleString() }}
+          </div>
         </div>
       </div>
     </v-card-text>
@@ -140,10 +53,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useDisplay } from 'vuetify'
-
-const props = defineProps({
+defineProps({
   post: {
     type: Object,
     required: true,
@@ -158,212 +68,68 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['click'])
-
-// Composables
-const { mobile } = useDisplay()
-
-// Computed
-const isMobile = computed(() => mobile.value)
-
-// Methods
-function getPreviewText(content) {
-  if (!content) return ''
-
-  // Remove HTML tags and get first 100 characters
-  const plainText = content.replace(/<[^>]*>/g, '')
-  return plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText
-}
+defineEmits(['click'])
 
 function formatDate(timestamp) {
   if (!timestamp) return ''
 
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
   const now = new Date()
-  const diffInHours = (now - date) / (1000 * 60 * 60)
+  const diffTime = Math.abs(now - date)
+  const diffSeconds = Math.floor(diffTime / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
 
-  if (diffInHours < 1) {
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60))
-    return `${diffInMinutes}분 전`
-  } else if (diffInHours < 24) {
-    return `${Math.floor(diffInHours)}시간 전`
-  } else if (diffInHours < 24 * 7) {
-    const diffInDays = Math.floor(diffInHours / 24)
-    return `${diffInDays}일 전`
-  } else {
+  if (diffDays >= 7) {
     return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit',
+    }).replace(/\. /g, '.').slice(0, -1)
   }
-}
-
-function getMatchStatusColor(status) {
-  switch (status) {
-    case 'live':
-      return 'error'
-    case 'finished':
-      return 'success'
-    case 'postponed':
-      return 'warning'
-    default:
-      return 'primary'
+  if (diffDays >= 1) {
+    return `${diffDays}일 전`
   }
-}
-
-function getMatchStatusText(status) {
-  switch (status) {
-    case 'live':
-      return 'LIVE'
-    case 'finished':
-      return '종료'
-    case 'postponed':
-      return '연기'
-    case 'scheduled':
-    default:
-      return '예정'
+  if (diffHours >= 1) {
+    return `${diffHours}시간 전`
   }
+  if (diffMinutes >= 1) {
+    return `${diffMinutes}분 전`
+  }
+  return '방금 전'
 }
 </script>
 
 <style scoped>
 .post-list-item {
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 44px; /* Touch-friendly minimum height */
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
 }
 
-.post-list-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Disable hover effects on touch devices */
-@media (hover: none) {
-  .post-list-item:hover {
-    transform: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+.post-list-item:hover .post-title {
+  color: rgba(var(--v-theme-primary), 1);
+  text-decoration: underline;
 }
 
 .pinned-post {
   background-color: rgba(var(--v-theme-primary), 0.05);
-  border-color: rgba(var(--v-theme-primary), 0.3);
 }
 
 .post-title {
-  line-height: 1.3;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.post-preview {
   line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  transition: color 0.2s ease;
 }
 
 .post-meta {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
+  color: rgba(var(--v-theme-on-surface), 0.7);
 }
 
-.post-thumbnail {
-  flex-shrink: 0;
-}
-
-.match-summary {
-  background-color: rgba(var(--v-theme-primary), 0.05);
-  border-radius: 8px;
-}
-
-.post-tags {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Mobile optimizations */
-@media (max-width: 599px) {
-  .post-list-item {
-    min-height: 48px; /* Larger touch target on mobile */
-  }
-
-  .post-list-item .v-card-text {
-    padding: 16px 12px;
-  }
-
-  .post-title {
-    font-size: 1.1rem;
-    line-height: 1.4;
-  }
-
+/* On small screens and down, hide some meta info */
+@media (max-width: 959px) {
   .post-meta {
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 0.8rem;
-  }
-
-  .post-meta > div {
-    margin-right: 0 !important;
-  }
-
-  .post-thumbnail {
-    width: 80px;
-    height: 80px;
-  }
-
-  .post-tags .v-chip {
-    font-size: 0.7rem;
-  }
-}
-
-/* Tablet optimizations */
-@media (min-width: 600px) and (max-width: 959px) {
-  .post-list-item .v-card-text {
-    padding: 14px;
-  }
-
-  .post-title {
-    font-size: 1.05rem;
-  }
-}
-
-/* Desktop optimizations */
-@media (min-width: 960px) {
-  .post-list-item .v-card-text {
-    padding: 16px;
-  }
-}
-
-/* Focus styles for keyboard navigation */
-.post-list-item:focus-visible {
-  outline: 2px solid var(--v-theme-primary);
-  outline-offset: 2px;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .post-list-item {
-    border: 2px solid;
-  }
-
-  .pinned-post {
-    border-color: var(--v-theme-primary);
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .post-list-item {
-    transition: none;
-  }
-
-  .post-list-item:hover {
-    transform: none;
+    display: none;
   }
 }
 </style>
