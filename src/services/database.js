@@ -357,6 +357,7 @@ export const commentService = {
       )
 
       const snapshot = await getDocs(q)
+      console.log('Database Service - Raw snapshot docs:', snapshot.docs)
       const comments = snapshot.docs.map((doc) => {
         const data = doc.data()
         return {
@@ -368,6 +369,7 @@ export const commentService = {
         }
       })
 
+      console.log('Database Service - Processed comments:', comments)
       console.log(`Loaded ${comments.length} comments for post ${postId}`)
       return comments
     } catch (error) {

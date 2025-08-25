@@ -132,7 +132,6 @@
             추천 {{ post.likeCount || 0 }}
           </v-btn>
           <v-spacer />
-          <v-btn variant="outlined" prepend-icon="mdi-share" @click="handleSharePost"> 공유 </v-btn>
         </v-card-actions>
       </v-card>
 
@@ -147,7 +146,6 @@
         :post-id="post.id"
         :match-data="post.matchData"
         :show-cheering-stats="true"
-        @comment-added="handleCommentAdded"
         @comment-updated="handleCommentUpdated"
         @comment-deleted="handleCommentDeleted"
       />
@@ -156,7 +154,6 @@
         :post-id="post.id"
         :comments="comments"
         :loading="commentsLoading"
-        @comment-added="handleCommentAdded"
         @comment-updated="handleCommentUpdated"
         @comment-deleted="handleCommentDeleted"
         @refresh-comments="fetchComments"
@@ -270,7 +267,7 @@ async function fetchComments() {
   commentsLoading.value = true
   try {
     const fetchedComments = await commentService.getComments(props.postId)
-    console.log('Fetched comments:', fetchedComments)
+    console.log('PostDetail - Fetched comments from service:', fetchedComments)
     comments.value = fetchedComments
   } catch (err) {
     console.error('Error fetching comments:', err)
@@ -363,14 +360,6 @@ async function confirmDeletePost() {
   } catch (err) {
     console.error('Error deleting post:', err)
     // Show error message
-  }
-}
-
-function handleCommentAdded(newComment) {
-  comments.value.push(newComment)
-  // Update post comment count
-  if (post.value) {
-    post.value.commentCount = (post.value.commentCount || 0) + 1
   }
 }
 

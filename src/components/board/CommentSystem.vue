@@ -267,7 +267,6 @@ async function handleSubmitComment() {
     const commentId = await commentService.createComment(commentData)
 
     // 댓글 작성 후 댓글 목록을 다시 로드하여 동기화
-    emit('comment-added', { id: commentId, ...commentData })
     newCommentContent.value = ''
 
     // 댓글 목록 새로고침 요청
@@ -302,7 +301,6 @@ async function handleSubmitReply() {
 
     const replyId = await commentService.createComment(replyData)
 
-    emit('comment-added', { id: replyId, ...replyData })
     replyDialog.value = false
     replyTarget.value = null
     replyContent.value = ''
