@@ -16,27 +16,124 @@
         </v-col>
       </v-row>
 
-      <!-- 경기 일정 및 결과 섹션 -->
+      <!-- 첫 번째 줄: Next Match, Recent Match, Notice -->
       <v-row class="mb-4 info-cards-row">
         <!-- 다음 경기 -->
-        <v-col cols="12" sm="6" class="mb-3">
+        <v-col cols="12" md="4" class="mb-3">
           <div class="info-card-wrapper">
             <MatchSchedule />
           </div>
         </v-col>
 
         <!-- 최근 경기 결과 -->
-        <v-col cols="12" sm="6" class="mb-3">
+        <v-col cols="12" md="4" class="mb-3">
           <div class="info-card-wrapper">
             <MatchResults />
           </div>
         </v-col>
+
+        <!-- Notice 게시판 -->
+        <v-col cols="12" md="4" class="mb-3">
+          <v-card class="board-section" variant="outlined" height="100%">
+            <!-- 게시판 헤더 -->
+            <v-card-title
+              class="board-header-roma d-flex align-center py-2 px-4"
+            >
+              <v-icon
+                icon="mdi-bullhorn"
+                color="white"
+                class="mr-3"
+                size="28"
+              />
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold text-white">Notice</div>
+              </div>
+              <v-btn
+                to="/board/notice"
+                variant="text"
+                size="small"
+                color="white"
+                class="text-white"
+              >
+                더보기
+                <v-icon icon="mdi-chevron-right" end color="white" />
+              </v-btn>
+            </v-card-title>
+
+            <v-divider />
+
+            <!-- 최근 게시물 목록 -->
+            <v-card-text class="pa-0">
+              <v-list class="py-0 post-list-fixed">
+                <!-- 5줄 고정 표시 -->
+                <template v-for="index in 5" :key="`notice-${index}`">
+                  <v-list-item
+                    v-if="
+                      boardPosts['notice'] && boardPosts['notice'][index - 1]
+                    "
+                    class="post-item"
+                    @click="
+                      handlePostClick(
+                        'notice',
+                        boardPosts['notice'][index - 1].id,
+                      )
+                    "
+                  >
+                    <v-list-item-title
+                      class="d-flex align-center justify-space-between post-title-row"
+                    >
+                      <div class="post-title-content">
+                        <span
+                          v-if="boardPosts['notice'][index - 1].isPinned"
+                          class="pinned-badge"
+                        >
+                          <v-icon icon="mdi-pin" size="14" color="error" />
+                        </span>
+                        <span class="post-title">{{
+                          boardPosts['notice'][index - 1].title
+                        }}</span>
+                        <span
+                          v-if="
+                            boardPosts['notice'][index - 1].commentCount > 0
+                          "
+                          class="comment-count"
+                        >
+                          [{{ boardPosts['notice'][index - 1].commentCount }}]
+                        </span>
+                      </div>
+                      <div class="post-date">
+                        <span class="text-caption">{{
+                          formatDate(boardPosts['notice'][index - 1].createdAt)
+                        }}</span>
+                      </div>
+                    </v-list-item-title>
+                  </v-list-item>
+
+                  <!-- 게시물이 없는 경우 빈 슬롯 -->
+                  <v-list-item v-else class="post-item post-item-empty">
+                    <v-list-item-title
+                      class="d-flex align-center justify-space-between"
+                    >
+                      <span class="text-medium-emphasis">
+                        <span v-if="index === 1">아직 게시물이 없습니다</span>
+                        <span v-else>-</span>
+                      </span>
+                    </v-list-item-title>
+                  </v-list-item>
+
+                  <!-- 구분선 (마지막 항목 제외) -->
+                  <v-divider v-if="index < 5" class="post-divider" />
+                </template>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
       </v-row>
 
-      <!-- 게시판별 최근 게시물 -->
+      <!-- 게시판별 최근 게시물 (Notice 제외) -->
       <v-row>
         <v-col
-          v-for="board in boardTypes"
+          v-for="board in filteredBoardTypes"
           :key="board.id"
           cols="12"
           md="4"
@@ -180,6 +277,11 @@ const boardTypes = computed(() =>
     color: getBoardColor(board.id),
     description: getBoardDescription(board.id),
   })),
+);
+
+// Notice를 제외한 게시판 목록 (3-3 배치용)
+const filteredBoardTypes = computed(() =>
+  boardTypes.value.filter((board) => board.id !== 'notice'),
 );
 
 // 게시판별 색상 설정
@@ -352,57 +454,6 @@ async function loadBoardPosts() {
 }
 
 // 임시 게시물 데이터 생성 (실제 데이터가 없을 때)
-function generateMockPosts(boardId) {
-  const mockTitles = {
-    free: [
-      '오늘 경기 어떻게 보셨나요?',
-      '로마 유니폼 구매 후기',
-      '이탈리아 여행 다녀왔습니다',
-      '새로운 시즌 기대되네요',
-      '로마 팬이 된 계기',
-    ],
-    analysis: [
-      '무리뉴 전술 분석',
-      '펠레그리니 플레이 스타일',
-      '상대팀 약점 분석',
-      '이번 시즌 포메이션 변화',
-      '선수별 스탯 비교',
-    ],
-    transfer: [
-      '새로운 영입 루머',
-      '여름 이적시장 정리',
-      '임대 선수 복귀 소식',
-      '계약 연장 뉴스',
-      '방출 예정 선수들',
-    ],
-    fanart: [
-      '로마 로고 리디자인',
-      '선수 일러스트 작업',
-      '경기장 사진 모음',
-      '팬아트 콘테스트',
-      '로마 배경화면 제작',
-    ],
-    notice: [
-      '커뮤니티 이용 규칙',
-      '새로운 기능 업데이트',
-      '정기 점검 안내',
-      '이벤트 당첨자 발표',
-      '운영진 모집 공고',
-    ],
-  };
-
-  const titles = mockTitles[boardId] || mockTitles.free;
-
-  return titles.map((title, index) => ({
-    id: `${boardId}_${index}`,
-    title,
-    authorName: `로마팬${Math.floor(Math.random() * 100)}`,
-    createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-    commentCount: Math.floor(Math.random() * 20),
-    likeCount: Math.floor(Math.random() * 50),
-    isPinned: index === 0 && Math.random() > 0.7,
-  }));
-}
 
 onMounted(() => {
   loadStats();
