@@ -14,6 +14,9 @@ const route = useRoute();
 const userStore = useUserStore();
 const { responsiveClasses, isMobile } = useResponsive();
 
+// Get authInitialized state
+const authInitialized = computed(() => userStore.authInitialized);
+
 // Initialize network monitoring
 useNetworkStatus();
 
@@ -71,35 +74,38 @@ const handleDrawerOverlayClick = () => {
 
 <template>
   <v-app class="responsive-app">
-    <!-- Header (hidden on splash screen) -->
-    <AppHeader v-if="!isSplashScreen" @toggle-drawer="toggleDrawer" />
+    <!-- Global Loading Overlay for Auth Initialization -->
+    <LoadingOverlay :is-active="!authInitialized" message="인증 정보를 확인하는 중..." />
 
-    <!-- Mobile Navigation Drawer (hidden on splash screen) -->
-    <AppNavigation
-      v-if="!isSplashScreen"
-      v-model="drawer"
-      @click:outside="handleDrawerOverlayClick"
-    />
+    <!-- Main App Content (only when auth is initialized) -->
+    <template v-if="authInitialized">
+      <!-- Header (hidden on splash screen) -->
+      <AppHeader v-if="!isSplashScreen" @toggle-drawer="toggleDrawer" />
 
-    <!-- Main Content -->
-    <v-main :class="isSplashScreen ? 'splash-main' : 'responsive-main'">
-      <div
-        :class="
-          isSplashScreen ? 'splash-content-wrapper' : 'main-content-wrapper'
-        "
-      >
-        <router-view />
-      </div>
-    </v-main>
+      <!-- Mobile Navigation Drawer (hidden on splash screen) -->
+      <AppNavigation
+        v-if="!isSplashScreen"
+        v-model="drawer"
+        @click:outside="handleDrawerOverlayClick"
+      />
 
-    <!-- Footer (hidden on splash screen) -->
-    <AppFooter v-if="!isSplashScreen" />
+      <!-- Main Content -->
+      <v-main :class="isSplashScreen ? 'splash-main' : 'responsive-main'">
+        <div
+          :class="
+            isSplashScreen ? 'splash-content-wrapper' : 'main-content-wrapper'
+          "
+        >
+          <router-view />
+        </div>
+      </v-main>
+
+      <!-- Footer (hidden on splash screen) -->
+      <AppFooter v-if="!isSplashScreen" />
+    </template>
 
     <!-- Global Error Notifications -->
     <ErrorNotification />
-
-    <!-- Global Loading Overlay -->
-    <LoadingOverlay />
   </v-app>
 </template>
 

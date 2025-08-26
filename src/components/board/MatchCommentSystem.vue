@@ -1,7 +1,11 @@
 <template>
   <div class="match-comment-system">
     <!-- 응원 통계 -->
-    <v-card v-if="showCheeringStats" class="cheering-stats mb-4" variant="tonal">
+    <v-card
+      v-if="showCheeringStats"
+      class="cheering-stats mb-4"
+      variant="tonal"
+    >
       <v-card-text class="pa-3">
         <div class="text-subtitle-2 mb-3 d-flex align-center">
           <v-icon icon="mdi-chart-bar" class="me-2" />
@@ -11,7 +15,10 @@
         <v-row>
           <v-col cols="6">
             <div class="stat-item text-center">
-              <div class="stat-value text-h6 font-weight-bold" style="color: #dc143c">
+              <div
+                class="stat-value text-h6 font-weight-bold"
+                style="color: #dc143c"
+              >
                 {{ cheeringStats.roma }}
               </div>
               <div class="stat-label text-caption">로마 응원</div>
@@ -19,7 +26,10 @@
           </v-col>
           <v-col cols="6">
             <div class="stat-item text-center">
-              <div class="stat-value text-h6 font-weight-bold" style="color: #ffd700">
+              <div
+                class="stat-value text-h6 font-weight-bold"
+                style="color: #ffd700"
+              >
                 {{ cheeringStats.general }}
               </div>
               <div class="stat-label text-caption">일반 응원</div>
@@ -36,7 +46,9 @@
             height="8"
             rounded
           />
-          <div class="text-center text-caption mt-1">총 {{ totalCheering }}명이 응원 중! 🔥</div>
+          <div class="text-center text-caption mt-1">
+            총 {{ totalCheering }}명이 응원 중! 🔥
+          </div>
         </div>
       </v-card-text>
     </v-card>
@@ -69,7 +81,10 @@
       <v-card-text class="pa-3">
         <div class="d-flex align-start">
           <v-avatar size="32" class="me-3">
-            <v-img v-if="userStore.user?.photoURL" :src="userStore.user.photoURL" />
+            <v-img
+              v-if="userStore.user?.photoURL"
+              :src="userStore.user.photoURL"
+            />
             <v-icon v-else icon="mdi-account-circle" />
           </v-avatar>
 
@@ -84,13 +99,27 @@
             />
 
             <!-- 응원 타입 선택 -->
-            <div class="comment-options d-flex align-center justify-space-between mt-2">
+            <div
+              class="comment-options d-flex align-center justify-space-between mt-2"
+            >
               <v-chip-group v-model="commentType" mandatory>
-                <v-chip value="general" size="small" variant="outlined"> 💛 일반 응원 </v-chip>
-                <v-chip value="roma" size="small" variant="outlined" color="error">
+                <v-chip value="general" size="small" variant="outlined">
+                  💛 일반 응원
+                </v-chip>
+                <v-chip
+                  value="roma"
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                >
                   ❤️ 로마 응원
                 </v-chip>
-                <v-chip value="prediction" size="small" variant="outlined" color="primary">
+                <v-chip
+                  value="prediction"
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                >
                   🎯 경기 예측
                 </v-chip>
               </v-chip-group>
@@ -116,14 +145,23 @@
         <p class="text-caption mt-2">댓글을 불러오는 중...</p>
       </div>
 
-      <div v-else-if="groupedComments.length === 0" class="empty-comments text-center py-8">
+      <div
+        v-else-if="groupedComments.length === 0"
+        class="empty-comments text-center py-8"
+      >
         <v-icon icon="mdi-comment-outline" size="48" color="grey-lighten-1" />
-        <p class="text-body-2 text-grey mt-2">첫 번째 응원 메시지를 남겨보세요!</p>
+        <p class="text-body-2 text-grey mt-2">
+          첫 번째 응원 메시지를 남겨보세요!
+        </p>
       </div>
 
       <div v-else>
         <!-- 댓글 그룹별 표시 -->
-        <div v-for="group in groupedComments" :key="group.type" class="comment-group mb-4">
+        <div
+          v-for="group in groupedComments"
+          :key="group.type"
+          class="comment-group mb-4"
+        >
           <div class="group-header d-flex align-center mb-3">
             <v-icon :icon="getGroupIcon(group.type)" class="me-2" />
             <span class="text-subtitle-2 font-weight-bold">
@@ -152,7 +190,11 @@
 
     <!-- 더 보기 버튼 -->
     <div v-if="hasMoreComments" class="text-center mt-4">
-      <v-btn variant="outlined" :loading="loadingMore" @click="loadMoreComments">
+      <v-btn
+        variant="outlined"
+        :loading="loadingMore"
+        @click="loadMoreComments"
+      >
         더 많은 응원 메시지 보기
       </v-btn>
     </div>
@@ -160,10 +202,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useUserStore } from '@/stores/user'
-import { commentService } from '@/services/database'
-import MatchCommentItem from './MatchCommentItem.vue'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useUserStore } from '@/stores/user';
+import { commentService } from '@/services/database';
+import MatchCommentItem from './MatchCommentItem.vue';
 
 const props = defineProps({
   postId: {
@@ -178,20 +220,24 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-})
+});
 
-const emit = defineEmits(['comment-added', 'comment-updated', 'comment-deleted'])
+const emit = defineEmits([
+  'comment-added',
+  'comment-updated',
+  'comment-deleted',
+]);
 
 // Stores
-const userStore = useUserStore()
+const userStore = useUserStore();
 
 // State
-const comments = ref([])
-const loading = ref(false)
-const loadingMore = ref(false)
-const hasMoreComments = ref(false)
-const newComment = ref('')
-const commentType = ref('general')
+const comments = ref([]);
+const loading = ref(false);
+const loadingMore = ref(false);
+const hasMoreComments = ref(false);
+const newComment = ref('');
+const commentType = ref('general');
 
 // Quick cheering options
 const quickCheers = ref([
@@ -203,71 +249,74 @@ const quickCheers = ref([
   { id: 6, text: '응원해요!', emoji: '📣', color: 'info', type: 'general' },
   { id: 7, text: '로마니스타!', emoji: '❤️', color: 'error', type: 'roma' },
   { id: 8, text: '최고야!', emoji: '👏', color: 'success', type: 'general' },
-])
+]);
 
 // Computed
 const canSubmitComment = computed(() => {
-  return userStore.isAuthenticated && newComment.value.trim().length > 0
-})
+  return userStore.isAuthenticated && newComment.value.trim().length > 0;
+});
 
 const cheeringStats = computed(() => {
-  const stats = { roma: 0, general: 0, prediction: 0 }
+  const stats = { roma: 0, general: 0, prediction: 0 };
 
   comments.value.forEach((comment) => {
     if (comment.cheerType) {
-      stats[comment.cheerType] = (stats[comment.cheerType] || 0) + 1
+      stats[comment.cheerType] = (stats[comment.cheerType] || 0) + 1;
     }
-  })
+  });
 
-  return stats
-})
+  return stats;
+});
 
 const totalCheering = computed(() => {
-  return Object.values(cheeringStats.value).reduce((sum, count) => sum + count, 0)
-})
+  return Object.values(cheeringStats.value).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
+});
 
 const cheeringPercentage = computed(() => {
-  if (totalCheering.value === 0) return 0
-  return (cheeringStats.value.roma / totalCheering.value) * 100
-})
+  if (totalCheering.value === 0) return 0;
+  return (cheeringStats.value.roma / totalCheering.value) * 100;
+});
 
 const groupedComments = computed(() => {
   const groups = {
     roma: { type: 'roma', comments: [] },
     general: { type: 'general', comments: [] },
     prediction: { type: 'prediction', comments: [] },
-  }
+  };
 
   comments.value.forEach((comment) => {
-    const type = comment.cheerType || 'general'
+    const type = comment.cheerType || 'general';
     if (groups[type]) {
-      groups[type].comments.push(comment)
+      groups[type].comments.push(comment);
     }
-  })
+  });
 
   // Filter out empty groups and sort by comment count
   return Object.values(groups)
     .filter((group) => group.comments.length > 0)
-    .sort((a, b) => b.comments.length - a.comments.length)
-})
+    .sort((a, b) => b.comments.length - a.comments.length);
+});
 
 // Methods
 async function fetchComments() {
-  loading.value = true
+  loading.value = true;
   try {
-    const fetchedComments = await commentService.getComments(props.postId)
-    comments.value = fetchedComments
+    const fetchedComments = await commentService.getComments(props.postId);
+    comments.value = fetchedComments;
   } catch (error) {
-    console.error('Error fetching comments:', error)
+    console.error('Error fetching comments:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function handleQuickCheer(cheer) {
   if (!userStore.isAuthenticated) {
     // Show login prompt
-    return
+    return;
   }
 
   const commentData = {
@@ -275,147 +324,150 @@ async function handleQuickCheer(cheer) {
     content: cheer.text,
     authorId: userStore.user.uid,
     authorName: userStore.user.displayName || userStore.user.email,
-    authorIcon: userStore.user.selectedIcon,
+    authorIcon: userStore.user.selectedIconData?.url || null,
     cheerType: cheer.type,
     isQuickCheer: true,
-  }
+  };
 
   try {
-    const commentId = await commentService.createComment(commentData)
+    const commentId = await commentService.createComment(commentData);
     const newCommentObj = {
       id: commentId,
       ...commentData,
       createdAt: new Date(),
       likeCount: 0,
-    }
+    };
 
-    comments.value.push(newCommentObj)
-    emit('comment-added', newCommentObj)
+    comments.value.push(newCommentObj);
+    emit('comment-added', newCommentObj);
   } catch (error) {
-    console.error('Error creating quick cheer:', error)
+    console.error('Error creating quick cheer:', error);
   }
 }
 
 async function handleSubmitComment() {
-  if (!canSubmitComment.value) return
+  if (!canSubmitComment.value) return;
 
   const commentData = {
     postId: props.postId,
     content: newComment.value.trim(),
     authorId: userStore.user.uid,
     authorName: userStore.user.displayName || userStore.user.email,
-    authorIcon: userStore.user.selectedIcon,
+    authorIcon: userStore.user.selectedIconData?.url || null,
     cheerType: commentType.value,
     isQuickCheer: false,
-  }
+  };
 
   try {
-    const commentId = await commentService.createComment(commentData)
+    const commentId = await commentService.createComment(commentData);
     const newCommentObj = {
       id: commentId,
       ...commentData,
       createdAt: new Date(),
       likeCount: 0,
-    }
+    };
 
-    comments.value.push(newCommentObj)
-    emit('comment-added', newCommentObj)
+    comments.value.push(newCommentObj);
+    emit('comment-added', newCommentObj);
 
     // Reset form
-    newComment.value = ''
-    commentType.value = 'general'
+    newComment.value = '';
+    commentType.value = 'general';
   } catch (error) {
-    console.error('Error creating comment:', error)
+    console.error('Error creating comment:', error);
   }
 }
 
 async function handleCommentLike(commentId) {
-  if (!userStore.isAuthenticated) return
+  if (!userStore.isAuthenticated) return;
 
   try {
-    const isLiked = await commentService.toggleCommentLike(commentId, userStore.user.uid)
+    const isLiked = await commentService.toggleCommentLike(
+      commentId,
+      userStore.user.uid,
+    );
 
     // Update local comment
-    const comment = comments.value.find((c) => c.id === commentId)
+    const comment = comments.value.find((c) => c.id === commentId);
     if (comment) {
-      comment.likeCount += isLiked ? 1 : -1
-      comment.isLiked = isLiked
+      comment.likeCount += isLiked ? 1 : -1;
+      comment.isLiked = isLiked;
     }
   } catch (error) {
-    console.error('Error toggling comment like:', error)
+    console.error('Error toggling comment like:', error);
   }
 }
 
 function handleCommentReply(comment) {
   // Set reply context
-  newComment.value = `@${comment.authorName} `
-  commentType.value = comment.cheerType || 'general'
+  newComment.value = `@${comment.authorName} `;
+  commentType.value = comment.cheerType || 'general';
 }
 
 function handleCommentEdit(comment) {
   // Handle comment editing
-  console.log('Edit comment:', comment)
+  console.log('Edit comment:', comment);
 }
 
 async function handleCommentDelete(commentId) {
   try {
-    await commentService.deleteComment(commentId, props.postId)
-    comments.value = comments.value.filter((c) => c.id !== commentId)
-    emit('comment-deleted', commentId)
+    await commentService.deleteComment(commentId, props.postId);
+    comments.value = comments.value.filter((c) => c.id !== commentId);
+    emit('comment-deleted', commentId);
   } catch (error) {
-    console.error('Error deleting comment:', error)
+    console.error('Error deleting comment:', error);
   }
 }
 
 async function loadMoreComments() {
-  loadingMore.value = true
+  loadingMore.value = true;
   try {
     // Implement pagination logic here
     // For now, just set hasMoreComments to false
-    hasMoreComments.value = false
+    hasMoreComments.value = false;
   } catch (error) {
-    console.error('Error loading more comments:', error)
+    console.error('Error loading more comments:', error);
   } finally {
-    loadingMore.value = false
+    loadingMore.value = false;
   }
 }
 
 function getGroupIcon(type) {
   switch (type) {
     case 'roma':
-      return 'mdi-heart'
+      return 'mdi-heart';
     case 'prediction':
-      return 'mdi-target'
+      return 'mdi-target';
     default:
-      return 'mdi-comment-text'
+      return 'mdi-comment-text';
   }
 }
 
 function getGroupTitle(type) {
   switch (type) {
     case 'roma':
-      return '로마 응원단'
+      return '로마 응원단';
     case 'prediction':
-      return '경기 예측'
+      return '경기 예측';
     default:
-      return '일반 응원'
+      return '일반 응원';
   }
 }
 
 // Lifecycle
 onMounted(() => {
-  fetchComments()
-})
+  fetchComments();
+});
 
 // Watch for post changes
 watch(
   () => props.postId,
   () => {
     if (props.postId) {
-      fetchComments()
+      fetchComments();
     }
   },
-)
+);
 </script>
 
 <style scoped>
@@ -424,7 +476,11 @@ watch(
 }
 
 .cheering-stats {
-  background: linear-gradient(135deg, rgba(220, 20, 60, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(220, 20, 60, 0.1) 0%,
+    rgba(255, 215, 0, 0.1) 100%
+  );
 }
 
 .stat-item {

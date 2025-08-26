@@ -12,7 +12,11 @@
           <v-card variant="outlined" class="mb-4">
             <v-card-title class="text-h6">기본 정보</v-card-title>
             <v-card-text>
-              <v-form ref="profileForm" v-model="profileFormValid" @submit.prevent="updateProfile">
+              <v-form
+                ref="profileForm"
+                v-model="profileFormValid"
+                @submit.prevent="updateProfile"
+              >
                 <v-text-field
                   v-model="profileData.displayName"
                   label="표시 이름"
@@ -82,7 +86,9 @@
 
               <v-divider class="my-4" />
 
-              <div class="text-body-2 text-medium-emphasis mb-2">포인트 획득 방법:</div>
+              <div class="text-body-2 text-medium-emphasis mb-2">
+                포인트 획득 방법:
+              </div>
               <v-list density="compact">
                 <v-list-item>
                   <v-list-item-title>게시글 작성: +10 포인트</v-list-item-title>
@@ -91,10 +97,14 @@
                   <v-list-item-title>댓글 작성: +5 포인트</v-list-item-title>
                 </v-list-item>
                 <v-list-item>
-                  <v-list-item-title>게시글 좋아요 받음: +1 포인트</v-list-item-title>
+                  <v-list-item-title
+                    >게시글 좋아요 받음: +1 포인트</v-list-item-title
+                  >
                 </v-list-item>
                 <v-list-item>
-                  <v-list-item-title>댓글 좋아요 받음: +1 포인트</v-list-item-title>
+                  <v-list-item-title
+                    >댓글 좋아요 받음: +1 포인트</v-list-item-title
+                  >
                 </v-list-item>
               </v-list>
             </v-card-text>
@@ -106,9 +116,11 @@
             <v-card-text>
               <div v-if="selectedIcon" class="text-center">
                 <v-avatar size="64" class="mb-2">
-                  <v-img :src="selectedIcon.imageUrl" :alt="selectedIcon.name" />
+                  <v-img :src="selectedIcon.url" :alt="selectedIcon.name" />
                 </v-avatar>
-                <div class="text-subtitle-1 font-weight-medium">{{ selectedIcon.name }}</div>
+                <div class="text-subtitle-1 font-weight-medium">
+                  {{ selectedIcon.name }}
+                </div>
                 <v-btn
                   color="error"
                   variant="outlined"
@@ -154,15 +166,25 @@
               <v-row>
                 <v-col cols="12" sm="6">
                   <div class="text-body-2 text-medium-emphasis">가입일</div>
-                  <div class="text-body-1">{{ formatDate(user?.createdAt) }}</div>
+                  <div class="text-body-1">
+                    {{ formatDate(user?.createdAt) }}
+                  </div>
                 </v-col>
                 <v-col cols="12" sm="6">
-                  <div class="text-body-2 text-medium-emphasis">마지막 로그인</div>
-                  <div class="text-body-1">{{ formatDate(user?.lastLoginAt) }}</div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    마지막 로그인
+                  </div>
+                  <div class="text-body-1">
+                    {{ formatDate(user?.lastLoginAt) }}
+                  </div>
                 </v-col>
                 <v-col cols="12" sm="6">
                   <div class="text-body-2 text-medium-emphasis">계정 상태</div>
-                  <v-chip :color="user?.isActive ? 'success' : 'error'" size="small" variant="flat">
+                  <v-chip
+                    :color="user?.isActive ? 'success' : 'error'"
+                    size="small"
+                    variant="flat"
+                  >
                     {{ user?.isActive ? '활성' : '비활성' }}
                   </v-chip>
                 </v-col>
@@ -243,63 +265,69 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useAuth } from '@/composables/useAuth'
-import { userService, iconService } from '@/services/database'
-import PointsHistory from './PointsHistory.vue'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useAuth } from '@/composables/useAuth';
+import { userService, iconService } from '@/services/database';
+import PointsHistory from './PointsHistory.vue';
 
 // Emits
-const emit = defineEmits(['go-to-icon-shop'])
+const emit = defineEmits(['go-to-icon-shop']);
 
 // Composables
-const { user, updateProfile: updateAuthProfile, updatePassword: updateAuthPassword } = useAuth()
+const {
+  user,
+  updateProfile: updateAuthProfile,
+  updatePassword: updateAuthPassword,
+} = useAuth();
 
 // Reactive data
-const loading = ref(false)
-const profileFormValid = ref(false)
-const passwordFormValid = ref(false)
-const selectedIcon = ref(null)
-const pointsHistoryRef = ref(null)
+const loading = ref(false);
+const profileFormValid = ref(false);
+const passwordFormValid = ref(false);
+const selectedIcon = ref(null);
+const pointsHistoryRef = ref(null);
 
 const profileData = ref({
   displayName: '',
   email: '',
   bio: '',
   favoritePlayer: '',
-})
+});
 
 const passwordData = ref({
   newPassword: '',
   confirmPassword: '',
-})
+});
 
 const snackbar = ref({
   show: false,
   message: '',
   color: 'success',
-})
+});
 
 // Computed
-const userPoints = computed(() => user.value?.points || 0)
+const userPoints = computed(() => user.value?.points || 0);
 
 // Form validation rules
 const displayNameRules = [
   (v) => !!v || '표시 이름은 필수입니다',
   (v) => (v && v.length >= 2) || '표시 이름은 최소 2자 이상이어야 합니다',
   (v) => (v && v.length <= 20) || '표시 이름은 최대 20자까지 가능합니다',
-]
+];
 
-const bioRules = [(v) => !v || v.length <= 200 || '자기소개는 최대 200자까지 가능합니다']
+const bioRules = [
+  (v) => !v || v.length <= 200 || '자기소개는 최대 200자까지 가능합니다',
+];
 
 const passwordRules = [
   (v) => !!v || '새 비밀번호는 필수입니다',
   (v) => (v && v.length >= 6) || '비밀번호는 최소 6자 이상이어야 합니다',
-]
+];
 
 const confirmPasswordRules = [
   (v) => !!v || '비밀번호 확인은 필수입니다',
   (v) => v === passwordData.value.newPassword || '비밀번호가 일치하지 않습니다',
-]
+];
 
 // Methods
 const showSnackbar = (message, color = 'success') => {
@@ -307,19 +335,19 @@ const showSnackbar = (message, color = 'success') => {
     show: true,
     message,
     color,
-  }
-}
+  };
+};
 
 const formatDate = (timestamp) => {
-  if (!timestamp) return '-'
+  if (!timestamp) return '-';
 
-  let date
+  let date;
   if (timestamp.toDate) {
-    date = timestamp.toDate()
+    date = timestamp.toDate();
   } else if (timestamp instanceof Date) {
-    date = timestamp
+    date = timestamp;
   } else {
-    date = new Date(timestamp)
+    date = new Date(timestamp);
   }
 
   return date.toLocaleDateString('ko-KR', {
@@ -328,52 +356,52 @@ const formatDate = (timestamp) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  })
-}
+  });
+};
 
 const loadUserProfile = async () => {
-  if (!user.value?.uid) return
+  if (!user.value?.uid) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
     // 사용자 정보 로드
-    const userData = await userService.getUser(user.value.uid)
+    const userData = await userService.getUser(user.value.uid);
     if (userData) {
       profileData.value = {
         displayName: userData.displayName || '',
         email: userData.email || '',
         bio: userData.profile?.bio || '',
         favoritePlayer: userData.profile?.favoritePlayer || '',
-      }
+      };
     }
 
     // 선택된 아이콘 정보 로드
     if (user.value.selectedIcon) {
-      await loadSelectedIcon(user.value.selectedIcon)
+      await loadSelectedIcon(user.value.selectedIcon);
     }
   } catch (error) {
-    console.error('Error loading user profile:', error)
-    showSnackbar('프로필 정보를 불러오는데 실패했습니다', 'error')
+    console.error('Error loading user profile:', error);
+    showSnackbar('프로필 정보를 불러오는데 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const loadSelectedIcon = async (iconId) => {
   try {
-    const icons = await iconService.getActiveIcons()
-    selectedIcon.value = icons.find((icon) => icon.id === iconId) || null
+    const icons = await iconService.getActiveIcons();
+    selectedIcon.value = icons.find((icon) => icon.id === iconId) || null;
   } catch (error) {
-    console.error('Error loading selected icon:', error)
+    console.error('Error loading selected icon:', error);
   }
-}
+};
 
 const updateProfile = async () => {
-  if (!profileFormValid.value) return
+  if (!profileFormValid.value) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
     const updates = {
       displayName: profileData.value.displayName,
@@ -381,74 +409,74 @@ const updateProfile = async () => {
         bio: profileData.value.bio,
         favoritePlayer: profileData.value.favoritePlayer,
       },
-    }
+    };
 
-    await updateAuthProfile(updates)
-    showSnackbar('프로필이 성공적으로 업데이트되었습니다')
+    await updateAuthProfile(updates);
+    showSnackbar('프로필이 성공적으로 업데이트되었습니다');
   } catch (error) {
-    console.error('Error updating profile:', error)
-    showSnackbar('프로필 업데이트에 실패했습니다', 'error')
+    console.error('Error updating profile:', error);
+    showSnackbar('프로필 업데이트에 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const updatePassword = async () => {
-  if (!passwordFormValid.value) return
+  if (!passwordFormValid.value) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
-    await updateAuthPassword(passwordData.value.newPassword)
+    await updateAuthPassword(passwordData.value.newPassword);
 
     // 폼 초기화
     passwordData.value = {
       newPassword: '',
       confirmPassword: '',
-    }
+    };
 
-    showSnackbar('비밀번호가 성공적으로 변경되었습니다')
+    showSnackbar('비밀번호가 성공적으로 변경되었습니다');
   } catch (error) {
-    console.error('Error updating password:', error)
-    showSnackbar('비밀번호 변경에 실패했습니다', 'error')
+    console.error('Error updating password:', error);
+    showSnackbar('비밀번호 변경에 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const removeIcon = async () => {
   try {
-    loading.value = true
+    loading.value = true;
 
-    await updateAuthProfile({ selectedIcon: null })
-    selectedIcon.value = null
+    await updateAuthProfile({ selectedIcon: null });
+    selectedIcon.value = null;
 
-    showSnackbar('아이콘이 해제되었습니다')
+    showSnackbar('아이콘이 해제되었습니다');
   } catch (error) {
-    console.error('Error removing icon:', error)
-    showSnackbar('아이콘 해제에 실패했습니다', 'error')
+    console.error('Error removing icon:', error);
+    showSnackbar('아이콘 해제에 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Watchers
 watch(
   user,
   (newUser) => {
     if (newUser) {
-      loadUserProfile()
+      loadUserProfile();
     }
   },
   { immediate: true },
-)
+);
 
 // Lifecycle
 onMounted(() => {
   if (user.value) {
-    loadUserProfile()
+    loadUserProfile();
   }
-})
+});
 </script>
 
 <style scoped>

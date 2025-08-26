@@ -17,7 +17,12 @@
       <div class="d-none d-md-flex align-start">
         <v-avatar size="40" class="me-3">
           <v-img
-            v-if="userStore.user?.photoURL"
+            v-if="userStore.userIcon?.url"
+            :src="userStore.userIcon.url"
+            :alt="userStore.userIcon.name"
+          />
+          <v-img
+            v-else-if="userStore.user?.photoURL"
             :src="userStore.user.photoURL"
           />
           <v-icon v-else icon="mdi-account-circle" />
@@ -50,7 +55,12 @@
         <div class="d-flex align-center mb-3">
           <v-avatar size="32" class="me-2">
             <v-img
-              v-if="userStore.user?.photoURL"
+              v-if="userStore.userIcon?.url"
+              :src="userStore.userIcon.url"
+              :alt="userStore.userIcon.name"
+            />
+            <v-img
+              v-else-if="userStore.user?.photoURL"
               :src="userStore.user.photoURL"
             />
             <v-icon v-else icon="mdi-account-circle" />
@@ -158,13 +168,28 @@
           </div>
 
           <!-- 답글 입력 -->
-          <v-textarea
-            v-model="replyContent"
-            placeholder="답글을 작성해주세요..."
-            variant="outlined"
-            rows="3"
-            auto-grow
-          />
+          <div class="d-flex align-start">
+            <v-avatar size="32" class="me-3 mt-1">
+              <v-img
+                v-if="userStore.userIcon?.url"
+                :src="userStore.userIcon.url"
+                :alt="userStore.userIcon.name"
+              />
+              <v-img
+                v-else-if="userStore.user?.photoURL"
+                :src="userStore.user.photoURL"
+              />
+              <v-icon v-else icon="mdi-account-circle" />
+            </v-avatar>
+            <v-textarea
+              v-model="replyContent"
+              placeholder="답글을 작성해주세요..."
+              variant="outlined"
+              rows="3"
+              auto-grow
+              class="flex-grow-1"
+            />
+          </div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -322,7 +347,7 @@ async function handleSubmitComment() {
       content: newCommentContent.value.trim(),
       authorId: userStore.user.uid,
       authorName: userStore.user.displayName || userStore.user.email,
-      authorIcon: userStore.user.selectedIcon || null,
+      authorIcon: userStore.user.selectedIconData?.url || null,
     };
 
     const commentId = await commentService.createComment(commentData);
@@ -360,7 +385,7 @@ async function handleSubmitReply() {
       content: replyContent.value.trim(),
       authorId: userStore.user.uid,
       authorName: userStore.user.displayName || userStore.user.email,
-      authorIcon: userStore.user.selectedIcon || null,
+      authorIcon: userStore.user.selectedIconData?.url || null,
     };
 
     const replyId = await commentService.createComment(replyData);

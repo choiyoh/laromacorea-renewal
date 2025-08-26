@@ -505,6 +505,50 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 사용자 이력 모달 -->
+    <v-dialog v-model="historyDialog" max-width="800px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon icon="mdi-history" class="me-2" />
+          사용자 변경 이력
+          <v-spacer />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="historyDialog = false"
+          />
+        </v-card-title>
+
+        <v-card-text>
+          <v-data-table
+            :headers="[
+              { title: '날짜', key: 'createdAt', width: '150px' },
+              { title: '변경 유형', key: 'type', width: '120px' },
+              { title: '변경 내용', key: 'description' },
+              { title: '관리자', key: 'adminName', width: '120px' },
+            ]"
+            :items="userHistory"
+            :items-per-page="10"
+            no-data-text="변경 이력이 없습니다"
+          >
+            <template v-slot:item.createdAt="{ item }">
+              {{ formatDate(item.createdAt) }}
+            </template>
+
+            <template v-slot:item.type="{ item }">
+              <v-chip
+                :color="getHistoryTypeColor(item.type)"
+                size="small"
+                variant="tonal"
+              >
+                {{ getHistoryTypeText(item.type) }}
+              </v-chip>
+            </template>
+          </v-data-table>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -927,8 +971,7 @@ const confirmPasswordReset = async () => {
     passwordResetDialog.value = false;
 
     // 성공 알림
-    // TODO: 토스트 알림 추가
-    console.log('비밀번호가 초기화되었습니다.');
+    showSuccessMessage('비밀번호가 초기화되었습니다.');
 
     emit('user-updated');
   } catch (error) {
@@ -944,14 +987,55 @@ const openPointsManagement = () => {
 };
 
 // 사용자 변경 이력 보기
+const userHistory = ref([]);
+const historyDialog = ref(false);
+
 const viewUserHistory = async () => {
   try {
-    const history = await adminService.getUserHistory(selectedUser.value.id);
-    console.log('User history:', history);
-    // TODO: 이력 표시 모달 구현
+    userHistory.value = await adminService.getUserHistory(
+      selectedUser.value.id,
+    );
+    historyDialog.value = true;
   } catch (error) {
     console.error('Failed to load user history:', error);
+    showErrorMessage('사용자 이력을 불러오는데 실패했습니다.');
   }
+};
+
+// 이력 타입 텍스트 변환
+const getHistoryTypeText = (type) => {
+  const typeMap = {
+    NICKNAME_CHANGE: '닉네임 변경',
+    ROLE_CHANGE: '권한 변경',
+    STATUS_CHANGE: '상태 변경',
+    VERIFICATION_CHANGE: '인증 상태 변경',
+    POINTS_ADJUSTMENT: '포인트 조정',
+    PASSWORD_RESET: '비밀번호 초기화',
+  };
+  return typeMap[type] || type;
+};
+
+// 이력 타입 색상
+const getHistoryTypeColor = (type) => {
+  const colorMap = {
+    NICKNAME_CHANGE: 'blue',
+    ROLE_CHANGE: 'purple',
+    STATUS_CHANGE: 'orange',
+    VERIFICATION_CHANGE: 'green',
+    POINTS_ADJUSTMENT: 'teal',
+    PASSWORD_RESET: 'red',
+  };
+  return colorMap[type] || 'grey';
+};
+
+// 메시지 표시 함수들
+const showSuccessMessage = (message) => {
+  // 간단한 알림 - 실제로는 toast 라이브러리를 사용할 수 있습니다
+  alert(`✅ ${message}`);
+};
+
+const showErrorMessage = (message) => {
+  alert(`❌ ${message}`);
 };
 
 onMounted(() => {

@@ -23,7 +23,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { db, storage, auth } from './firebase';
 import { collections } from './database';
 
 export const adminService = {
@@ -500,6 +500,22 @@ export const adminService = {
 
   async addIcon(iconData) {
     try {
+      // 현재 사용자 인증 상태 확인
+      const currentUser = auth.currentUser;
+      console.log('현재 Firebase 사용자:', currentUser);
+
+      if (!currentUser) {
+        throw new Error('사용자가 로그인되어 있지 않습니다');
+      }
+
+      // 관리자 권한 확인
+      const isAdminUser = await this.checkAdminPermission(currentUser.uid);
+      console.log('관리자 권한 확인:', isAdminUser);
+
+      if (!isAdminUser) {
+        throw new Error('관리자 권한이 필요합니다');
+      }
+
       let iconUrl = '';
       const { file, ...dataToSave } = iconData;
 
@@ -507,6 +523,13 @@ export const adminService = {
       if (file && file instanceof File) {
         const uniqueFileName = `${Date.now()}_${file.name}`;
         const iconStorageRef = storageRef(storage, `icons/${uniqueFileName}`);
+
+        console.log('파일 업로드 시도:', {
+          fileName: uniqueFileName,
+          fileSize: file.size,
+          fileType: file.type,
+          path: `icons/${uniqueFileName}`,
+        });
 
         // 2. 파일 업로드
         const uploadResult = await uploadBytes(iconStorageRef, file);

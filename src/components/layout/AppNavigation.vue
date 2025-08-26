@@ -18,10 +18,13 @@
           <v-icon v-else size="32">mdi-account-circle</v-icon>
         </v-avatar>
         <div>
-          <div class="font-weight-bold">
-            <v-icon v-if="userStore.user?.selectedIcon" size="16" class="me-1">
-              {{ userStore.user.selectedIcon }}
-            </v-icon>
+          <div class="font-weight-bold d-flex align-center">
+            <v-avatar v-if="userStore.userIcon" size="20" class="me-2">
+              <v-img
+                :src="userStore.userIcon.url"
+                :alt="userStore.userIcon.name"
+              />
+            </v-avatar>
             {{ userStore.user?.displayName || '사용자' }}
           </div>
           <div class="text-caption d-flex align-center">

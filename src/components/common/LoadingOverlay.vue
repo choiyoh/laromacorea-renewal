@@ -29,6 +29,10 @@ import { computed } from 'vue'
 import { useErrorStore } from '@/stores/error'
 
 const props = defineProps({
+  isActive: {
+    type: Boolean,
+    default: false,
+  },
   message: {
     type: String,
     default: '로딩 중...',
@@ -53,7 +57,7 @@ const props = defineProps({
 
 const errorStore = useErrorStore()
 
-const isVisible = computed(() => errorStore.globalLoading)
+const isVisible = computed(() => props.isActive || errorStore.globalLoading)
 </script>
 
 <style scoped>

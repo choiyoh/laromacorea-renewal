@@ -33,7 +33,7 @@ export const useUserStore = defineStore('user', () => {
     );
   });
   const userPoints = computed(() => user.value?.points || 0);
-  const userIcon = computed(() => user.value?.selectedIcon || null);
+  const userIcon = computed(() => user.value?.selectedIconData || null);
 
   // Actions
   async function signIn(email, password) {
@@ -203,6 +203,25 @@ export const useUserStore = defineStore('user', () => {
     user.value = null;
   }
 
+  async function loadUserIconData(iconId) {
+    try {
+      // iconService를 동적으로 import하여 순환 참조 방지
+      const { iconService } = await import('@/services/database');
+      const icons = await iconService.getActiveIcons();
+      const iconData = icons.find((icon) => icon.id === iconId);
+
+      if (iconData && user.value) {
+        user.value.selectedIconData = {
+          id: iconData.id,
+          name: iconData.name,
+          url: iconData.url,
+        };
+      }
+    } catch (error) {
+      console.error('Error loading user icon data:', error);
+    }
+  }
+
   // Initialize auth state listener
   function initializeAuth() {
     console.log('Initializing auth state listener...');
@@ -235,6 +254,11 @@ export const useUserStore = defineStore('user', () => {
             emailVerified: firebaseUser.emailVerified,
             ...userData, // Merge Firestore data
           };
+
+          // 선택된 아이콘 데이터 로드
+          if (userData?.selectedIcon) {
+            await loadUserIconData(userData.selectedIcon);
+          }
 
           console.log('User store updated:', user.value);
         } else {
@@ -284,6 +308,7 @@ export const useUserStore = defineStore('user', () => {
     setUser,
     clearError,
     clearUser,
+    loadUserIconData,
     initializeAuth,
   };
 });

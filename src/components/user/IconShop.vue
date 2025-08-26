@@ -75,7 +75,14 @@
       </v-card-title>
       <v-card-text>
         <v-row>
-          <v-col v-for="icon in purchasedIcons" :key="icon.id" cols="6" sm="4" md="3" lg="2">
+          <v-col
+            v-for="icon in purchasedIcons"
+            :key="icon.id"
+            cols="6"
+            sm="4"
+            md="3"
+            lg="2"
+          >
             <v-card
               :class="[
                 'icon-card purchased-icon',
@@ -85,9 +92,11 @@
             >
               <v-card-text class="text-center pa-3">
                 <v-avatar size="48" class="mb-2">
-                  <v-img :src="icon.imageUrl" :alt="icon.name" />
+                  <v-img :src="icon.url" :alt="icon.name" />
                 </v-avatar>
-                <div class="text-body-2 font-weight-medium">{{ icon.name }}</div>
+                <div class="text-body-2 font-weight-medium">
+                  {{ icon.name }}
+                </div>
                 <v-chip
                   v-if="user?.selectedIcon === icon.id"
                   color="success"
@@ -127,7 +136,9 @@
         </div>
 
         <div v-else-if="filteredIcons.length === 0" class="text-center py-8">
-          <v-icon size="64" class="mb-4 text-medium-emphasis">mdi-package-variant</v-icon>
+          <v-icon size="64" class="mb-4 text-medium-emphasis"
+            >mdi-package-variant</v-icon
+          >
           <h3 class="text-h6 mb-2">아이콘이 없습니다</h3>
           <p class="text-body-2 text-medium-emphasis">
             {{
@@ -139,16 +150,28 @@
         </div>
 
         <v-row v-else>
-          <v-col v-for="icon in filteredIcons" :key="icon.id" cols="6" sm="4" md="3" lg="2">
+          <v-col
+            v-for="icon in filteredIcons"
+            :key="icon.id"
+            cols="6"
+            sm="4"
+            md="3"
+            lg="2"
+          >
             <v-card
-              :class="['icon-card', { 'insufficient-points': userPoints < icon.price }]"
+              :class="[
+                'icon-card',
+                { 'insufficient-points': userPoints < icon.price },
+              ]"
               @click="showPurchaseDialog(icon)"
             >
               <v-card-text class="text-center pa-3">
                 <v-avatar size="48" class="mb-2">
-                  <v-img :src="icon.imageUrl" :alt="icon.name" />
+                  <v-img :src="icon.url" :alt="icon.name" />
                 </v-avatar>
-                <div class="text-body-2 font-weight-medium mb-1">{{ icon.name }}</div>
+                <div class="text-body-2 font-weight-medium mb-1">
+                  {{ icon.name }}
+                </div>
                 <v-chip
                   :color="userPoints >= icon.price ? 'success' : 'error'"
                   size="small"
@@ -157,7 +180,10 @@
                   <v-icon start size="16">mdi-star</v-icon>
                   {{ icon.price.toLocaleString() }}
                 </v-chip>
-                <div v-if="icon.description" class="text-caption text-medium-emphasis mt-1">
+                <div
+                  v-if="icon.description"
+                  class="text-caption text-medium-emphasis mt-1"
+                >
                   {{ icon.description }}
                 </div>
               </v-card-text>
@@ -174,10 +200,16 @@
         <v-card-text>
           <div class="text-center mb-4">
             <v-avatar size="80" class="mb-2">
-              <v-img :src="purchaseDialog.icon.imageUrl" :alt="purchaseDialog.icon.name" />
+              <v-img
+                :src="purchaseDialog.icon.url"
+                :alt="purchaseDialog.icon.name"
+              />
             </v-avatar>
             <h3 class="text-h6">{{ purchaseDialog.icon.name }}</h3>
-            <p v-if="purchaseDialog.icon.description" class="text-body-2 text-medium-emphasis">
+            <p
+              v-if="purchaseDialog.icon.description"
+              class="text-body-2 text-medium-emphasis"
+            >
               {{ purchaseDialog.icon.description }}
             </p>
           </div>
@@ -203,7 +235,9 @@
           <div class="d-flex justify-space-between align-center">
             <span>구매 후 포인트:</span>
             <v-chip
-              :color="userPoints - purchaseDialog.icon.price >= 0 ? 'info' : 'error'"
+              :color="
+                userPoints - purchaseDialog.icon.price >= 0 ? 'info' : 'error'
+              "
               variant="flat"
             >
               <v-icon start size="16">mdi-star</v-icon>
@@ -218,7 +252,8 @@
             class="mt-4"
           >
             포인트가 부족합니다.
-            {{ (purchaseDialog.icon.price - userPoints).toLocaleString() }} 포인트가 더 필요합니다.
+            {{ (purchaseDialog.icon.price - userPoints).toLocaleString() }}
+            포인트가 더 필요합니다.
           </v-alert>
         </v-card-text>
 
@@ -248,34 +283,34 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useAuth } from '@/composables/useAuth'
-import { iconService, userService } from '@/services/database'
+import { ref, computed, onMounted } from 'vue';
+import { useAuth } from '@/composables/useAuth';
+import { iconService, userService } from '@/services/database';
 
 // Composables
-const { user, updateProfile } = useAuth()
+const { user, updateProfile } = useAuth();
 
 // Reactive data
-const loading = ref(false)
-const icons = ref([])
-const purchasedIconIds = ref([])
-const searchQuery = ref('')
-const selectedCategory = ref('all')
-const sortBy = ref('price-asc')
+const loading = ref(false);
+const icons = ref([]);
+const purchasedIconIds = ref([]);
+const searchQuery = ref('');
+const selectedCategory = ref('all');
+const sortBy = ref('price-asc');
 
 const purchaseDialog = ref({
   show: false,
   icon: null,
-})
+});
 
 const snackbar = ref({
   show: false,
   message: '',
   color: 'success',
-})
+});
 
 // Computed
-const userPoints = computed(() => user.value?.points || 0)
+const userPoints = computed(() => user.value?.points || 0);
 
 const categoryOptions = computed(() => [
   { title: '전체', value: 'all' },
@@ -283,59 +318,63 @@ const categoryOptions = computed(() => [
   { title: '로고', value: 'logo' },
   { title: '특별', value: 'special' },
   { title: '시즌', value: 'seasonal' },
-])
+]);
 
 const sortOptions = [
   { title: '가격 낮은순', value: 'price-asc' },
   { title: '가격 높은순', value: 'price-desc' },
   { title: '이름순', value: 'name-asc' },
   { title: '인기순', value: 'popularity-desc' },
-]
+];
 
 const purchasedIcons = computed(() => {
-  return icons.value.filter((icon) => purchasedIconIds.value.includes(icon.id))
-})
+  return icons.value.filter((icon) => purchasedIconIds.value.includes(icon.id));
+});
 
 const availableIcons = computed(() => {
-  return icons.value.filter((icon) => !purchasedIconIds.value.includes(icon.id))
-})
+  return icons.value.filter(
+    (icon) => !purchasedIconIds.value.includes(icon.id),
+  );
+});
 
 const filteredIcons = computed(() => {
-  let filtered = [...availableIcons.value]
+  let filtered = [...availableIcons.value];
 
   // 검색 필터
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (icon) =>
         icon.name.toLowerCase().includes(query) ||
         (icon.description && icon.description.toLowerCase().includes(query)),
-    )
+    );
   }
 
   // 카테고리 필터
   if (selectedCategory.value !== 'all') {
-    filtered = filtered.filter((icon) => icon.category === selectedCategory.value)
+    filtered = filtered.filter(
+      (icon) => icon.category === selectedCategory.value,
+    );
   }
 
   // 정렬
   switch (sortBy.value) {
     case 'price-asc':
-      filtered.sort((a, b) => a.price - b.price)
-      break
+      filtered.sort((a, b) => a.price - b.price);
+      break;
     case 'price-desc':
-      filtered.sort((a, b) => b.price - a.price)
-      break
+      filtered.sort((a, b) => b.price - a.price);
+      break;
     case 'name-asc':
-      filtered.sort((a, b) => a.name.localeCompare(b.name))
-      break
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+      break;
     case 'popularity-desc':
-      filtered.sort((a, b) => (b.purchaseCount || 0) - (a.purchaseCount || 0))
-      break
+      filtered.sort((a, b) => (b.purchaseCount || 0) - (a.purchaseCount || 0));
+      break;
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Methods
 const showSnackbar = (message, color = 'success') => {
@@ -343,108 +382,115 @@ const showSnackbar = (message, color = 'success') => {
     show: true,
     message,
     color,
-  }
-}
+  };
+};
 
 const loadIcons = async () => {
   try {
-    loading.value = true
-    icons.value = await iconService.getActiveIcons()
+    loading.value = true;
+    icons.value = await iconService.getActiveIcons();
   } catch (error) {
-    console.error('Error loading icons:', error)
-    showSnackbar('아이콘 목록을 불러오는데 실패했습니다', 'error')
+    console.error('Error loading icons:', error);
+    showSnackbar('아이콘 목록을 불러오는데 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const loadPurchasedIcons = async () => {
-  if (!user.value?.uid) return
+  if (!user.value?.uid) return;
 
   try {
-    const purchased = await iconService.getUserPurchasedIcons(user.value.uid)
-    purchasedIconIds.value = purchased.map((item) => item.iconId)
+    const purchased = await iconService.getUserPurchasedIcons(user.value.uid);
+    purchasedIconIds.value = purchased.map((item) => item.iconId);
   } catch (error) {
-    console.error('Error loading purchased icons:', error)
+    console.error('Error loading purchased icons:', error);
   }
-}
+};
 
 const showPurchaseDialog = (icon) => {
   purchaseDialog.value = {
     show: true,
     icon,
-  }
-}
+  };
+};
 
 const purchaseIcon = async () => {
-  const icon = purchaseDialog.value.icon
-  if (!icon || !user.value?.uid) return
+  const icon = purchaseDialog.value.icon;
+  if (!icon || !user.value?.uid) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
     // 포인트 부족 체크
     if (userPoints.value < icon.price) {
-      showSnackbar('포인트가 부족합니다', 'error')
-      return
+      showSnackbar('포인트가 부족합니다', 'error');
+      return;
     }
 
     // 아이콘 구매
-    await iconService.purchaseIcon(user.value.uid, icon.id, icon.price)
+    await iconService.purchaseIcon(user.value.uid, icon.id, icon.price);
 
     // 구매한 아이콘 목록에 추가
-    purchasedIconIds.value.push(icon.id)
+    purchasedIconIds.value.push(icon.id);
 
     // 사용자 데이터 새로고침
-    await refreshUserData()
+    await refreshUserData();
 
-    purchaseDialog.value.show = false
-    showSnackbar(`${icon.name} 아이콘을 구매했습니다!`)
+    purchaseDialog.value.show = false;
+    showSnackbar(`${icon.name} 아이콘을 구매했습니다!`);
   } catch (error) {
-    console.error('Error purchasing icon:', error)
-    showSnackbar('아이콘 구매에 실패했습니다', 'error')
+    console.error('Error purchasing icon:', error);
+    showSnackbar('아이콘 구매에 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const selectIcon = async (icon) => {
-  if (!user.value?.uid) return
+  if (!user.value?.uid) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
-    await updateProfile({ selectedIcon: icon.id })
-    showSnackbar(`${icon.name} 아이콘을 선택했습니다`)
+    await updateProfile({
+      selectedIcon: icon.id,
+      selectedIconData: {
+        id: icon.id,
+        name: icon.name,
+        url: icon.url,
+      },
+    });
+    showSnackbar(`${icon.name} 아이콘을 선택했습니다`);
   } catch (error) {
-    console.error('Error selecting icon:', error)
-    showSnackbar('아이콘 선택에 실패했습니다', 'error')
+    console.error('Error selecting icon:', error);
+    showSnackbar('아이콘 선택에 실패했습니다', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const refreshUserData = async () => {
-  if (!user.value?.uid) return
+  if (!user.value?.uid) return;
 
   try {
-    const userData = await userService.getUser(user.value.uid)
+    const userData = await userService.getUser(user.value.uid);
     if (userData) {
       // 사용자 스토어 업데이트 (포인트 등)
-      Object.assign(user.value, userData)
+      Object.assign(user.value, userData);
     }
   } catch (error) {
-    console.error('Error refreshing user data:', error)
+    console.error('Error refreshing user data:', error);
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await loadIcons()
+  await loadIcons();
   if (user.value?.uid) {
-    await loadPurchasedIcons()
+    await loadPurchasedIcons();
   }
-})
+});
 </script>
 
 <style scoped>

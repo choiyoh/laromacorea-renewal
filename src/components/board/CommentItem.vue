@@ -130,7 +130,7 @@
               prepend-icon="mdi-thumb-up"
               @click="handleLike"
             >
-              {{ comment.likeCount || 0 }}
+              {{ likeCount }}
             </v-btn>
 
             <v-btn
@@ -165,7 +165,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
 
 const props = defineProps({
@@ -189,7 +189,8 @@ const emit = defineEmits(['reply', 'edit', 'delete', 'like']);
 const userStore = useUserStore();
 
 // State
-const isLiked = ref(false); // TODO: Get actual like status from database
+const isLiked = ref(false);
+const likeCount = ref(props.comment.likeCount || 0);
 
 // Computed
 const canEdit = computed(() => {
@@ -239,10 +240,44 @@ async function handleLike() {
     return;
   }
 
-  // Toggle like status optimistically
-  isLiked.value = !isLiked.value;
-  emit('like', props.comment);
+  try {
+    // Toggle like status optimistically
+    const wasLiked = isLiked.value;
+    isLiked.value = !isLiked.value;
+    likeCount.value += isLiked.value ? 1 : -1;
+
+    // Call API
+    await commentService.toggleCommentLike(
+      props.comment.id,
+      userStore.user.uid,
+    );
+
+    emit('like', props.comment);
+  } catch (error) {
+    // Revert optimistic update on error
+    isLiked.value = !isLiked.value;
+    likeCount.value += isLiked.value ? 1 : -1;
+    console.error('Error toggling like:', error);
+  }
 }
+
+// 좋아요 상태 로드
+const loadLikeStatus = async () => {
+  if (!userStore.isAuthenticated) return;
+
+  try {
+    isLiked.value = await commentService.checkCommentLike(
+      props.comment.id,
+      userStore.user.uid,
+    );
+  } catch (error) {
+    console.error('Error loading like status:', error);
+  }
+};
+
+onMounted(() => {
+  loadLikeStatus();
+});
 </script>
 
 <style scoped>

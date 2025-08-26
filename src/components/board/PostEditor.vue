@@ -368,7 +368,7 @@ async function handleSubmit() {
         '익명',
       authorEmail: userStore.user.email,
       authorPhotoURL: userStore.user.photoURL || null,
-      authorIcon: userStore.user.selectedIcon || null,
+      authorIcon: userStore.user.selectedIconData?.url || null,
     };
 
     // 경기 게시글 관련 데이터 추가

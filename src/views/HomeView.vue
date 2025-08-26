@@ -250,6 +250,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useHead } from '@vueuse/head';
 import { useBoardsStore } from '@/stores/boards';
 import { useUserStore } from '@/stores/user';
 import { postService } from '@/services/database';
@@ -454,6 +455,43 @@ async function loadBoardPosts() {
 }
 
 // 임시 게시물 데이터 생성 (실제 데이터가 없을 때)
+
+// SEO 메타 태그 설정
+useHead({
+  title: 'La Roma Corea - AS 로마 한국 팬 커뮤니티',
+  meta: [
+    {
+      name: 'description',
+      content:
+        'AS 로마 한국 팬들을 위한 공식 커뮤니티. 경기 분석, 이적 소식, 팬 아트 등 다양한 콘텐츠를 만나보세요.',
+    },
+    {
+      name: 'keywords',
+      content: 'AS로마, 로마, 세리에A, 축구, 팬클럽, 커뮤니티, 이탈리아축구',
+    },
+    {
+      property: 'og:title',
+      content: 'La Roma Corea - AS 로마 한국 팬 커뮤니티',
+    },
+    {
+      property: 'og:description',
+      content:
+        'AS 로마 한국 팬들을 위한 공식 커뮤니티. 경기 분석, 이적 소식, 팬 아트 등 다양한 콘텐츠를 만나보세요.',
+    },
+    {
+      property: 'og:type',
+      content: 'website',
+    },
+    {
+      property: 'og:image',
+      content: '/images/main-logo.gif',
+    },
+    {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    },
+  ],
+});
 
 onMounted(() => {
   loadStats();

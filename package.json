@@ -26,7 +26,9 @@
     "add-sample-data": "node scripts/add-sample-data.js",
     "test-auth": "node scripts/test-auth.js",
     "create-test-users": "node scripts/create-test-users.js",
-    "check-admin-user": "node scripts/check-admin-user.js"
+    "check-admin-user": "node scripts/check-admin-user.js",
+    "update-posts-icons": "node scripts/update-existing-posts-icons.js",
+    "check-user-icons": "node scripts/check-user-icons.js"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
