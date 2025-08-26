@@ -11,10 +11,14 @@
       <div class="d-flex align-start">
         <!-- 사용자 아바타 -->
         <div class="comment-avatar me-3">
-          <v-avatar size="24">
-            <v-img v-if="comment.authorIcon" :src="comment.authorIcon" />
-            <v-icon v-else icon="mdi-account-circle" size="16" />
-          </v-avatar>
+          <UserAvatar
+            :user-id="comment.authorId"
+            :display-name="comment.authorName"
+            :static-icon-url="comment.authorIcon"
+            size="24"
+            icon-size="16"
+            default-icon="mdi-account-circle"
+          />
 
           <!-- 응원 타입 배지 -->
           <v-chip
@@ -168,6 +172,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
   comment: {

@@ -36,14 +36,15 @@
             <div class="d-flex align-center">
               <!-- 작성자 -->
               <div class="d-flex align-center me-6">
-                <v-avatar size="24" class="me-2">
-                  <v-img
-                    v-if="post.authorPhotoURL || post.authorIcon"
-                    :src="post.authorPhotoURL || post.authorIcon"
-                    :alt="post.authorName || '익명'"
-                  />
-                  <v-icon v-else icon="mdi-account" size="16" />
-                </v-avatar>
+                <UserAvatar
+                  :user-id="post.authorId"
+                  :display-name="post.authorName"
+                  :photo-u-r-l="post.authorPhotoURL"
+                  :static-icon-url="post.authorIcon"
+                  size="24"
+                  icon-size="16"
+                  avatar-class="me-2"
+                />
                 <span class="text-subtitle-1 font-weight-medium">{{
                   post.authorName || '익명'
                 }}</span>
@@ -92,14 +93,15 @@
             <!-- 작성자 정보 -->
             <div class="d-flex align-center justify-space-between mb-2">
               <div class="d-flex align-center">
-                <v-avatar size="22" class="me-2">
-                  <v-img
-                    v-if="post.authorPhotoURL || post.authorIcon"
-                    :src="post.authorPhotoURL || post.authorIcon"
-                    :alt="post.authorName || '익명'"
-                  />
-                  <v-icon v-else icon="mdi-account" size="14" />
-                </v-avatar>
+                <UserAvatar
+                  :user-id="post.authorId"
+                  :display-name="post.authorName"
+                  :photo-u-r-l="post.authorPhotoURL"
+                  :static-icon-url="post.authorIcon"
+                  size="22"
+                  icon-size="14"
+                  avatar-class="me-2"
+                />
                 <span class="text-body-1 font-weight-medium">{{
                   post.authorName || '익명'
                 }}</span>
@@ -281,6 +283,7 @@ import { postService, commentService } from '@/services/database';
 import CommentSystem from './CommentSystem.vue';
 import MatchCommentSystem from './MatchCommentSystem.vue';
 import MatchInfo from './MatchInfo.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
   postId: {

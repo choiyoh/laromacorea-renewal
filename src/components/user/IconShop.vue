@@ -286,9 +286,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { iconService, userService } from '@/services/database';
+import { useUserIcon } from '@/composables/useUserIcon';
 
 // Composables
 const { user, updateProfile } = useAuth();
+const { invalidateUserIconCache } = useUserIcon();
 
 // Reactive data
 const loading = ref(false);
@@ -461,6 +463,10 @@ const selectIcon = async (icon) => {
         url: icon.url,
       },
     });
+
+    // 사용자 아이콘 캐시 무효화
+    invalidateUserIconCache(user.value.uid);
+
     showSnackbar(`${icon.name} 아이콘을 선택했습니다`);
   } catch (error) {
     console.error('Error selecting icon:', error);

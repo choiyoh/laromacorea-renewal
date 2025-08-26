@@ -3,14 +3,15 @@
     <div class="comment-wrapper py-2">
       <div class="d-flex align-start">
         <!-- 작성자 아바타 -->
-        <v-avatar :size="comment.level > 0 ? 20 : 24" class="me-2">
-          <v-img v-if="comment.authorIcon" :src="comment.authorIcon" />
-          <v-icon
-            v-else
-            icon="mdi-account-circle"
-            :size="comment.level > 0 ? 14 : 16"
-          />
-        </v-avatar>
+        <UserAvatar
+          :user-id="comment.authorId"
+          :display-name="comment.authorName"
+          :static-icon-url="comment.authorIcon"
+          :size="comment.level > 0 ? 20 : 24"
+          :icon-size="comment.level > 0 ? 14 : 16"
+          default-icon="mdi-account-circle"
+          avatar-class="me-2"
+        />
 
         <div class="flex-grow-1">
           <!-- Desktop 댓글 헤더 -->
@@ -171,6 +172,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
   comment: {

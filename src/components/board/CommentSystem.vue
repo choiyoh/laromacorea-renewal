@@ -153,13 +153,15 @@
           <!-- 원본 댓글 -->
           <div class="original-comment mb-4 pa-3 bg-grey-lighten-4 rounded">
             <div class="d-flex align-center mb-2">
-              <v-avatar size="20" class="me-2">
-                <v-img
-                  v-if="replyTarget?.authorIcon"
-                  :src="replyTarget.authorIcon"
-                />
-                <v-icon v-else icon="mdi-account-circle" />
-              </v-avatar>
+              <UserAvatar
+                :user-id="replyTarget?.authorId"
+                :display-name="replyTarget?.authorName"
+                :static-icon-url="replyTarget?.authorIcon"
+                size="20"
+                icon-size="14"
+                default-icon="mdi-account-circle"
+                avatar-class="me-2"
+              />
               <span class="font-weight-medium">{{
                 replyTarget?.authorName
               }}</span>
@@ -261,6 +263,7 @@ import { ref, computed, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { commentService } from '@/services/database';
 import CommentItem from './CommentItem.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
   postId: {

@@ -39,14 +39,15 @@
         <div class="post-meta d-flex align-center flex-shrink-0">
           <!-- Author -->
           <div class="d-flex align-center me-4" style="width: 140px">
-            <v-avatar size="20" class="me-2">
-              <v-img
-                v-if="post.authorPhotoURL || post.authorIcon"
-                :src="post.authorPhotoURL || post.authorIcon"
-                :alt="post.authorName || '익명'"
-              />
-              <v-icon v-else icon="mdi-account" size="14" />
-            </v-avatar>
+            <UserAvatar
+              :user-id="post.authorId"
+              :display-name="post.authorName"
+              :photo-u-r-l="post.authorPhotoURL"
+              :static-icon-url="post.authorIcon"
+              size="20"
+              icon-size="14"
+              avatar-class="me-2"
+            />
             <span class="text-truncate">{{ post.authorName || '익명' }}</span>
           </div>
 
@@ -98,14 +99,15 @@
         >
           <!-- Author (Left) -->
           <div class="d-flex align-center">
-            <v-avatar size="16" class="me-1">
-              <v-img
-                v-if="post.authorPhotoURL || post.authorIcon"
-                :src="post.authorPhotoURL || post.authorIcon"
-                :alt="post.authorName || '익명'"
-              />
-              <v-icon v-else icon="mdi-account" size="12" />
-            </v-avatar>
+            <UserAvatar
+              :user-id="post.authorId"
+              :display-name="post.authorName"
+              :photo-u-r-l="post.authorPhotoURL"
+              :static-icon-url="post.authorIcon"
+              size="16"
+              icon-size="12"
+              avatar-class="me-1"
+            />
             <span>{{ post.authorName || '익명' }}</span>
           </div>
 
@@ -122,6 +124,8 @@
 </template>
 
 <script setup>
+import UserAvatar from '@/components/common/UserAvatar.vue';
+
 defineProps({
   post: {
     type: Object,

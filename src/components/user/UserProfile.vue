@@ -269,6 +269,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { userService, iconService } from '@/services/database';
 import PointsHistory from './PointsHistory.vue';
+import { useUserIcon } from '@/composables/useUserIcon';
 
 // Emits
 const emit = defineEmits(['go-to-icon-shop']);
@@ -279,6 +280,8 @@ const {
   updateProfile: updateAuthProfile,
   updatePassword: updateAuthPassword,
 } = useAuth();
+
+const { invalidateUserIconCache } = useUserIcon();
 
 // Reactive data
 const loading = ref(false);
@@ -450,6 +453,9 @@ const removeIcon = async () => {
 
     await updateAuthProfile({ selectedIcon: null });
     selectedIcon.value = null;
+
+    // 사용자 아이콘 캐시 무효화
+    invalidateUserIconCache(user.value.uid);
 
     showSnackbar('아이콘이 해제되었습니다');
   } catch (error) {
