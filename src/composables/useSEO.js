@@ -2,35 +2,36 @@
  * SEO composable for managing meta tags and structured data
  */
 
-import { useHead } from '@unhead/vue'
-import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useHead } from '@unhead/vue';
+import { computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 export function useSEO(options = {}) {
-  const route = useRoute()
+  const route = useRoute();
 
   const defaultMeta = {
     title: 'AS 로마 한국 팬 커뮤니티 - La Roma Corea',
     description:
       'AS 로마 한국 팬들을 위한 커뮤니티 사이트. 최신 경기 정보, 선수 소식, 팬들과의 소통을 즐겨보세요.',
-    keywords: 'AS 로마, AS Roma, 축구, 세리에A, 한국 팬클럽, 로마 팬, 축구 커뮤니티',
+    keywords:
+      'AS 로마, AS Roma, 축구, 세리에A, 한국 팬클럽, 로마 팬, 축구 커뮤니티',
     author: 'La Roma Corea',
     image: '/og-image.jpg',
     url: 'https://laromacorea.com',
     type: 'website',
     locale: 'ko_KR',
     siteName: 'La Roma Corea',
-  }
+  };
 
   const meta = computed(() => ({
     ...defaultMeta,
     ...options,
-  }))
+  }));
 
   const canonicalUrl = computed(() => {
-    const baseUrl = meta.value.url
-    return `${baseUrl}${route.fullPath}`
-  })
+    const baseUrl = meta.value.url;
+    return `${baseUrl}${route.fullPath}`;
+  });
 
   const structuredData = computed(() => {
     const baseData = {
@@ -48,7 +49,7 @@ export function useSEO(options = {}) {
         target: `${meta.value.url}/search?q={search_term_string}`,
         'query-input': 'required name=search_term_string',
       },
-    }
+    };
 
     // Add specific structured data based on page type
     if (options.type === 'article') {
@@ -76,7 +77,7 @@ export function useSEO(options = {}) {
           '@type': 'WebPage',
           '@id': canonicalUrl.value,
         },
-      }
+      };
     }
 
     if (options.type === 'profile') {
@@ -89,11 +90,11 @@ export function useSEO(options = {}) {
           description: options.profileDescription,
           image: options.profileImage,
         },
-      }
+      };
     }
 
-    return baseData
-  })
+    return baseData;
+  });
 
   // Set up head management
   useHead({
@@ -134,9 +135,23 @@ export function useSEO(options = {}) {
 
       // Favicon and app icons
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
-      { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
-      { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
+      {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: '/apple-touch-icon.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: '/favicon-32x32.png',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: '/favicon-16x16.png',
+      },
       { rel: 'manifest', href: '/site.webmanifest' },
 
       // Preconnect to external domains
@@ -151,7 +166,7 @@ export function useSEO(options = {}) {
         children: JSON.stringify(structuredData.value),
       },
     ],
-  })
+  });
 
   // Update meta tags when route changes
   watch(
@@ -160,16 +175,16 @@ export function useSEO(options = {}) {
       // Update canonical URL and other dynamic meta tags
     },
     { immediate: true },
-  )
+  );
 
   return {
     meta,
     canonicalUrl,
     structuredData,
     updateMeta: (newMeta) => {
-      Object.assign(options, newMeta)
+      Object.assign(options, newMeta);
     },
-  }
+  };
 }
 
 /**
@@ -177,32 +192,32 @@ export function useSEO(options = {}) {
  */
 export function useBoardSEO(boardType, posts = []) {
   const boardTitles = {
-    notice: '공지사항',
-    squad: '스쿼드',
-    match: '경기',
-    calcio: '칼치오',
-    free: '자유게시판',
-    special: '스페셜',
+    notice: 'Notice',
+    squad: 'Squad',
+    match: 'Match',
+    calcio: 'Calcio',
+    free: 'Free',
+    special: 'Special',
     media: '미디어',
     icon: '아이콘 상점',
-  }
+  };
 
   const boardDescriptions = {
-    notice: 'AS 로마 한국 팬 커뮤니티의 공지사항을 확인하세요.',
-    squad: 'AS 로마 선수단 정보와 스쿼드 소식을 확인하세요.',
-    match: 'AS 로마 경기 일정, 결과, 분석을 확인하세요.',
-    calcio: '이탈리아 축구와 세리에A 소식을 확인하세요.',
-    free: 'AS 로마 팬들과 자유롭게 소통하세요.',
-    special: 'AS 로마 특별 이벤트와 소식을 확인하세요.',
-    media: 'AS 로마 관련 사진과 동영상을 공유하세요.',
+    notice: 'Check official announcements from AS Roma Korea Community.',
+    squad: 'Get the latest AS Roma squad information and player news.',
+    match: 'View AS Roma match schedules, results, and analysis.',
+    calcio: 'Stay updated with Italian football and Serie A news.',
+    free: 'Connect and chat freely with AS Roma fans.',
+    special: 'Discover special AS Roma events and exclusive content.',
+    media: 'Share AS Roma photos and videos with the community.',
     icon: '포인트로 아이콘을 구매하고 개성을 표현하세요.',
-  }
+  };
 
   return useSEO({
     title: `${boardTitles[boardType]} - AS 로마 한국 팬 커뮤니티`,
     description: boardDescriptions[boardType],
     type: 'website',
-  })
+  });
 }
 
 /**
@@ -210,13 +225,13 @@ export function useBoardSEO(boardType, posts = []) {
  */
 export function usePostSEO(post) {
   if (!post) {
-    return useSEO()
+    return useSEO();
   }
 
-  const title = `${post.title} - AS 로마 한국 팬 커뮤니티`
+  const title = `${post.title} - AS 로마 한국 팬 커뮤니티`;
   const description = post.content
     ? post.content.replace(/<[^>]*>/g, '').substring(0, 160) + '...'
-    : 'AS 로마 한국 팬 커뮤니티의 게시글을 확인하세요.'
+    : 'AS 로마 한국 팬 커뮤니티의 게시글을 확인하세요.';
 
   return useSEO({
     title,
@@ -226,7 +241,7 @@ export function usePostSEO(post) {
     publishedTime: post.createdAt,
     modifiedTime: post.updatedAt,
     image: post.mediaUrls?.[0] || '/og-image.jpg',
-  })
+  });
 }
 
 /**
@@ -234,7 +249,7 @@ export function usePostSEO(post) {
  */
 export function useProfileSEO(user) {
   if (!user) {
-    return useSEO()
+    return useSEO();
   }
 
   return useSEO({
@@ -243,5 +258,5 @@ export function useProfileSEO(user) {
     type: 'profile',
     profileName: user.displayName,
     profileImage: user.photoURL,
-  })
+  });
 }

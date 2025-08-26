@@ -1,20 +1,18 @@
 // Boards store for managing board and post data
-import { ref, computed } from 'vue'
-import { defineStore } from 'pinia'
-import { ApiService } from '@/services/api'
-import { postService } from '@/services/database-simple'
-import { orderBy, where, limit } from 'firebase/firestore'
-import { useErrorStore } from '@/stores/error'
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
+import { postService } from '@/services/database';
+import { useErrorStore } from '@/stores/error';
 
 export const useBoardsStore = defineStore('boards', () => {
   // Get error store instance
-  const errorStore = useErrorStore()
+  const errorStore = useErrorStore();
 
   // State
-  const posts = ref([])
-  const currentPost = ref(null)
-  const loading = ref(false)
-  const error = ref(null)
+  const posts = ref([]);
+  const currentPost = ref(null);
+  const loading = ref(false);
+  const error = ref(null);
 
   // Board types configuration
   const boardTypes = ref([
@@ -22,150 +20,145 @@ export const useBoardsStore = defineStore('boards', () => {
     { id: 'calcio', name: 'Calcio', icon: 'mdi-newspaper', adminOnly: false },
     { id: 'free', name: 'Free', icon: 'mdi-chat', adminOnly: false },
     { id: 'match', name: 'Match', icon: 'mdi-soccer', adminOnly: false },
-    { id: 'squad', name: 'Squad', icon: 'mdi-account-group', adminOnly: false },
+    {
+      id: 'squad',
+      name: 'Squad',
+      icon: 'mdi-account-group',
+      adminOnly: false,
+    },
     { id: 'special', name: 'Special', icon: 'mdi-star', adminOnly: false },
     { id: 'media', name: 'Media', icon: 'mdi-play-circle', adminOnly: false },
-  ])
+  ]);
 
   // Getters
   const getPostsByBoard = computed(() => (boardType) => {
-    return posts.value.filter((post) => post.boardType === boardType)
-  })
+    return posts.value.filter((post) => post.boardType === boardType);
+  });
 
   const getBoardConfig = computed(() => (boardType) => {
-    return boardTypes.value.find((board) => board.id === boardType)
-  })
+    return boardTypes.value.find((board) => board.id === boardType);
+  });
 
   // Actions
   async function fetchPosts(boardType = null, limitCount = 20) {
-    const loadingKey = `fetch-posts-${boardType || 'all'}`
-    errorStore.setLoading(loadingKey, true)
-    error.value = null
+    const loadingKey = `fetch-posts-${boardType || 'all'}`;
+    errorStore.setLoading(loadingKey, true);
+    error.value = null;
 
     try {
-      const constraints = [
-        where('isDeleted', '==', false),
-        orderBy('isPinned', 'desc'),
-        orderBy('createdAt', 'desc'),
-        limit(limitCount),
-      ]
+      const options = {
+        limitCount,
+        sortBy: 'latest',
+      };
 
-      if (boardType) {
-        constraints.splice(1, 0, where('boardType', '==', boardType))
-      }
-
-      // 임시로 간단한 서비스 사용 (인덱스 생성 대기 중)
-      const fetchedPosts = await postService.getPosts(boardType, { limitCount })
-      posts.value = fetchedPosts
+      const fetchedPosts = await postService.getPosts(boardType, options);
+      posts.value = fetchedPosts;
     } catch (err) {
-      error.value = err.message
-      errorStore.handleFirebaseError(err, `Fetch Posts - ${boardType || 'All'}`)
-      console.error('Error fetching posts:', err)
+      error.value = err.message;
+      errorStore.handleFirebaseError(
+        err,
+        `Fetch Posts - ${boardType || 'All'}`,
+      );
+      console.error('Error fetching posts:', err);
     } finally {
-      errorStore.setLoading(loadingKey, false)
+      errorStore.setLoading(loadingKey, false);
     }
   }
 
   async function fetchPost(postId) {
-    const loadingKey = `fetch-post-${postId}`
-    errorStore.setLoading(loadingKey, true)
-    error.value = null
+    const loadingKey = `fetch-post-${postId}`;
+    errorStore.setLoading(loadingKey, true);
+    error.value = null;
 
     try {
-      const post = await ApiService.getDocument('posts', postId)
-      currentPost.value = post
-      return post
+      const post = await postService.getPost(postId);
+      currentPost.value = post;
+      return post;
     } catch (err) {
-      error.value = err.message
-      errorStore.handleFirebaseError(err, `Fetch Post - ${postId}`)
-      console.error('Error fetching post:', err)
-      throw err
+      error.value = err.message;
+      errorStore.handleFirebaseError(err, `Fetch Post - ${postId}`);
+      console.error('Error fetching post:', err);
+      throw err;
     } finally {
-      errorStore.setLoading(loadingKey, false)
+      errorStore.setLoading(loadingKey, false);
     }
   }
 
   async function createPost(postData) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     try {
-      const postId = await ApiService.addDocument('posts', {
-        ...postData,
-        viewCount: 0,
-        likeCount: 0,
-        commentCount: 0,
-        isPinned: false,
-      })
+      const postId = await postService.createPost(postData);
 
       // Refresh posts after creating
-      await fetchPosts(postData.boardType)
+      await fetchPosts(postData.boardType);
 
-      return postId
+      return postId;
     } catch (err) {
-      error.value = err.message
-      console.error('Error creating post:', err)
-      throw err
+      error.value = err.message;
+      console.error('Error creating post:', err);
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function updatePost(postId, postData) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     try {
-      await ApiService.updateDocument('posts', postId, postData)
+      await postService.updatePost(postId, postData);
 
       // Update current post if it's the one being edited
       if (currentPost.value?.id === postId) {
-        currentPost.value = { ...currentPost.value, ...postData }
+        currentPost.value = { ...currentPost.value, ...postData };
       }
 
       // Update in posts array
-      const index = posts.value.findIndex((post) => post.id === postId)
+      const index = posts.value.findIndex((post) => post.id === postId);
       if (index !== -1) {
-        posts.value[index] = { ...posts.value[index], ...postData }
+        posts.value[index] = { ...posts.value[index], ...postData };
       }
     } catch (err) {
-      error.value = err.message
-      console.error('Error updating post:', err)
-      throw err
+      error.value = err.message;
+      console.error('Error updating post:', err);
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function deletePost(postId) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     try {
-      await ApiService.deleteDocument('posts', postId)
+      await postService.deletePost(postId);
 
       // Remove from posts array
-      posts.value = posts.value.filter((post) => post.id !== postId)
+      posts.value = posts.value.filter((post) => post.id !== postId);
 
       // Clear current post if it's the one being deleted
       if (currentPost.value?.id === postId) {
-        currentPost.value = null
+        currentPost.value = null;
       }
     } catch (err) {
-      error.value = err.message
-      console.error('Error deleting post:', err)
-      throw err
+      error.value = err.message;
+      console.error('Error deleting post:', err);
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   function clearError() {
-    error.value = null
+    error.value = null;
   }
 
   function clearCurrentPost() {
-    currentPost.value = null
+    currentPost.value = null;
   }
 
   return {
@@ -188,5 +181,5 @@ export const useBoardsStore = defineStore('boards', () => {
     deletePost,
     clearError,
     clearCurrentPost,
-  }
-})
+  };
+});

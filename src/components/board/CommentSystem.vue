@@ -1,64 +1,88 @@
 <template>
   <div class="comment-system">
     <!-- 댓글 헤더 -->
-    <v-card class="comments-header mb-4" variant="outlined">
-      <v-card-text class="pa-4">
-        <div class="d-flex align-center justify-space-between">
-          <h3 class="text-h6">
-            댓글 <span class="text-primary">{{ comments.length }}</span>
-          </h3>
-          <v-select
-            v-model="sortBy"
-            :items="sortOptions"
-            variant="outlined"
-            density="compact"
-            hide-details
-            style="max-width: 150px"
-          />
-        </div>
-      </v-card-text>
-    </v-card>
+    <div class="comments-header mb-4">
+      <div class="text-body-1 font-weight-medium mb-3">
+        댓글 <span class="text-grey-darken-1">{{ comments.length }}</span>
+      </div>
+      <v-divider />
+    </div>
 
     <!-- 댓글 작성 폼 -->
-    <v-card v-if="userStore.isAuthenticated" class="comment-form mb-4" variant="outlined">
-      <v-card-text class="pa-4">
-        <div class="d-flex align-start">
-          <v-avatar size="40" class="me-3">
-            <v-img v-if="userStore.user?.photoURL" :src="userStore.user.photoURL" />
-            <v-icon v-else icon="mdi-account-circle" />
-          </v-avatar>
-          <div class="flex-grow-1">
-            <v-textarea
-              v-model="newCommentContent"
-              placeholder="댓글을 작성해주세요..."
-              variant="outlined"
-              rows="3"
-              auto-grow
-              hide-details
-              :disabled="submittingComment"
-            />
-            <div class="d-flex justify-end mt-2">
-              <v-btn
-                color="primary"
-                :loading="submittingComment"
-                :disabled="!newCommentContent.trim()"
-                @click="handleSubmitComment"
-              >
-                댓글 작성
-              </v-btn>
-            </div>
+    <div v-if="userStore.isAuthenticated" class="comment-form mb-6">
+      <!-- Desktop Layout -->
+      <div class="d-none d-md-flex align-start">
+        <v-avatar size="40" class="me-3">
+          <v-img
+            v-if="userStore.user?.photoURL"
+            :src="userStore.user.photoURL"
+          />
+          <v-icon v-else icon="mdi-account-circle" />
+        </v-avatar>
+        <div class="flex-grow-1">
+          <v-textarea
+            v-model="newCommentContent"
+            placeholder="댓글을 작성해주세요..."
+            variant="outlined"
+            rows="3"
+            auto-grow
+            hide-details
+            :disabled="submittingComment"
+          />
+          <div class="d-flex justify-end mt-3">
+            <v-btn
+              color="primary"
+              :loading="submittingComment"
+              :disabled="!newCommentContent.trim()"
+              @click="handleSubmitComment"
+            >
+              댓글 작성
+            </v-btn>
           </div>
         </div>
-      </v-card-text>
-    </v-card>
+      </div>
+
+      <!-- Mobile Layout -->
+      <div class="d-md-none">
+        <div class="d-flex align-center mb-3">
+          <v-avatar size="32" class="me-2">
+            <v-img
+              v-if="userStore.user?.photoURL"
+              :src="userStore.user.photoURL"
+            />
+            <v-icon v-else icon="mdi-account-circle" />
+          </v-avatar>
+          <span class="text-body-2 font-weight-medium">댓글 작성</span>
+        </div>
+        <v-textarea
+          v-model="newCommentContent"
+          placeholder="댓글을 작성해주세요..."
+          variant="outlined"
+          rows="4"
+          auto-grow
+          hide-details
+          :disabled="submittingComment"
+        />
+        <div class="d-flex justify-end mt-3">
+          <v-btn
+            color="primary"
+            :loading="submittingComment"
+            :disabled="!newCommentContent.trim()"
+            @click="handleSubmitComment"
+          >
+            댓글 작성
+          </v-btn>
+        </div>
+      </div>
+      <v-divider class="mt-6" />
+    </div>
 
     <!-- 로그인 안내 -->
-    <v-card v-else class="login-prompt mb-4" variant="outlined">
-      <v-card-text class="pa-4 text-center">
-        <p class="text-body-1 mb-3">댓글을 작성하려면 로그인이 필요합니다.</p>
-        <v-btn color="primary" @click="$emit('login-required')">로그인</v-btn>
-      </v-card-text>
-    </v-card>
+    <div v-else class="login-prompt mb-6 text-center py-6">
+      <p class="text-body-1 mb-4">댓글을 작성하려면 로그인이 필요합니다.</p>
+      <v-btn color="primary" @click="$emit('login-required')">로그인</v-btn>
+      <v-divider class="mt-6" />
+    </div>
 
     <!-- 댓글 목록 -->
     <div class="comments-list">
@@ -69,7 +93,10 @@
       </div>
 
       <!-- 댓글이 없는 경우 -->
-      <div v-else-if="sortedComments.length === 0" class="empty-comments text-center py-8">
+      <div
+        v-else-if="sortedComments.length === 0"
+        class="empty-comments text-center py-8"
+      >
         <v-icon icon="mdi-comment-outline" size="48" color="grey-lighten-1" />
         <p class="text-body-1 mt-2">첫 번째 댓글을 작성해보세요!</p>
       </div>
@@ -99,10 +126,15 @@
           <div class="original-comment mb-4 pa-3 bg-grey-lighten-4 rounded">
             <div class="d-flex align-center mb-2">
               <v-avatar size="24" class="me-2">
-                <v-img v-if="replyTarget?.authorIcon" :src="replyTarget.authorIcon" />
+                <v-img
+                  v-if="replyTarget?.authorIcon"
+                  :src="replyTarget.authorIcon"
+                />
                 <v-icon v-else icon="mdi-account-circle" />
               </v-avatar>
-              <span class="font-weight-medium">{{ replyTarget?.authorName }}</span>
+              <span class="font-weight-medium">{{
+                replyTarget?.authorName
+              }}</span>
             </div>
             <p class="text-body-2">{{ replyTarget?.content }}</p>
           </div>
@@ -136,7 +168,12 @@
       <v-card>
         <v-card-title>댓글 수정</v-card-title>
         <v-card-text>
-          <v-textarea v-model="editContent" variant="outlined" rows="3" auto-grow />
+          <v-textarea
+            v-model="editContent"
+            variant="outlined"
+            rows="3"
+            auto-grow
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -163,7 +200,11 @@
         <v-card-actions>
           <v-spacer />
           <v-btn @click="deleteDialog = false">취소</v-btn>
-          <v-btn color="error" :loading="deletingComment" @click="handleConfirmDelete">
+          <v-btn
+            color="error"
+            :loading="deletingComment"
+            @click="handleConfirmDelete"
+          >
             삭제
           </v-btn>
         </v-card-actions>
@@ -173,10 +214,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useUserStore } from '@/stores/user'
-import { commentService } from '@/services/database'
-import CommentItem from './CommentItem.vue'
+import { ref, computed, watch } from 'vue';
+import { useUserStore } from '@/stores/user';
+import { commentService } from '@/services/database';
+import CommentItem from './CommentItem.vue';
 
 const props = defineProps({
   postId: {
@@ -191,7 +232,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-})
+});
 
 const emit = defineEmits([
   'comment-added',
@@ -199,62 +240,51 @@ const emit = defineEmits([
   'comment-deleted',
   'login-required',
   'refresh-comments',
-])
+]);
 
 // Stores
-const userStore = useUserStore()
+const userStore = useUserStore();
 
 // State
-const newCommentContent = ref('')
-const submittingComment = ref(false)
-const sortBy = ref('oldest')
-const replyDialog = ref(false)
-const replyTarget = ref(null)
-const replyContent = ref('')
-const submittingReply = ref(false)
-const editDialog = ref(false)
-const editTarget = ref(null)
-const editContent = ref('')
-const updatingComment = ref(false)
-const deleteDialog = ref(false)
-const deleteTarget = ref(null)
-const deletingComment = ref(false)
-
-// Sort options
-const sortOptions = [
-  { title: '오래된 순', value: 'oldest' },
-  { title: '최신 순', value: 'newest' },
-  { title: '추천 순', value: 'likes' },
-]
+const newCommentContent = ref('');
+const submittingComment = ref(false);
+const replyDialog = ref(false);
+const replyTarget = ref(null);
+const replyContent = ref('');
+const submittingReply = ref(false);
+const editDialog = ref(false);
+const editTarget = ref(null);
+const editContent = ref('');
+const updatingComment = ref(false);
+const deleteDialog = ref(false);
+const deleteTarget = ref(null);
+const deletingComment = ref(false);
 
 // Computed
 const sortedComments = computed(() => {
-  console.log('CommentSystem - props.comments:', props.comments)
-  const topLevelComments = props.comments.filter((comment) => !comment.parentId)
-  console.log('CommentSystem - topLevelComments:', topLevelComments)
+  console.log('CommentSystem - props.comments:', props.comments);
+  const topLevelComments = props.comments.filter(
+    (comment) => !comment.parentId,
+  );
+  console.log('CommentSystem - topLevelComments:', topLevelComments);
 
-  switch (sortBy.value) {
-    case 'newest':
-      return topLevelComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    case 'likes':
-      return topLevelComments.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
-    case 'oldest':
-    default:
-      return topLevelComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-  }
-})
+  // 기본적으로 오래된 순으로 정렬
+  return topLevelComments.sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+  );
+});
 
 // Methods
 function getReplies(commentId) {
   return props.comments
     .filter((comment) => comment.parentId === commentId)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 }
 
 async function handleSubmitComment() {
-  if (!newCommentContent.value.trim()) return
+  if (!newCommentContent.value.trim()) return;
 
-  submittingComment.value = true
+  submittingComment.value = true;
   try {
     const commentData = {
       postId: props.postId,
@@ -262,33 +292,36 @@ async function handleSubmitComment() {
       authorId: userStore.user.uid,
       authorName: userStore.user.displayName || userStore.user.email,
       authorIcon: userStore.user.selectedIcon || null,
-    }
+    };
 
-    const commentId = await commentService.createComment(commentData)
+    const commentId = await commentService.createComment(commentData);
 
     // 댓글 작성 후 댓글 목록을 다시 로드하여 동기화
-    newCommentContent.value = ''
+    newCommentContent.value = '';
 
     // 댓글 목록 새로고침 요청
-    emit('refresh-comments')
+    emit('refresh-comments');
+
+    // 댓글 추가 이벤트 발생
+    emit('comment-added', commentId);
   } catch (err) {
-    console.error('Error creating comment:', err)
+    console.error('Error creating comment:', err);
     // Show error message
   } finally {
-    submittingComment.value = false
+    submittingComment.value = false;
   }
 }
 
 function handleReply(comment) {
-  replyTarget.value = comment
-  replyContent.value = ''
-  replyDialog.value = true
+  replyTarget.value = comment;
+  replyContent.value = '';
+  replyDialog.value = true;
 }
 
 async function handleSubmitReply() {
-  if (!replyContent.value.trim() || !replyTarget.value) return
+  if (!replyContent.value.trim() || !replyTarget.value) return;
 
-  submittingReply.value = true
+  submittingReply.value = true;
   try {
     const replyData = {
       postId: props.postId,
@@ -297,86 +330,92 @@ async function handleSubmitReply() {
       authorId: userStore.user.uid,
       authorName: userStore.user.displayName || userStore.user.email,
       authorIcon: userStore.user.selectedIcon || null,
-    }
+    };
 
-    const replyId = await commentService.createComment(replyData)
+    const replyId = await commentService.createComment(replyData);
 
-    replyDialog.value = false
-    replyTarget.value = null
-    replyContent.value = ''
+    replyDialog.value = false;
+    replyTarget.value = null;
+    replyContent.value = '';
 
     // 댓글 목록 새로고침 요청
-    emit('refresh-comments')
+    emit('refresh-comments');
   } catch (err) {
-    console.error('Error creating reply:', err)
+    console.error('Error creating reply:', err);
     // Show error message
   } finally {
-    submittingReply.value = false
+    submittingReply.value = false;
   }
 }
 
 function handleEditComment(comment) {
-  editTarget.value = comment
-  editContent.value = comment.content
-  editDialog.value = true
+  editTarget.value = comment;
+  editContent.value = comment.content;
+  editDialog.value = true;
 }
 
 async function handleUpdateComment() {
-  if (!editContent.value.trim() || !editTarget.value) return
+  if (!editContent.value.trim() || !editTarget.value) return;
 
-  updatingComment.value = true
+  updatingComment.value = true;
   try {
-    await commentService.updateComment(editTarget.value.id, editContent.value.trim())
+    await commentService.updateComment(
+      editTarget.value.id,
+      editContent.value.trim(),
+    );
 
     // Update the comment in the UI
     const updatedComment = {
       ...editTarget.value,
       content: editContent.value.trim(),
       updatedAt: new Date(),
-    }
+    };
 
-    emit('comment-updated', updatedComment)
-    editDialog.value = false
-    editTarget.value = null
-    editContent.value = ''
+    emit('comment-updated', updatedComment);
+    editDialog.value = false;
+    editTarget.value = null;
+    editContent.value = '';
   } catch (err) {
-    console.error('Error updating comment:', err)
+    console.error('Error updating comment:', err);
     // Show error message
   } finally {
-    updatingComment.value = false
+    updatingComment.value = false;
   }
 }
 
 function handleDeleteComment(comment) {
-  deleteTarget.value = comment
-  deleteDialog.value = true
+  deleteTarget.value = comment;
+  deleteDialog.value = true;
 }
 
 async function handleConfirmDelete() {
-  if (!deleteTarget.value) return
+  if (!deleteTarget.value) return;
 
-  deletingComment.value = true
+  deletingComment.value = true;
   try {
-    await commentService.deleteComment(deleteTarget.value.id, props.postId)
-    emit('comment-deleted', deleteTarget.value.id)
-    deleteDialog.value = false
-    deleteTarget.value = null
+    await commentService.deleteComment(deleteTarget.value.id, props.postId);
+    emit('comment-deleted', deleteTarget.value.id);
+    deleteDialog.value = false;
+    deleteTarget.value = null;
   } catch (err) {
-    console.error('Error deleting comment:', err)
+    console.error('Error deleting comment:', err);
     // Show error message
   } finally {
-    deletingComment.value = false
+    deletingComment.value = false;
   }
 }
 
 async function handleLikeComment(comment) {
   if (!userStore.isAuthenticated) {
-    emit('login-required')
-    return
+    emit('login-required');
+    return;
   }
 
   try {
-    const newLikeStatus = await commentService.toggleCommentLike(comment.id, userStore.user.uid)
+    const newLikeStatus = await commentService.toggleCommentLike(
+      comment.id,
+      userStore.user.uid,
+    );
 
     // Update the comment in the local state
     const updatedComment = {
@@ -384,11 +423,11 @@ async function handleLikeComment(comment) {
       likeCount: newLikeStatus
         ? (comment.likeCount || 0) + 1
         : Math.max((comment.likeCount || 0) - 1, 0),
-    }
+    };
 
-    emit('comment-updated', updatedComment)
+    emit('comment-updated', updatedComment);
   } catch (err) {
-    console.error('Error toggling comment like:', err)
+    console.error('Error toggling comment like:', err);
     // Show error message
   }
 }
@@ -416,19 +455,12 @@ async function handleLikeComment(comment) {
 }
 
 @media (max-width: 768px) {
-  .comments-header .d-flex {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
+  .comments-header {
+    padding: 0 8px;
   }
 
-  .comment-form .d-flex {
-    flex-direction: column;
-  }
-
-  .comment-form .v-avatar {
-    align-self: flex-start;
-    margin-bottom: 1rem;
+  .comment-form {
+    padding: 0 8px;
   }
 }
 </style>

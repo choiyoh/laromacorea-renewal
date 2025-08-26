@@ -7,7 +7,11 @@
           <v-breadcrumbs :items="breadcrumbs" class="pa-0 mb-4" />
 
           <!-- 게시글 작성 에디터 -->
-          <PostEditor :board-type="boardType" @submit="handleSubmit" @cancel="handleCancel" />
+          <PostEditor
+            :board-type="boardType"
+            @submit="handleSubmit"
+            @cancel="handleCancel"
+          />
         </v-col>
       </v-row>
     </v-container>
@@ -15,29 +19,29 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import PostEditor from '@/components/board/PostEditor.vue'
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import PostEditor from '@/components/board/PostEditor.vue';
 
 const props = defineProps({
   boardType: {
     type: String,
     required: true,
   },
-})
+});
 
-const router = useRouter()
+const router = useRouter();
 
 // Board configuration
 const boardConfig = {
   notice: { name: '공지사항', icon: 'mdi-bullhorn' },
   squad: { name: '스쿼드', icon: 'mdi-account-group' },
   match: { name: '경기', icon: 'mdi-soccer' },
-  calcio: { name: '칼치오', icon: 'mdi-newspaper' },
+  calcio: { name: 'Calcio', icon: 'mdi-newspaper' },
   free: { name: '자유게시판', icon: 'mdi-forum' },
   special: { name: '스페셜', icon: 'mdi-star' },
   media: { name: '미디어', icon: 'mdi-play-circle' },
-}
+};
 
 // Computed
 const breadcrumbs = computed(() => [
@@ -55,17 +59,17 @@ const breadcrumbs = computed(() => [
     title: '글쓰기',
     disabled: true,
   },
-])
+]);
 
 // Methods
 function handleSubmit() {
   // 게시글 작성 완료 후 게시판으로 이동
-  router.push(`/board/${props.boardType}`)
+  router.push(`/board/${props.boardType}`);
 }
 
 function handleCancel() {
   // 취소 시 게시판으로 이동
-  router.push(`/board/${props.boardType}`)
+  router.push(`/board/${props.boardType}`);
 }
 </script>
 

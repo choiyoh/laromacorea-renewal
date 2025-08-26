@@ -8,7 +8,9 @@
             관리자 패널
           </v-card-title>
           <v-card-text>
-            <p class="text-body-1 mb-4">AS 로마 한국 팬 커뮤니티 관리자 전용 페이지입니다.</p>
+            <p class="text-body-1 mb-4">
+              AS 로마 한국 팬 커뮤니티 관리자 전용 페이지입니다.
+            </p>
           </v-card-text>
         </v-card>
       </v-col>
@@ -47,12 +49,7 @@
 
           <!-- 사용자 관리 탭 -->
           <v-tabs-window-item value="users">
-            <v-card>
-              <v-card-title>사용자 관리</v-card-title>
-              <v-card-text>
-                <p class="text-body-2 text-grey">사용자 관리 기능은 추후 구현 예정입니다.</p>
-              </v-card-text>
-            </v-card>
+            <AdminUserManager @user-updated="handleUserUpdated" />
           </v-tabs-window-item>
         </v-tabs-window>
       </v-col>
@@ -61,14 +58,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import AdminDashboard from '@/components/admin/AdminDashboard.vue'
-import AdminNoticeManager from '@/components/admin/AdminNoticeManager.vue'
-import AdminIconManager from '@/components/admin/AdminIconManager.vue'
-import AdminPointsManager from '@/components/admin/AdminPointsManager.vue'
+import { ref } from 'vue';
+import AdminDashboard from '@/components/admin/AdminDashboard.vue';
+import AdminNoticeManager from '@/components/admin/AdminNoticeManager.vue';
+import AdminIconManager from '@/components/admin/AdminIconManager.vue';
+import AdminPointsManager from '@/components/admin/AdminPointsManager.vue';
+import AdminUserManager from '@/components/admin/AdminUserManager.vue';
 
 // 활성 탭
-const activeTab = ref('dashboard')
+const activeTab = ref('dashboard');
+
+// 사용자 업데이트 핸들러
+const handleUserUpdated = () => {
+  console.log('사용자 정보가 업데이트되었습니다.');
+};
 </script>
 
 <style scoped>

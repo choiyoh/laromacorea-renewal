@@ -5,7 +5,11 @@
         <v-col cols="12">
           <!-- 뒤로가기 버튼 -->
           <div class="d-flex align-center mb-4">
-            <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="$router.go(-1)">
+            <v-btn
+              variant="text"
+              prepend-icon="mdi-arrow-left"
+              @click="$router.go(-1)"
+            >
               목록으로
             </v-btn>
             <v-spacer />
@@ -27,8 +31,8 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-import PostDetail from '@/components/board/PostDetail.vue'
+import { useRouter } from 'vue-router';
+import PostDetail from '@/components/board/PostDetail.vue';
 
 const props = defineProps({
   boardType: {
@@ -39,33 +43,33 @@ const props = defineProps({
     type: String,
     required: true,
   },
-})
+});
 
-const router = useRouter()
+const router = useRouter();
 
 // Board name mapping
 const boardNames = {
   notice: '공지사항',
   squad: '스쿼드',
   match: '경기',
-  calcio: '칼치오',
+  calcio: 'Calcio',
   free: '자유게시판',
   special: '특별게시판',
   media: '미디어',
-}
+};
 
 function getBoardName(boardType) {
-  return boardNames[boardType] || boardType
+  return boardNames[boardType] || boardType;
 }
 
 function handleEditPost() {
   // Navigate to edit page
-  router.push(`/board/${props.boardType}/post/${props.postId}/edit`)
+  router.push(`/board/${props.boardType}/post/${props.postId}/edit`);
 }
 
 function handleDeletePost(postId) {
   // Navigate back to board list after deletion
-  router.push(`/board/${props.boardType}`)
+  router.push(`/board/${props.boardType}`);
 }
 </script>
 

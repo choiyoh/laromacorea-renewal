@@ -30,7 +30,12 @@
       <div v-else-if="error" class="text-center py-8">
         <v-icon icon="mdi-alert-circle" color="error" size="48" class="mb-2" />
         <div class="text-body-2 text-error mb-2">{{ error }}</div>
-        <v-btn color="primary" variant="outlined" size="small" @click="refreshMatches">
+        <v-btn
+          color="primary"
+          variant="outlined"
+          size="small"
+          @click="refreshMatches"
+        >
           다시 시도
         </v-btn>
       </div>
@@ -93,19 +98,41 @@
         <div class="match-details">
           <div class="d-flex align-center justify-space-between mb-2">
             <div class="detail-item">
-              <v-icon icon="mdi-calendar" size="16" class="mr-2" color="primary" />
-              <span class="text-body-2">{{ formatFullDate(nextMatch.utcDate) }}</span>
+              <v-icon
+                icon="mdi-calendar"
+                size="16"
+                class="mr-2"
+                color="primary"
+              />
+              <span class="text-body-2">{{
+                formatFullDate(nextMatch.utcDate)
+              }}</span>
             </div>
           </div>
           <div class="d-flex align-center justify-space-between mb-2">
             <div class="detail-item">
-              <v-icon icon="mdi-trophy" size="16" class="mr-2" color="primary" />
-              <span class="text-body-2">{{ nextMatch.competition?.name || '리그' }}</span>
+              <v-icon
+                icon="mdi-trophy"
+                size="16"
+                class="mr-2"
+                color="primary"
+              />
+              <span class="text-body-2">{{
+                nextMatch.competition?.name || '리그'
+              }}</span>
             </div>
           </div>
-          <div v-if="nextMatch.venue" class="d-flex align-center justify-space-between">
+          <div
+            v-if="nextMatch.venue"
+            class="d-flex align-center justify-space-between"
+          >
             <div class="detail-item">
-              <v-icon icon="mdi-stadium" size="16" class="mr-2" color="primary" />
+              <v-icon
+                icon="mdi-stadium"
+                size="16"
+                class="mr-2"
+                color="primary"
+              />
               <span class="text-body-2">{{ nextMatch.venue }}</span>
             </div>
           </div>
@@ -124,7 +151,9 @@
 
       <div v-else class="text-center py-8">
         <v-icon icon="mdi-calendar-blank" size="48" color="grey" class="mb-2" />
-        <div class="text-body-2 text-medium-emphasis">예정된 경기가 없습니다</div>
+        <div class="text-body-2 text-medium-emphasis">
+          예정된 경기가 없습니다
+        </div>
       </div>
     </v-card-text>
 
@@ -133,7 +162,9 @@
       <v-card>
         <v-card-title class="match-header d-flex align-center pa-4">
           <v-icon icon="mdi-soccer" color="white" class="mr-3" size="24" />
-          <span class="text-h6 font-weight-bold text-white">AS 로마 경기 일정</span>
+          <span class="text-h6 font-weight-bold text-white"
+            >AS 로마 경기 일정</span
+          >
           <v-spacer />
           <v-btn
             icon="mdi-close"
@@ -212,8 +243,15 @@
           </v-list>
 
           <div v-else class="text-center py-8">
-            <v-icon icon="mdi-calendar-blank" size="48" color="grey" class="mb-2" />
-            <div class="text-body-2 text-medium-emphasis">예정된 경기가 없습니다</div>
+            <v-icon
+              icon="mdi-calendar-blank"
+              size="48"
+              color="grey"
+              class="mb-2"
+            />
+            <div class="text-body-2 text-medium-emphasis">
+              예정된 경기가 없습니다
+            </div>
           </div>
         </v-card-text>
       </v-card>
@@ -222,151 +260,154 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { matchService } from '@/services/match'
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { matchService } from '@/services/match';
 
-const loading = ref(false)
-const error = ref('')
-const nextMatch = ref(null)
-const showAllMatches = ref(false)
-const allMatches = ref([])
-const loadingAll = ref(false)
-const timeUntilMatch = ref('')
-let countdownInterval = null
+const loading = ref(false);
+const error = ref('');
+const nextMatch = ref(null);
+const showAllMatches = ref(false);
+const allMatches = ref([]);
+const loadingAll = ref(false);
+const timeUntilMatch = ref('');
+let countdownInterval = null;
 
 // 경기 일정 로드
 const loadMatches = async () => {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = '';
 
   try {
-    const matches = await matchService.getUpcomingMatches()
-    nextMatch.value = matches.length > 0 ? matches[0] : null
+    const matches = await matchService.getUpcomingMatches();
+    nextMatch.value = matches.length > 0 ? matches[0] : null;
   } catch (err) {
-    console.error('Failed to load matches:', err)
-    error.value = '경기 일정을 불러올 수 없습니다'
+    console.error('Failed to load matches:', err);
+    error.value = '경기 일정을 불러올 수 없습니다';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 경기 일정 새로고침
 const refreshMatches = () => {
-  loadMatches()
-}
+  loadMatches();
+};
 
 // 전체 경기 일정 로드
 const loadAllMatches = async () => {
-  loadingAll.value = true
+  loadingAll.value = true;
 
   try {
-    const matches = await matchService.getUpcomingMatches()
-    allMatches.value = matches
+    const matches = await matchService.getUpcomingMatches();
+    allMatches.value = matches;
   } catch (err) {
-    console.error('Failed to load all matches:', err)
-    allMatches.value = []
+    console.error('Failed to load all matches:', err);
+    allMatches.value = [];
   } finally {
-    loadingAll.value = false
+    loadingAll.value = false;
   }
-}
+};
 
 // 모달이 열릴 때 전체 일정 로드
 watch(showAllMatches, (newValue) => {
   if (newValue) {
-    loadAllMatches()
+    loadAllMatches();
   }
-})
+});
 
 // 날짜 포맷팅
 const formatMatchDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    month: '2-digit',
-    day: '2-digit',
-  }).replace(/\. /g, '/').replace('.', '')
-}
+  const date = new Date(dateString);
+  return date
+    .toLocaleDateString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    .replace(/\. /g, '/')
+    .replace('.', '');
+};
 
 const formatFullDate = (dateString) => {
-  const date = new Date(dateString)
+  const date = new Date(dateString);
   return date.toLocaleDateString('ko-KR', {
     timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'short',
-  })
-}
+  });
+};
 
 const formatTime = (dateString) => {
-  const date = new Date(dateString)
+  const date = new Date(dateString);
   return date.toLocaleTimeString('ko-KR', {
     timeZone: 'Asia/Seoul',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  })
-}
+  });
+};
 
 // 경기까지 남은 시간 계산 및 업데이트
 const updateCountdown = () => {
   if (!nextMatch.value) {
-    timeUntilMatch.value = ''
-    return
+    timeUntilMatch.value = '';
+    return;
   }
 
-  const matchDate = new Date(nextMatch.value.utcDate).getTime()
-  const now = new Date().getTime()
-  const diff = matchDate - now
+  const matchDate = new Date(nextMatch.value.utcDate).getTime();
+  const now = new Date().getTime();
+  const diff = matchDate - now;
 
   if (diff <= 0) {
-    timeUntilMatch.value = '경기 진행중'
+    timeUntilMatch.value = '경기 진행중';
     if (countdownInterval) {
-      clearInterval(countdownInterval)
+      clearInterval(countdownInterval);
     }
-    return
+    return;
   }
 
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-  let countdownString = ''
+  let countdownString = '';
   if (days > 0) {
-    countdownString = `${days}일 ${hours}시간 남음`
+    countdownString = `${days}일 ${hours}시간 ${minutes}분 남음`;
   } else if (hours > 0) {
-    countdownString = `${hours}시간 ${minutes}분 남음`
+    countdownString = `${hours}시간 ${minutes}분 남음`;
   } else if (minutes > 0) {
-    countdownString = `${minutes}분 ${seconds}초 남음`
+    countdownString = `${minutes}분 ${seconds}초 남음`;
   } else {
-    countdownString = `${seconds}초 남음`
+    countdownString = `${seconds}초 남음`;
   }
-  timeUntilMatch.value = countdownString
-}
+  timeUntilMatch.value = countdownString;
+};
 
 watch(nextMatch, (newMatch) => {
   if (countdownInterval) {
-    clearInterval(countdownInterval)
+    clearInterval(countdownInterval);
   }
 
   if (newMatch) {
-    updateCountdown()
-    countdownInterval = setInterval(updateCountdown, 1000)
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
   } else {
-    timeUntilMatch.value = ''
+    timeUntilMatch.value = '';
   }
-})
+});
 
 onMounted(() => {
-  loadMatches()
-})
+  loadMatches();
+});
 
 onUnmounted(() => {
   if (countdownInterval) {
-    clearInterval(countdownInterval)
+    clearInterval(countdownInterval);
   }
-})
+});
 </script>
 
 <style scoped>

@@ -41,7 +41,12 @@
         <v-icon icon="mdi-account-group" class="mr-2" />
         사용자 관리
         <v-spacer />
-        <v-btn icon="mdi-refresh" variant="text" @click="loadUsers" :loading="loading" />
+        <v-btn
+          icon="mdi-refresh"
+          variant="text"
+          @click="loadUsers"
+          :loading="loading"
+        />
       </v-card-title>
 
       <v-data-table
@@ -51,70 +56,95 @@
         class="user-table"
         item-value="id"
       >
-        <template #item.avatar="{ item }">
+        <template v-slot:item.avatar="{ item }">
           <v-avatar size="32" class="my-2">
-            <v-img v-if="item.photoURL" :src="item.photoURL" :alt="item.displayName" />
+            <v-img
+              v-if="item.photoURL"
+              :src="item.photoURL"
+              :alt="item.displayName"
+            />
             <v-icon v-else icon="mdi-account" />
           </v-avatar>
         </template>
 
-        <template #item.displayName="{ item }">
+        <template v-slot:item.displayName="{ item }">
           <div>
-            <div class="font-weight-medium">{{ item.displayName || '이름 없음' }}</div>
-            <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
+            <div class="font-weight-medium">
+              {{ item.displayName || '이름 없음' }}
+            </div>
+            <div class="text-caption text-medium-emphasis">
+              {{ item.email }}
+            </div>
           </div>
         </template>
 
-        <template #item.role="{ item }">
-          <v-chip :color="getRoleColor(item.role)" size="small" variant="elevated">
+        <template v-slot:item.role="{ item }">
+          <v-chip
+            :color="getRoleColor(item.role)"
+            size="small"
+            variant="elevated"
+          >
             {{ getRoleText(item.role) }}
           </v-chip>
         </template>
 
-        <template #item.isActive="{ item }">
-          <v-chip :color="item.isActive ? 'success' : 'error'" size="small" variant="elevated">
+        <template v-slot:item.isActive="{ item }">
+          <v-chip
+            :color="item.isActive ? 'success' : 'error'"
+            size="small"
+            variant="elevated"
+          >
             {{ item.isActive ? '활성' : '비활성' }}
           </v-chip>
         </template>
 
-        <template #item.points="{ item }">
+        <template v-slot:item.points="{ item }">
           <div class="d-flex align-center">
             <v-icon icon="mdi-star" color="warning" size="16" class="mr-1" />
             {{ item.points || 0 }}
           </div>
         </template>
 
-        <template #item.createdAt="{ item }">
+        <template v-slot:item.createdAt="{ item }">
           {{ formatDate(item.createdAt) }}
         </template>
 
-        <template #item.actions="{ item }">
+        <template v-slot:item.actions="{ item }">
           <v-menu>
-            <template #activator="{ props }">
-              <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" />
+            <template v-slot:activator="{ props }">
+              <v-btn
+                icon="mdi-dots-vertical"
+                variant="text"
+                size="small"
+                v-bind="props"
+              />
             </template>
             <v-list>
               <v-list-item @click="openUserDetail(item)">
-                <template #prepend>
+                <template v-slot:prepend>
                   <v-icon icon="mdi-account-details" />
                 </template>
                 <v-list-item-title>상세 관리</v-list-item-title>
               </v-list-item>
               <v-list-item @click="editUser(item)">
-                <template #prepend>
+                <template v-slot:prepend>
                   <v-icon icon="mdi-pencil" />
                 </template>
                 <v-list-item-title>기본 편집</v-list-item-title>
               </v-list-item>
               <v-list-item @click="adjustPoints(item)">
-                <template #prepend>
+                <template v-slot:prepend>
                   <v-icon icon="mdi-star" />
                 </template>
                 <v-list-item-title>포인트 조정</v-list-item-title>
               </v-list-item>
               <v-list-item @click="toggleUserStatus(item)">
-                <template #prepend>
-                  <v-icon :icon="item.isActive ? 'mdi-account-off' : 'mdi-account-check'" />
+                <template v-slot:prepend>
+                  <v-icon
+                    :icon="
+                      item.isActive ? 'mdi-account-off' : 'mdi-account-check'
+                    "
+                  />
                 </template>
                 <v-list-item-title>
                   {{ item.isActive ? '비활성화' : '활성화' }}
@@ -152,7 +182,11 @@
               variant="outlined"
               class="mb-3"
             />
-            <v-switch v-model="selectedUser.isActive" label="활성 상태" color="success" />
+            <v-switch
+              v-model="selectedUser.isActive"
+              label="활성 상태"
+              color="success"
+            />
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -181,7 +215,12 @@
             variant="outlined"
             class="mb-3"
           />
-          <v-textarea v-model="pointsReason" label="조정 사유" variant="outlined" rows="3" />
+          <v-textarea
+            v-model="pointsReason"
+            label="조정 사유"
+            variant="outlined"
+            rows="3"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -200,11 +239,19 @@
             <v-icon v-else icon="mdi-account" />
           </v-avatar>
           <div>
-            <div class="text-h6">{{ selectedUser?.displayName || '이름 없음' }}</div>
-            <div class="text-caption text-medium-emphasis">{{ selectedUser?.email }}</div>
+            <div class="text-h6">
+              {{ selectedUser?.displayName || '이름 없음' }}
+            </div>
+            <div class="text-caption text-medium-emphasis">
+              {{ selectedUser?.email }}
+            </div>
           </div>
           <v-spacer />
-          <v-btn icon="mdi-close" variant="text" @click="userDetailDialog = false" />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="userDetailDialog = false"
+          />
         </v-card-title>
 
         <v-divider />
@@ -319,11 +366,15 @@
                           :color="selectedUser?.isActive ? 'error' : 'success'"
                           variant="outlined"
                           :prepend-icon="
-                            selectedUser?.isActive ? 'mdi-account-cancel' : 'mdi-account-check'
+                            selectedUser?.isActive
+                              ? 'mdi-account-cancel'
+                              : 'mdi-account-check'
                           "
                           @click="toggleEditStatus"
                         >
-                          {{ selectedUser?.isActive ? '계정 정지' : '계정 활성화' }}
+                          {{
+                            selectedUser?.isActive ? '계정 정지' : '계정 활성화'
+                          }}
                         </v-btn>
                       </v-col>
                       <v-col cols="12" sm="6" md="4">
@@ -368,7 +419,9 @@
                       </v-col>
                       <v-col cols="6" md="3">
                         <div class="text-center">
-                          <div class="text-h4 text-warning">{{ selectedUser?.points || 0 }}</div>
+                          <div class="text-h4 text-warning">
+                            {{ selectedUser?.points || 0 }}
+                          </div>
                           <div class="text-caption">포인트</div>
                         </div>
                       </v-col>
@@ -403,8 +456,8 @@
             >님의 비밀번호를 초기화하시겠습니까?
           </div>
           <v-alert type="warning" variant="tonal" class="mb-4">
-            비밀번호가 <strong>qwer1234</strong>로 초기화되며, 사용자는 다음 로그인 시 비밀번호
-            변경이 필요합니다.
+            비밀번호가 <strong>qwer1234</strong>로 초기화되며, 사용자는 다음
+            로그인 시 비밀번호 변경이 필요합니다.
           </v-alert>
           <v-textarea
             v-model="passwordResetReason"
@@ -417,7 +470,11 @@
         <v-card-actions>
           <v-spacer />
           <v-btn @click="passwordResetDialog = false">취소</v-btn>
-          <v-btn color="error" @click="confirmPasswordReset" :disabled="!passwordResetReason">
+          <v-btn
+            color="error"
+            @click="confirmPasswordReset"
+            :disabled="!passwordResetReason"
+          >
             초기화
           </v-btn>
         </v-card-actions>
@@ -427,40 +484,40 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { adminService } from '@/services/admin'
-import { useUserStore } from '@/stores/user'
+import { ref, computed, onMounted } from 'vue';
+import { adminService } from '@/services/admin';
+import { useUserStore } from '@/stores/user';
 
-const emit = defineEmits(['user-updated'])
+const emit = defineEmits(['user-updated']);
 
-const userStore = useUserStore()
-const loading = ref(false)
-const users = ref([])
-const searchTerm = ref('')
-const statusFilter = ref('all')
-const roleFilter = ref('all')
+const userStore = useUserStore();
+const loading = ref(false);
+const users = ref([]);
+const searchTerm = ref('');
+const statusFilter = ref('all');
+const roleFilter = ref('all');
 
 // 다이얼로그 상태
-const editDialog = ref(false)
-const pointsDialog = ref(false)
-const userDetailDialog = ref(false)
-const passwordResetDialog = ref(false)
-const selectedUser = ref(null)
-const pointsAdjustment = ref(0)
-const pointsReason = ref('')
-const passwordResetReason = ref('')
+const editDialog = ref(false);
+const pointsDialog = ref(false);
+const userDetailDialog = ref(false);
+const passwordResetDialog = ref(false);
+const selectedUser = ref(null);
+const pointsAdjustment = ref(0);
+const pointsReason = ref('');
+const passwordResetReason = ref('');
 
 // 사용자 상세 관리 폼
 const userDetailForm = ref({
   displayName: '',
   role: '',
   status: '',
-})
+});
 
 // 편집 상태
-const isEditingBasicInfo = ref(false)
-const isEditingRole = ref(false)
-const isEditingStatus = ref(false)
+const isEditingBasicInfo = ref(false);
+const isEditingRole = ref(false);
+const isEditingStatus = ref(false);
 
 // 테이블 헤더
 const headers = [
@@ -471,21 +528,21 @@ const headers = [
   { title: '포인트', key: 'points' },
   { title: '가입일', key: 'createdAt' },
   { title: '작업', key: 'actions', sortable: false },
-]
+];
 
 // 필터 옵션
 const statusOptions = [
   { title: '전체', value: 'all' },
   { title: '활성', value: 'active' },
   { title: '비활성', value: 'inactive' },
-]
+];
 
 const roleOptions = [
   { title: '전체', value: 'all' },
   { title: '사용자', value: 'user' },
   { title: '관리자', value: 'admin' },
   { title: '모더레이터', value: 'moderator' },
-]
+];
 
 // 상세 관리용 옵션들
 const detailedRoleOptions = [
@@ -493,200 +550,213 @@ const detailedRoleOptions = [
   { title: '모더레이터', value: 'moderator' },
   { title: '관리자', value: 'admin' },
   { title: '최고 관리자', value: 'super_admin' },
-]
+];
 
 const statusDetailOptions = [
   { title: '정상', value: 'active' },
   { title: '정지', value: 'suspended' },
   { title: '탈퇴', value: 'deleted' },
-]
+];
 
 // 필터링된 사용자 목록
 const filteredUsers = computed(() => {
-  let filtered = users.value
+  let filtered = users.value;
 
   // 검색어 필터
   if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     filtered = filtered.filter(
       (user) =>
-        user.displayName?.toLowerCase().includes(term) || user.email?.toLowerCase().includes(term),
-    )
+        user.displayName?.toLowerCase().includes(term) ||
+        user.email?.toLowerCase().includes(term),
+    );
   }
 
   // 상태 필터
   if (statusFilter.value !== 'all') {
-    const isActive = statusFilter.value === 'active'
-    filtered = filtered.filter((user) => user.isActive === isActive)
+    const isActive = statusFilter.value === 'active';
+    filtered = filtered.filter((user) => user.isActive === isActive);
   }
 
   // 역할 필터
   if (roleFilter.value !== 'all') {
-    filtered = filtered.filter((user) => user.role === roleFilter.value)
+    filtered = filtered.filter((user) => user.role === roleFilter.value);
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // 사용자 목록 로드
 const loadUsers = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    users.value = await adminService.getUsers({ limitCount: 100 })
+    users.value = await adminService.getUsers({ limitCount: 100 });
+    console.log('로드된 사용자 목록:', users.value);
+    console.log('사용자 수:', users.value.length);
   } catch (error) {
-    console.error('Failed to load users:', error)
+    console.error('Failed to load users:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 사용자 검색
 const searchUsers = async () => {
   if (searchTerm.value.length > 2) {
-    loading.value = true
+    loading.value = true;
     try {
-      const searchResults = await adminService.searchUsers(searchTerm.value)
-      users.value = searchResults
+      const searchResults = await adminService.searchUsers(searchTerm.value);
+      users.value = searchResults;
     } catch (error) {
-      console.error('Failed to search users:', error)
+      console.error('Failed to search users:', error);
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   } else if (searchTerm.value === '') {
-    loadUsers()
+    loadUsers();
   }
-}
+};
 
 // 필터 적용
 const filterUsers = () => {
   // 필터링은 computed에서 처리됨
-}
+};
 
 // 역할 색상
 const getRoleColor = (role) => {
   switch (role) {
     case 'admin':
-      return 'error'
+      return 'error';
     case 'moderator':
-      return 'warning'
+      return 'warning';
     default:
-      return 'primary'
+      return 'primary';
   }
-}
+};
 
 // 역할 텍스트
 const getRoleText = (role) => {
   switch (role) {
     case 'admin':
-      return '관리자'
+      return '관리자';
     case 'moderator':
-      return '모더레이터'
+      return '모더레이터';
     default:
-      return '사용자'
+      return '사용자';
   }
-}
+};
 
 // 날짜 포맷팅
 const formatDate = (timestamp) => {
-  if (!timestamp) return '-'
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return date.toLocaleDateString('ko-KR')
-}
+  if (!timestamp) return '-';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString('ko-KR');
+};
 
 // 사용자 편집
 const editUser = (user) => {
-  selectedUser.value = { ...user }
-  editDialog.value = true
-}
+  selectedUser.value = { ...user };
+  editDialog.value = true;
+};
 
 // 사용자 저장
 const saveUser = async () => {
   try {
-    await adminService.updateUserRole(selectedUser.value.id, selectedUser.value.role)
-    await adminService.updateUserStatus(selectedUser.value.id, selectedUser.value.isActive)
+    await adminService.updateUserRole(
+      selectedUser.value.id,
+      selectedUser.value.role,
+    );
+    await adminService.updateUserStatus(
+      selectedUser.value.id,
+      selectedUser.value.isActive,
+    );
 
     // 로컬 상태 업데이트
-    const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+    const index = users.value.findIndex((u) => u.id === selectedUser.value.id);
     if (index !== -1) {
-      users.value[index] = { ...selectedUser.value }
+      users.value[index] = { ...selectedUser.value };
     }
 
-    editDialog.value = false
-    emit('user-updated')
+    editDialog.value = false;
+    emit('user-updated');
   } catch (error) {
-    console.error('Failed to save user:', error)
+    console.error('Failed to save user:', error);
   }
-}
+};
 
 // 포인트 조정
 const adjustPoints = (user) => {
-  selectedUser.value = user
-  pointsAdjustment.value = 0
-  pointsReason.value = ''
-  pointsDialog.value = true
-}
+  selectedUser.value = user;
+  pointsAdjustment.value = 0;
+  pointsReason.value = '';
+  pointsDialog.value = true;
+};
 
 // 포인트 조정 저장
 const savePointsAdjustment = async () => {
   try {
-    await adminService.adjustUserPoints(
+    await adminService.adjustUserPointsWithHistory(
       selectedUser.value.id,
       pointsAdjustment.value,
       pointsReason.value,
-      userStore.user.uid,
-    )
+      userStore.user?.uid || 'admin',
+    );
 
     // 로컬 상태 업데이트
-    const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+    const index = users.value.findIndex((u) => u.id === selectedUser.value.id);
     if (index !== -1) {
-      users.value[index].points = (users.value[index].points || 0) + pointsAdjustment.value
+      users.value[index].points =
+        (users.value[index].points || 0) + pointsAdjustment.value;
     }
 
-    pointsDialog.value = false
-    emit('user-updated')
+    pointsDialog.value = false;
+    emit('user-updated');
   } catch (error) {
-    console.error('Failed to adjust points:', error)
+    console.error('Failed to adjust points:', error);
   }
-}
+};
 
 // 사용자 상태 토글
 const toggleUserStatus = async (user) => {
   try {
-    const newStatus = !user.isActive
-    await adminService.updateUserStatus(user.id, newStatus)
+    const newStatus = !user.isActive;
+    console.log(
+      `사용자 ${user.displayName}의 상태를 ${newStatus ? '활성화' : '비활성화'}로 변경합니다.`,
+    );
 
-    // 로컬 상태 업데이트
-    const index = users.value.findIndex((u) => u.id === user.id)
-    if (index !== -1) {
-      users.value[index].isActive = newStatus
-    }
+    await adminService.updateUserStatus(user.id, newStatus);
 
-    emit('user-updated')
+    // 사용자 목록 새로고침으로 최신 상태 반영
+    await loadUsers();
+
+    emit('user-updated');
+    console.log('사용자 상태 변경 완료');
   } catch (error) {
-    console.error('Failed to toggle user status:', error)
+    console.error('Failed to toggle user status:', error);
+    alert('사용자 상태 변경에 실패했습니다: ' + error.message);
   }
-}
+};
 
 // 사용자 상세 관리 열기
 const openUserDetail = async (user) => {
-  selectedUser.value = user
+  selectedUser.value = user;
   userDetailForm.value = {
     displayName: user.displayName || '',
     role: user.role || 'user',
     status: user.isActive ? 'active' : 'suspended',
-  }
+  };
 
   // 사용자 통계 로드
   try {
-    const stats = await adminService.getUserStats(user.id)
-    selectedUser.value.stats = stats
+    const stats = await adminService.getUserStats(user.id);
+    selectedUser.value.stats = stats;
   } catch (error) {
-    console.error('Failed to load user stats:', error)
-    selectedUser.value.stats = { posts: 0, comments: 0, likes: 0 }
+    console.error('Failed to load user stats:', error);
+    selectedUser.value.stats = { posts: 0, comments: 0, likes: 0 };
   }
 
-  userDetailDialog.value = true
-}
+  userDetailDialog.value = true;
+};
 
 // 기본 정보 편집 토글
 const toggleEditBasicInfo = async () => {
@@ -697,86 +767,87 @@ const toggleEditBasicInfo = async () => {
         selectedUser.value.id,
         userDetailForm.value.displayName,
         '관리자에 의한 닉네임 변경',
-      )
+      );
 
-      selectedUser.value.displayName = userDetailForm.value.displayName
+      selectedUser.value.displayName = userDetailForm.value.displayName;
 
       // 로컬 상태 업데이트
-      const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+      const index = users.value.findIndex(
+        (u) => u.id === selectedUser.value.id,
+      );
       if (index !== -1) {
-        users.value[index].displayName = userDetailForm.value.displayName
+        users.value[index].displayName = userDetailForm.value.displayName;
       }
 
-      isEditingBasicInfo.value = false
-      emit('user-updated')
+      isEditingBasicInfo.value = false;
+      emit('user-updated');
     } catch (error) {
-      console.error('Failed to update nickname:', error)
+      console.error('Failed to update nickname:', error);
     }
   } else {
-    isEditingBasicInfo.value = true
+    isEditingBasicInfo.value = true;
   }
-}
+};
 
 // 권한 편집 토글
 const toggleEditRole = async () => {
   if (isEditingRole.value) {
     // 저장
     try {
-      await adminService.updateUserRole(
+      await adminService.updateUserRoleWithHistory(
+        userStore.user?.uid || 'admin',
         selectedUser.value.id,
         userDetailForm.value.role,
         '관리자에 의한 권한 변경',
-      )
+      );
 
-      selectedUser.value.role = userDetailForm.value.role
+      selectedUser.value.role = userDetailForm.value.role;
 
       // 로컬 상태 업데이트
-      const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
+      const index = users.value.findIndex(
+        (u) => u.id === selectedUser.value.id,
+      );
       if (index !== -1) {
-        users.value[index].role = userDetailForm.value.role
+        users.value[index].role = userDetailForm.value.role;
       }
 
-      isEditingRole.value = false
-      emit('user-updated')
+      isEditingRole.value = false;
+      emit('user-updated');
     } catch (error) {
-      console.error('Failed to update role:', error)
+      console.error('Failed to update role:', error);
     }
   } else {
-    isEditingRole.value = true
+    isEditingRole.value = true;
   }
-}
+};
 
-// 상태 편집 토글
+// 상태 편집 토글 - 바로 상태 변경
 const toggleEditStatus = async () => {
-  if (isEditingStatus.value) {
-    // 저장
-    try {
-      const isActive = userDetailForm.value.status === 'active'
-      await adminService.updateUserStatus(selectedUser.value.id, isActive)
+  try {
+    const newStatus = !selectedUser.value.isActive;
+    await adminService.updateUserStatus(selectedUser.value.id, newStatus);
 
-      selectedUser.value.isActive = isActive
+    selectedUser.value.isActive = newStatus;
+    userDetailForm.value.status = newStatus ? 'active' : 'suspended';
 
-      // 로컬 상태 업데이트
-      const index = users.value.findIndex((u) => u.id === selectedUser.value.id)
-      if (index !== -1) {
-        users.value[index].isActive = isActive
-      }
+    // 사용자 목록 새로고침
+    await loadUsers();
 
-      isEditingStatus.value = false
-      emit('user-updated')
-    } catch (error) {
-      console.error('Failed to update status:', error)
-    }
-  } else {
-    isEditingStatus.value = true
+    emit('user-updated');
+    console.log(
+      `사용자 상태가 ${newStatus ? '활성화' : '비활성화'}되었습니다.`,
+    );
+  } catch (error) {
+    console.error('Failed to update status:', error);
+    alert('사용자 상태 변경에 실패했습니다: ' + error.message);
   }
-}
+};
 
 // 비밀번호 초기화
 const resetPassword = () => {
-  passwordResetReason.value = ''
-  passwordResetDialog.value = true
-}
+  passwordResetReason.value = '';
+  passwordResetDialog.value = true;
+};
 
 // 비밀번호 초기화 확인
 const confirmPasswordReset = async () => {
@@ -785,41 +856,41 @@ const confirmPasswordReset = async () => {
       selectedUser.value.id,
       'qwer1234',
       passwordResetReason.value,
-    )
+    );
 
-    passwordResetDialog.value = false
+    passwordResetDialog.value = false;
 
     // 성공 알림
     // TODO: 토스트 알림 추가
-    console.log('비밀번호가 초기화되었습니다.')
+    console.log('비밀번호가 초기화되었습니다.');
 
-    emit('user-updated')
+    emit('user-updated');
   } catch (error) {
-    console.error('Failed to reset password:', error)
+    console.error('Failed to reset password:', error);
   }
-}
+};
 
 // 포인트 관리 열기
 const openPointsManagement = () => {
-  pointsAdjustment.value = 0
-  pointsReason.value = ''
-  pointsDialog.value = true
-}
+  pointsAdjustment.value = 0;
+  pointsReason.value = '';
+  pointsDialog.value = true;
+};
 
 // 사용자 변경 이력 보기
 const viewUserHistory = async () => {
   try {
-    const history = await adminService.getUserHistory(selectedUser.value.id)
-    console.log('User history:', history)
+    const history = await adminService.getUserHistory(selectedUser.value.id);
+    console.log('User history:', history);
     // TODO: 이력 표시 모달 구현
   } catch (error) {
-    console.error('Failed to load user history:', error)
+    console.error('Failed to load user history:', error);
   }
-}
+};
 
 onMounted(() => {
-  loadUsers()
-})
+  loadUsers();
+});
 </script>
 
 <style scoped>

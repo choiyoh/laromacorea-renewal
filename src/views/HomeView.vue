@@ -6,7 +6,11 @@
         <v-col cols="12">
           <div class="text-center">
             <div class="main-logo-wrapper mb-4">
-              <img src="/images/main-logo.gif" alt="La Roma Corea" class="main-logo-image" />
+              <img
+                src="/images/main-logo.gif"
+                alt="La Roma Corea"
+                class="main-logo-image"
+              />
             </div>
           </div>
         </v-col>
@@ -38,10 +42,19 @@
 
       <!-- 게시판별 최근 게시물 -->
       <v-row>
-        <v-col v-for="board in boardTypes" :key="board.id" cols="12" md="6" lg="4" class="mb-4">
+        <v-col
+          v-for="board in boardTypes"
+          :key="board.id"
+          cols="12"
+          md="6"
+          lg="4"
+          class="mb-4"
+        >
           <v-card class="board-section" variant="outlined" height="100%">
             <!-- 게시판 헤더 -->
-            <v-card-title class="board-header-roma d-flex align-center py-2 px-4">
+            <v-card-title
+              class="board-header-roma d-flex align-center py-2 px-4"
+            >
               <v-icon :icon="board.icon" color="white" class="mr-3" size="28" />
               <div class="flex-grow-1">
                 <div class="text-h6 font-weight-bold text-white">
@@ -71,7 +84,9 @@
                 <!-- 5줄 고정 표시 -->
                 <template v-for="index in 5" :key="`${board.id}-${index}`">
                   <v-list-item
-                    v-if="boardPosts[board.id] && boardPosts[board.id][index - 1]"
+                    v-if="
+                      boardPosts[board.id] && boardPosts[board.id][index - 1]
+                    "
                     :to="`/board/${board.id}/post/${boardPosts[board.id][index - 1].id}`"
                     class="post-item"
                   >
@@ -79,12 +94,19 @@
                       class="d-flex align-center justify-space-between post-title-row"
                     >
                       <div class="post-title-content">
-                        <span v-if="boardPosts[board.id][index - 1].isPinned" class="pinned-badge">
+                        <span
+                          v-if="boardPosts[board.id][index - 1].isPinned"
+                          class="pinned-badge"
+                        >
                           <v-icon icon="mdi-pin" size="14" color="error" />
                         </span>
-                        <span class="post-title">{{ boardPosts[board.id][index - 1].title }}</span>
+                        <span class="post-title">{{
+                          boardPosts[board.id][index - 1].title
+                        }}</span>
                         <span
-                          v-if="boardPosts[board.id][index - 1].commentCount > 0"
+                          v-if="
+                            boardPosts[board.id][index - 1].commentCount > 0
+                          "
                           class="comment-count"
                         >
                           [{{ boardPosts[board.id][index - 1].commentCount }}]
@@ -100,7 +122,9 @@
 
                   <!-- 게시물이 없는 경우 빈 슬롯 -->
                   <v-list-item v-else class="post-item post-item-empty">
-                    <v-list-item-title class="d-flex align-center justify-space-between">
+                    <v-list-item-title
+                      class="d-flex align-center justify-space-between"
+                    >
                       <span class="text-medium-emphasis">
                         <span v-if="index === 1">아직 게시물이 없습니다</span>
                         <span v-else>-</span>
@@ -129,24 +153,24 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useBoardsStore } from '@/stores/boards'
-import { postService } from '@/services/database'
-import { collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '@/services/firebase'
-import MatchSchedule from '@/components/match/MatchSchedule.vue'
-import MatchResults from '@/components/match/MatchResults.vue'
+import { ref, computed, onMounted } from 'vue';
+import { useBoardsStore } from '@/stores/boards';
+import { postService } from '@/services/database';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/services/firebase';
+import MatchSchedule from '@/components/match/MatchSchedule.vue';
+import MatchResults from '@/components/match/MatchResults.vue';
 
-const boardsStore = useBoardsStore()
-const loading = ref(true)
-const boardPosts = ref({})
+const boardsStore = useBoardsStore();
+const loading = ref(true);
+const boardPosts = ref({});
 
 // 전체 통계
 const totalStats = ref({
   users: 0,
   posts: 0,
   comments: 0,
-})
+});
 
 const boardTypes = computed(() =>
   boardsStore.boardTypes.map((board) => ({
@@ -154,52 +178,52 @@ const boardTypes = computed(() =>
     color: getBoardColor(board.id),
     description: getBoardDescription(board.id),
   })),
-)
+);
 
 // 게시판별 색상 설정
 function getBoardColor(boardId) {
   const colors = {
-    free: '#1976D2', // 파란색 - 자유게시판
-    analysis: '#388E3C', // 초록색 - 경기분석
-    transfer: '#F57C00', // 주황색 - 이적소식
-    fanart: '#7B1FA2', // 보라색 - 팬아트
-    notice: '#D32F2F', // 빨간색 - 공지사항
-  }
-  return colors[boardId] || '#1976D2'
+    free: '#1976D2', // 파란색 - Free
+    analysis: '#388E3C', // 초록색 - Match Analysis
+    transfer: '#F57C00', // 주황색 - Transfer News
+    fanart: '#7B1FA2', // 보라색 - Fan Art
+    notice: '#D32F2F', // 빨간색 - Notice
+  };
+  return colors[boardId] || '#1976D2';
 }
 
 // 게시판별 설명 설정
 function getBoardDescription(boardId) {
   const descriptions = {
-    free: '자유로운 이야기를 나누는 공간',
-    analysis: '경기 분석과 전술 토론',
-    transfer: '이적 소식과 루머',
-    fanart: '팬아트와 창작물',
-    notice: '공지사항과 중요 소식',
-  }
-  return descriptions[boardId] || '게시판 설명'
+    free: 'Share your thoughts and stories freely',
+    analysis: 'Match analysis and tactical discussions',
+    transfer: 'Transfer news and rumors',
+    fanart: 'Fan art and creative works',
+    notice: 'Official announcements and important news',
+  };
+  return descriptions[boardId] || 'Board description';
 }
 
 // 날짜 포맷팅
 function formatDate(timestamp) {
-  if (!timestamp) return ''
+  if (!timestamp) return '';
 
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  const now = new Date()
-  const diff = now - date
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
 
-  const minutes = Math.floor(diff / (1000 * 60))
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
   if (days > 0) {
-    return `${days}일 전`
+    return `${days}일 전`;
   } else if (hours > 0) {
-    return `${hours}시간 전`
+    return `${hours}시간 전`;
   } else if (minutes > 0) {
-    return `${minutes}분 전`
+    return `${minutes}분 전`;
   } else {
-    return '방금 전'
+    return '방금 전';
   }
 }
 
@@ -207,26 +231,32 @@ function formatDate(timestamp) {
 async function loadStats() {
   try {
     // 사용자 수 조회
-    const usersSnapshot = await getDocs(collection(db, 'users'))
-    totalStats.value.users = usersSnapshot.size
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    totalStats.value.users = usersSnapshot.size;
 
     // 게시글 수 조회 (삭제되지 않은 것만)
-    const postsQuery = query(collection(db, 'posts'), where('isDeleted', '==', false))
-    const postsSnapshot = await getDocs(postsQuery)
-    totalStats.value.posts = postsSnapshot.size
+    const postsQuery = query(
+      collection(db, 'posts'),
+      where('isDeleted', '==', false),
+    );
+    const postsSnapshot = await getDocs(postsQuery);
+    totalStats.value.posts = postsSnapshot.size;
 
     // 댓글 수 조회 (삭제되지 않은 것만)
-    const commentsQuery = query(collection(db, 'comments'), where('isDeleted', '==', false))
-    const commentsSnapshot = await getDocs(commentsQuery)
-    totalStats.value.comments = commentsSnapshot.size
+    const commentsQuery = query(
+      collection(db, 'comments'),
+      where('isDeleted', '==', false),
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    totalStats.value.comments = commentsSnapshot.size;
   } catch (error) {
-    console.error('Failed to load stats:', error)
+    console.error('Failed to load stats:', error);
     // 에러 발생 시 기본값 유지
     totalStats.value = {
       users: 1247,
       posts: 3892,
       comments: 8456,
-    }
+    };
   }
 }
 
@@ -240,34 +270,36 @@ async function loadPostStats(posts) {
           collection(db, 'comments'),
           where('postId', '==', post.id),
           where('isDeleted', '==', false),
-        )
-        const commentsSnapshot = await getDocs(commentsQuery)
+        );
+        const commentsSnapshot = await getDocs(commentsQuery);
 
         // 좋아요 수 조회 (likes 서브컬렉션)
-        const likesSnapshot = await getDocs(collection(db, 'posts', post.id, 'likes'))
+        const likesSnapshot = await getDocs(
+          collection(db, 'posts', post.id, 'likes'),
+        );
 
         return {
           ...post,
           commentCount: commentsSnapshot.size,
           likeCount: likesSnapshot.size,
-        }
+        };
       } catch (error) {
-        console.error(`Failed to load stats for post ${post.id}:`, error)
+        console.error(`Failed to load stats for post ${post.id}:`, error);
         return {
           ...post,
           commentCount: post.commentCount || 0,
           likeCount: post.likeCount || 0,
-        }
+        };
       }
     }),
-  )
+  );
 
-  return postsWithStats
+  return postsWithStats;
 }
 
 // 각 게시판별 최근 게시물 로드
 async function loadBoardPosts() {
-  loading.value = true
+  loading.value = true;
 
   try {
     const promises = boardTypes.value.map(async (board) => {
@@ -275,33 +307,33 @@ async function loadBoardPosts() {
         const posts = await postService.getPosts(board.id, {
           limitCount: 5,
           sortBy: 'latest',
-        })
+        });
 
         // 실제 댓글 수와 좋아요 수 로드
-        const postsWithStats = await loadPostStats(posts)
+        const postsWithStats = await loadPostStats(posts);
 
-        return { boardId: board.id, posts: postsWithStats }
+        return { boardId: board.id, posts: postsWithStats };
       } catch (error) {
-        console.error(`Failed to load posts for board ${board.id}:`, error)
-        return { boardId: board.id, posts: [] }
+        console.error(`Failed to load posts for board ${board.id}:`, error);
+        return { boardId: board.id, posts: [] };
       }
-    })
+    });
 
-    const results = await Promise.all(promises)
+    const results = await Promise.all(promises);
 
     // 결과를 boardPosts 객체에 저장
     results.forEach(({ boardId, posts }) => {
-      boardPosts.value[boardId] = posts
-    })
+      boardPosts.value[boardId] = posts;
+    });
   } catch (error) {
-    console.error('Failed to load board posts:', error)
+    console.error('Failed to load board posts:', error);
 
-    // 에러 발생 시 임시 데이터로 대체
+    // 에러 발생 시 빈 배열로 설정
     boardTypes.value.forEach((board) => {
-      boardPosts.value[board.id] = generateMockPosts(board.id)
-    })
+      boardPosts.value[board.id] = [];
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -343,9 +375,9 @@ function generateMockPosts(boardId) {
       '이벤트 당첨자 발표',
       '운영진 모집 공고',
     ],
-  }
+  };
 
-  const titles = mockTitles[boardId] || mockTitles.free
+  const titles = mockTitles[boardId] || mockTitles.free;
 
   return titles.map((title, index) => ({
     id: `${boardId}_${index}`,
@@ -355,13 +387,13 @@ function generateMockPosts(boardId) {
     commentCount: Math.floor(Math.random() * 20),
     likeCount: Math.floor(Math.random() * 50),
     isPinned: index === 0 && Math.random() > 0.7,
-  }))
+  }));
 }
 
 onMounted(() => {
-  loadStats()
-  loadBoardPosts()
-})
+  loadStats();
+  loadBoardPosts();
+});
 </script>
 
 <style scoped>

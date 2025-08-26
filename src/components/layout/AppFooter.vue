@@ -7,11 +7,18 @@
         <v-col cols="12" md="4">
           <div class="d-flex align-center mb-2">
             <span class="text-subtitle-1 font-weight-bold"
-              ><v-img src="/favicon.ico" alt="AS Roma Logo" width="20" height="20" class="me-2" />La
-              Roma Corea</span
+              ><v-img
+                src="/favicon.ico"
+                alt="AS Roma Logo"
+                width="20"
+                height="20"
+                class="me-2"
+              />La Roma Corea</span
             >
           </div>
-          <p class="text-caption mb-0">AS 로마를 사랑하는 한국 팬들의 커뮤니티</p>
+          <p class="text-caption mb-0">
+            AS 로마를 사랑하는 한국 팬들의 커뮤니티
+          </p>
         </v-col>
 
         <!-- Social Links -->
@@ -33,7 +40,13 @@
           </div>
           <div>
             <p class="text-caption mb-0">
-              <a href="https://www.asroma.com" target="_blank" class="text-white"> asroma.com </a>
+              <a
+                href="https://www.asroma.com"
+                target="_blank"
+                class="text-white"
+              >
+                asroma.com
+              </a>
             </p>
           </div>
         </v-col>
@@ -41,9 +54,17 @@
 
       <!-- Mobile Footer -->
       <div class="d-md-none text-center">
-        <div class="d-flex align-center justify-center mb-2">
-          <v-img src="/favicon.ico" alt="AS Roma Logo" width="20" height="20" class="me-2" />
-          <span class="font-weight-bold">La Roma Corea</span>
+        <div class="mobile-footer-title">
+          <img
+            src="/favicon.ico"
+            alt="AS Roma Logo"
+            width="20"
+            height="20"
+            class="footer-logo"
+          />
+          <div class="text-wrapper">
+            <span class="font-weight-bold footer-text">La Roma Corea</span>
+          </div>
         </div>
 
         <!-- Mobile Social Links -->
@@ -77,19 +98,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 // Computed
-const currentYear = computed(() => new Date().getFullYear())
-
-// Quick navigation links
-const quickLinks = [
-  { name: '홈', to: '/' },
-  { name: 'Notice', to: '/board/notice' },
-  { name: 'Squad', to: '/board/squad' },
-  { name: 'Match', to: '/board/match' },
-  { name: '아이콘 상점', to: '/icon-shop' },
-]
+const currentYear = computed(() => new Date().getFullYear());
 
 // Social media links
 const socialLinks = [
@@ -113,7 +125,7 @@ const socialLinks = [
     icon: 'mdi-youtube',
     url: 'https://youtube.com/asroma',
   },
-]
+];
 </script>
 
 <style scoped>
@@ -123,5 +135,47 @@ const socialLinks = [
 
 .v-btn:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Mobile Footer Styling */
+.mobile-footer-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.text-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.footer-logo {
+  flex-shrink: 0;
+}
+
+.footer-text {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Ensure proper alignment on all mobile devices */
+@media (max-width: 599px) {
+  .mobile-footer-title {
+    align-items: center;
+    min-height: 32px;
+  }
+
+  .footer-logo {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .footer-text {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
 }
 </style>
