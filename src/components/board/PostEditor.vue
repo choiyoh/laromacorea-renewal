@@ -142,7 +142,13 @@
     </v-card>
 
     <!-- Match Template Dialog -->
-    <v-dialog v-model="showMatchTemplate" max-width="900px" scrollable>
+    <v-dialog
+      v-model="showMatchTemplate"
+      max-width="900px"
+      scrollable
+      persistent
+      class="match-template-dialog"
+    >
       <MatchPostTemplate
         :available-matches="availableMatches"
         @create-post="handleMatchTemplateCreate"
@@ -463,23 +469,24 @@ function handleBoardTypeChange(boardType) {
 
 async function loadAvailableMatches() {
   try {
-    // Try to get today's matches first
-    let matches = await matchService.getTodayMatches();
+    console.log('Loading available matches...');
 
-    // If no matches today, get upcoming matches
-    if (matches.length === 0) {
-      matches = await matchService.getUpcomingMatches(5);
-    }
+    // Get upcoming matches
+    let matches = await matchService.getUpcomingMatches();
+    console.log('Loaded matches:', matches);
 
-    // If still no matches, create sample data for demo
-    if (matches.length === 0) {
+    // If no matches from API, use mock data
+    if (!matches || matches.length === 0) {
+      console.log('No matches from API, using mock data');
       matches = matchService.getMockMatches();
     }
 
     availableMatches.value = matches;
+    console.log('Available matches set:', availableMatches.value);
   } catch (error) {
     console.error('Error loading matches:', error);
     // Fallback to sample data
+    console.log('Using fallback mock data');
     availableMatches.value = matchService.getMockMatches();
   }
 }
@@ -508,6 +515,12 @@ function handleMatchTemplateCreate(postData) {
 onMounted(async () => {
   await nextTick();
   initializeEditor();
+
+  // Match 게시판이면 경기 데이터 미리 로드
+  if (props.boardType === 'match' || formData.value.boardType === 'match') {
+    console.log('Loading matches for match board...');
+    await loadAvailableMatches();
+  }
 
   if (props.isEdit && props.post) {
     formData.value = {
@@ -633,6 +646,16 @@ onUnmounted(() => {
   font-family: inherit;
 }
 
+/* Dialog styling */
+:deep(.match-template-dialog .v-overlay__content) {
+  background-color: rgb(var(--v-theme-surface));
+  border-radius: 8px;
+}
+
+:deep(.match-template-dialog .v-card) {
+  background-color: rgb(var(--v-theme-surface)) !important;
+}
+
 @media (max-width: 768px) {
   :deep(.ql-toolbar) {
     padding: 8px;
@@ -640,6 +663,14 @@ onUnmounted(() => {
 
   :deep(.ql-formats) {
     margin-right: 8px;
+  }
+
+  :deep(.match-template-dialog) {
+    margin: 16px;
+  }
+
+  :deep(.match-template-dialog .v-overlay__content) {
+    max-height: 90vh;
   }
 }
 </style>

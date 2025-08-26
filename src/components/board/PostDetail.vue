@@ -99,7 +99,6 @@
                   :static-icon-url="post.authorIcon"
                   size="22"
                   avatar-class="me-2 avatar-aligned"
-                  avatar-class="me-2"
                 />
                 <span class="text-body-1 font-weight-medium">{{
                   post.authorName || '익명'
