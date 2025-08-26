@@ -501,16 +501,28 @@ export const adminService = {
   async addIcon(iconData) {
     try {
       let iconUrl = '';
+      const { file, ...dataToSave } = iconData;
 
-      // 임시로 파일 업로드를 건너뛰고 placeholder 이미지 사용
-      if (iconData.file) {
-        console.log('파일 업로드 건너뛰기 - 임시 이미지 사용');
-        iconUrl = `https://via.placeholder.com/100x100/FFD700/000000?text=${encodeURIComponent(iconData.name)}`;
+      // 1. 파일이 있으면 스토리지에 업로드
+      if (file && file instanceof File) {
+        const uniqueFileName = `${Date.now()}_${file.name}`;
+        const iconStorageRef = storageRef(storage, `icons/${uniqueFileName}`);
+
+        // 2. 파일 업로드
+        const uploadResult = await uploadBytes(iconStorageRef, file);
+
+        // 3. 다운로드 URL 가져오기
+        iconUrl = await getDownloadURL(uploadResult.ref);
+        console.log('파일 업로드 성공, URL:', iconUrl);
+      } else {
+        // 파일이 없는 경우 플레이스홀더 사용 (기존 로직 유지)
+        console.log('파일 없음 - 임시 이미지 사용');
+        iconUrl = `https://via.placeholder.com/100x100/FFD700/000000?text=${encodeURIComponent(
+          dataToSave.name,
+        )}`;
       }
 
-      // File 객체를 제거하고 나머지 데이터만 저장
-      const { ...dataToSave } = iconData;
-
+      // 4. Firestore에 저장 (File 객체 제외)
       const docRef = await addDoc(collection(db, collections.icons), {
         ...dataToSave,
         url: iconUrl,
@@ -518,7 +530,7 @@ export const adminService = {
         purchaseCount: 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        createdBy: 'admin',
+        createdBy: 'admin', // TODO: 실제 관리자 ID로 교체
       });
 
       console.log('아이콘 생성 완료:', docRef.id);
