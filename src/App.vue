@@ -1,86 +1,99 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { useUserStore } from '@/stores/user'
-import { useResponsive } from '@/composables/useResponsive'
-import { useNetworkStatus } from '@/composables/useNetworkStatus'
-import AppHeader from '@/components/layout/AppHeader.vue'
-import AppNavigation from '@/components/layout/AppNavigation.vue'
-import AppFooter from '@/components/layout/AppFooter.vue'
-import ErrorNotification from '@/components/common/ErrorNotification.vue'
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+import { useResponsive } from '@/composables/useResponsive';
+import { useNetworkStatus } from '@/composables/useNetworkStatus';
+import AppHeader from '@/components/layout/AppHeader.vue';
+import AppNavigation from '@/components/layout/AppNavigation.vue';
+import AppFooter from '@/components/layout/AppFooter.vue';
+import ErrorNotification from '@/components/common/ErrorNotification.vue';
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue';
 
-const userStore = useUserStore()
-const { responsiveClasses, isMobile } = useResponsive()
+const route = useRoute();
+const userStore = useUserStore();
+const { responsiveClasses, isMobile } = useResponsive();
 
 // Initialize network monitoring
-useNetworkStatus()
+useNetworkStatus();
 
 // Mobile drawer state
-const drawer = ref(false)
+const drawer = ref(false);
+
+// Check if current route is splash screen
+const isSplashScreen = computed(() => route.name === 'splash');
 
 // Initialize authentication state listener
 onMounted(() => {
-  userStore.initializeAuth()
+  userStore.initializeAuth();
 
   // Add responsive classes to document (with safety check)
   nextTick(() => {
     try {
-      const classes = responsiveClasses.value
+      const classes = responsiveClasses.value;
       if (classes && classes.length > 0) {
-        document.documentElement.classList.add(...classes)
+        document.documentElement.classList.add(...classes);
       }
     } catch (error) {
-      console.warn('Failed to add responsive classes:', error)
+      console.warn('Failed to add responsive classes:', error);
     }
-  })
+  });
 
   // Handle drawer auto-close on desktop (with safety check)
   nextTick(() => {
     try {
       if (!isMobile.value) {
-        drawer.value = false
+        drawer.value = false;
       }
     } catch (error) {
-      console.warn('Failed to handle drawer state:', error)
+      console.warn('Failed to handle drawer state:', error);
     }
-  })
-})
+  });
+});
 
 onUnmounted(() => {
   // Clean up responsive classes
-  document.documentElement.classList.remove(...responsiveClasses.value)
-})
+  document.documentElement.classList.remove(...responsiveClasses.value);
+});
 
 // Methods
 const toggleDrawer = () => {
-  drawer.value = !drawer.value
-}
+  drawer.value = !drawer.value;
+};
 
 // Close drawer when clicking outside (mobile only)
 const handleDrawerOverlayClick = () => {
   if (isMobile.value) {
-    drawer.value = false
+    drawer.value = false;
   }
-}
+};
 </script>
 
 <template>
   <v-app class="responsive-app">
-    <!-- Header -->
-    <AppHeader @toggle-drawer="toggleDrawer" />
+    <!-- Header (hidden on splash screen) -->
+    <AppHeader v-if="!isSplashScreen" @toggle-drawer="toggleDrawer" />
 
-    <!-- Mobile Navigation Drawer -->
-    <AppNavigation v-model="drawer" @click:outside="handleDrawerOverlayClick" />
+    <!-- Mobile Navigation Drawer (hidden on splash screen) -->
+    <AppNavigation
+      v-if="!isSplashScreen"
+      v-model="drawer"
+      @click:outside="handleDrawerOverlayClick"
+    />
 
     <!-- Main Content -->
-    <v-main class="responsive-main">
-      <div class="main-content-wrapper">
+    <v-main :class="isSplashScreen ? 'splash-main' : 'responsive-main'">
+      <div
+        :class="
+          isSplashScreen ? 'splash-content-wrapper' : 'main-content-wrapper'
+        "
+      >
         <router-view />
       </div>
     </v-main>
 
-    <!-- Footer -->
-    <AppFooter />
+    <!-- Footer (hidden on splash screen) -->
+    <AppFooter v-if="!isSplashScreen" />
 
     <!-- Global Error Notifications -->
     <ErrorNotification />
@@ -118,11 +131,22 @@ const handleDrawerOverlayClick = () => {
   min-height: calc(calc(var(--vh, 1vh) * 100) - 64px - 120px);
 }
 
+.splash-main {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
 .main-content-wrapper {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+.splash-content-wrapper {
+  width: 100%;
+  height: 100%;
+  padding: 0;
 }
 
 @media (max-width: 599px) {

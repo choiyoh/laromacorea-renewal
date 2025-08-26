@@ -1,5 +1,11 @@
 <template>
-  <v-navigation-drawer v-model="drawer" temporary location="left" width="280" class="d-md-none">
+  <v-navigation-drawer
+    v-model="drawer"
+    temporary
+    location="left"
+    width="280"
+    class="d-md-none"
+  >
     <!-- User Profile Section -->
     <div v-if="userStore.isAuthenticated" class="pa-4 bg-primary">
       <div class="d-flex align-center text-white">
@@ -30,8 +36,17 @@
     <div v-else class="pa-4 bg-grey-lighten-4">
       <div class="text-center">
         <v-icon size="48" class="text-grey mb-2">mdi-account-circle</v-icon>
-        <div class="text-body-2 text-grey-darken-1 mb-3">로그인이 필요합니다</div>
-        <v-btn color="primary" variant="flat" block @click="$router.push('/auth')"> 로그인 </v-btn>
+        <div class="text-body-2 text-grey-darken-1 mb-3">
+          로그인이 필요합니다
+        </div>
+        <v-btn
+          color="primary"
+          variant="flat"
+          block
+          @click="$router.push('/auth')"
+        >
+          로그인
+        </v-btn>
       </div>
     </div>
 
@@ -40,7 +55,11 @@
     <!-- Navigation Menu -->
     <v-list nav>
       <!-- Home -->
-      <v-list-item :to="`/`" :active="$route.path === '/'" @click="closeDrawer">
+      <v-list-item
+        :to="`/home`"
+        :active="$route.path === '/home'"
+        @click="closeDrawer"
+      >
         <template v-slot:prepend>
           <v-icon>mdi-home</v-icon>
         </template>
@@ -104,8 +123,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useUserStore } from '@/stores/user'
+import { computed } from 'vue';
+import { useUserStore } from '@/stores/user';
 
 // Props
 const props = defineProps({
@@ -113,19 +132,19 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-})
+});
 
 // Emits
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue']);
 
 // Composables
-const userStore = useUserStore()
+const userStore = useUserStore();
 
 // Computed
 const drawer = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
-})
+});
 
 // Board navigation items with icons
 const boards = [
@@ -136,17 +155,17 @@ const boards = [
   { key: 'special', name: 'Special', icon: 'mdi-star' },
   { key: 'squad', name: 'Squad', icon: 'mdi-account-group' },
   { key: 'media', name: 'Media', icon: 'mdi-play-circle' },
-]
+];
 
 // Methods
 const closeDrawer = () => {
-  drawer.value = false
-}
+  drawer.value = false;
+};
 
 const handleSignOut = async () => {
-  await userStore.signOut()
-  closeDrawer()
-}
+  await userStore.signOut();
+  closeDrawer();
+};
 </script>
 
 <style scoped>

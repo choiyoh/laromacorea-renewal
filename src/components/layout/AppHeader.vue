@@ -8,7 +8,7 @@
       <!-- Logo -->
       <v-app-bar-title class="d-flex align-center">
         <router-link
-          to="/"
+          to="/home"
           class="text-decoration-none text-black d-flex align-center"
         >
           <v-img
@@ -114,7 +114,7 @@
 
         <!-- Center: Logo -->
         <div class="mobile-center">
-          <router-link to="/" class="text-decoration-none text-black">
+          <router-link to="/home" class="text-decoration-none text-black">
             <span class="font-weight-bold mobile-title">La Roma Corea</span>
           </router-link>
         </div>

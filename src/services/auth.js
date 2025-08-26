@@ -44,8 +44,17 @@ export class AuthService {
         password,
       );
 
-      // Update last login time
+      // 사용자 문서에서 계정 상태 확인
       if (userCredential.user) {
+        const userDoc = await this.getUserDocument(userCredential.user.uid);
+
+        // 계정이 비활성화된 경우 로그인 차단
+        if (userDoc && userDoc.isActive === false) {
+          // Firebase Auth에서 로그아웃
+          await signOut(auth);
+          throw new Error('운영자에 의해 제재된 멤버입니다');
+        }
+
         await this.updateUserLastLogin(userCredential.user.uid);
       }
 

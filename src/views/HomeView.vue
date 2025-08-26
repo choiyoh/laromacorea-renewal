@@ -16,26 +16,19 @@
         </v-col>
       </v-row>
 
-      <!-- 경기 일정, 결과 및 공지사항 섹션 -->
+      <!-- 경기 일정 및 결과 섹션 -->
       <v-row class="mb-4 info-cards-row">
-        <!-- 다음 경기 (가장 중요) -->
-        <v-col cols="12" sm="6" lg="4" class="mb-3">
+        <!-- 다음 경기 -->
+        <v-col cols="12" sm="6" class="mb-3">
           <div class="info-card-wrapper">
             <MatchSchedule />
           </div>
         </v-col>
 
         <!-- 최근 경기 결과 -->
-        <v-col cols="12" sm="6" lg="4" class="mb-3">
+        <v-col cols="12" sm="6" class="mb-3">
           <div class="info-card-wrapper">
             <MatchResults />
-          </div>
-        </v-col>
-
-        <!-- 공지사항 -->
-        <v-col cols="12" sm="12" lg="4" class="mb-3">
-          <div class="info-card-wrapper">
-            <NoticeBoard />
           </div>
         </v-col>
       </v-row>
@@ -46,7 +39,7 @@
           v-for="board in boardTypes"
           :key="board.id"
           cols="12"
-          md="6"
+          md="4"
           lg="4"
           class="mb-4"
         >
@@ -87,8 +80,13 @@
                     v-if="
                       boardPosts[board.id] && boardPosts[board.id][index - 1]
                     "
-                    :to="`/board/${board.id}/post/${boardPosts[board.id][index - 1].id}`"
                     class="post-item"
+                    @click="
+                      handlePostClick(
+                        board.id,
+                        boardPosts[board.id][index - 1].id,
+                      )
+                    "
                   >
                     <v-list-item-title
                       class="d-flex align-center justify-space-between post-title-row"
@@ -154,14 +152,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useBoardsStore } from '@/stores/boards';
+import { useUserStore } from '@/stores/user';
 import { postService } from '@/services/database';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import MatchSchedule from '@/components/match/MatchSchedule.vue';
 import MatchResults from '@/components/match/MatchResults.vue';
 
+const router = useRouter();
 const boardsStore = useBoardsStore();
+const userStore = useUserStore();
 const loading = ref(true);
 const boardPosts = ref({});
 
@@ -202,6 +204,18 @@ function getBoardDescription(boardId) {
     notice: 'Official announcements and important news',
   };
   return descriptions[boardId] || 'Board description';
+}
+
+// 게시물 클릭 핸들러
+function handlePostClick(boardId, postId) {
+  // 로그인하지 않은 사용자는 로그인 페이지로 리다이렉트
+  if (!userStore.isAuthenticated) {
+    router.push('/auth');
+    return;
+  }
+
+  // 로그인된 사용자는 게시물 상세 페이지로 이동
+  router.push(`/board/${boardId}/post/${postId}`);
 }
 
 // 날짜 포맷팅

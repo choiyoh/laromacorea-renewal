@@ -530,7 +530,7 @@ const handleSubmit = async () => {
 
       // Redirect to home page
       setTimeout(() => {
-        router.push('/');
+        router.push('/home');
       }, 1000);
     }
   } catch (error) {
@@ -542,7 +542,10 @@ const handleSubmit = async () => {
 
     let errorMsg = '오류가 발생했습니다.';
 
-    if (
+    // 제재된 계정 메시지를 우선적으로 처리
+    if (error.message === '운영자에 의해 제재된 멤버입니다') {
+      errorMsg = error.message;
+    } else if (
       error.code === 'auth/user-not-found' ||
       error.code === 'auth/wrong-password'
     ) {
