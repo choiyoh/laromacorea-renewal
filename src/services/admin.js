@@ -32,6 +32,11 @@ export const adminService = {
    */
   async checkAdminPermission(userId) {
     try {
+      // userId 유효성 검사
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('유효하지 않은 사용자 ID입니다.');
+      }
+
       const userDoc = await getDoc(doc(db, collections.users, userId));
       if (!userDoc.exists()) {
         throw new Error('사용자를 찾을 수 없습니다.');
@@ -50,6 +55,15 @@ export const adminService = {
    */
   async createNotice(adminUserId, noticeData) {
     try {
+      // 매개변수 유효성 검사
+      if (!adminUserId || typeof adminUserId !== 'string') {
+        throw new Error('유효하지 않은 관리자 ID입니다.');
+      }
+
+      if (!noticeData || typeof noticeData !== 'object') {
+        throw new Error('유효하지 않은 공지사항 데이터입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {

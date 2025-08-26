@@ -515,7 +515,7 @@ onMounted(async () => {
 }
 
 .post-body {
-  line-height: 1.7;
+  line-height: 1.1;
   word-break: break-word;
   font-size: 1rem;
   min-height: 200px;

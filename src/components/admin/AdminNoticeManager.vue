@@ -72,12 +72,21 @@
                     color="warning"
                     class="mr-4"
                   />
-                  <v-switch v-model="newNotice.isPopup" label="팝업 표시" color="error" />
+                  <v-switch
+                    v-model="newNotice.isPopup"
+                    label="팝업 표시"
+                    color="error"
+                  />
                 </v-col>
               </v-row>
 
               <div class="d-flex justify-end">
-                <v-btn type="submit" color="primary" variant="elevated" :loading="createLoading">
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  variant="elevated"
+                  :loading="createLoading"
+                >
                   <v-icon icon="mdi-bullhorn" class="mr-2" />
                   공지사항 등록
                 </v-btn>
@@ -119,7 +128,13 @@
         />
       </v-col>
       <v-col cols="12" md="2">
-        <v-btn color="primary" variant="elevated" @click="loadNotices" :loading="loading" block>
+        <v-btn
+          color="primary"
+          variant="elevated"
+          @click="loadNotices"
+          :loading="loading"
+          block
+        >
           새로고침
         </v-btn>
       </v-col>
@@ -131,12 +146,18 @@
         <v-icon icon="mdi-bullhorn" class="mr-2" />
         공지사항 관리
         <v-spacer />
-        <v-chip color="info" variant="elevated"> 총 {{ filteredNotices.length }}개 </v-chip>
+        <v-chip color="info" variant="elevated">
+          총 {{ filteredNotices.length }}개
+        </v-chip>
       </v-card-title>
 
       <v-card-text>
         <v-list v-if="filteredNotices.length > 0" class="notice-list">
-          <v-list-item v-for="notice in filteredNotices" :key="notice.id" class="notice-item">
+          <v-list-item
+            v-for="notice in filteredNotices"
+            :key="notice.id"
+            class="notice-item"
+          >
             <template #prepend>
               <v-avatar :color="getTypeColor(notice.type)" size="40">
                 <v-icon :icon="getTypeIcon(notice.type)" />
@@ -145,13 +166,27 @@
 
             <v-list-item-title class="d-flex align-center">
               <div class="d-flex align-center flex-wrap gap-2 mb-1">
-                <v-chip v-if="notice.isPinned" color="warning" size="small" variant="elevated">
+                <v-chip
+                  v-if="notice.isPinned"
+                  color="warning"
+                  size="small"
+                  variant="elevated"
+                >
                   고정
                 </v-chip>
-                <v-chip v-if="notice.isPopup" color="error" size="small" variant="elevated">
+                <v-chip
+                  v-if="notice.isPopup"
+                  color="error"
+                  size="small"
+                  variant="elevated"
+                >
                   팝업
                 </v-chip>
-                <v-chip :color="getPriorityColor(notice.priority)" size="small" variant="outlined">
+                <v-chip
+                  :color="getPriorityColor(notice.priority)"
+                  size="small"
+                  variant="outlined"
+                >
                   {{ getPriorityText(notice.priority) }}
                 </v-chip>
               </div>
@@ -159,12 +194,14 @@
             </v-list-item-title>
 
             <v-list-item-subtitle class="mt-2">
-              <div class="notice-content">
-                {{ notice.content.substring(0, 100) }}{{ notice.content.length > 100 ? '...' : '' }}
-              </div>
+              <div
+                class="notice-content"
+                v-html="getContentPreview(notice.content)"
+              ></div>
               <div class="d-flex align-center justify-space-between mt-2">
                 <div class="text-caption text-medium-emphasis">
-                  {{ formatDate(notice.createdAt) }} • 조회 {{ notice.views || 0 }}회
+                  {{ formatDate(notice.createdAt) }} • 조회
+                  {{ notice.views || 0 }}회
                 </div>
                 <v-chip
                   :color="notice.isActive ? 'success' : 'error'"
@@ -179,7 +216,12 @@
             <template #append>
               <v-menu>
                 <template #activator="{ props }">
-                  <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" />
+                  <v-btn
+                    icon="mdi-dots-vertical"
+                    variant="text"
+                    size="small"
+                    v-bind="props"
+                  />
                 </template>
                 <v-list>
                   <v-list-item @click="viewNotice(notice)">
@@ -196,7 +238,9 @@
                   </v-list-item>
                   <v-list-item @click="toggleNoticeStatus(notice)">
                     <template #prepend>
-                      <v-icon :icon="notice.isActive ? 'mdi-eye-off' : 'mdi-eye'" />
+                      <v-icon
+                        :icon="notice.isActive ? 'mdi-eye-off' : 'mdi-eye'"
+                      />
                     </template>
                     <v-list-item-title>
                       {{ notice.isActive ? '비활성화' : '활성화' }}
@@ -215,7 +259,12 @@
         </v-list>
 
         <div v-else class="text-center py-8">
-          <v-icon icon="mdi-bullhorn-outline" size="64" color="grey" class="mb-4" />
+          <v-icon
+            icon="mdi-bullhorn-outline"
+            size="64"
+            color="grey"
+            class="mb-4"
+          />
           <p class="text-h6 text-medium-emphasis">공지사항이 없습니다</p>
         </div>
       </v-card-text>
@@ -228,7 +277,12 @@
           <v-icon icon="mdi-bullhorn" class="mr-2" />
           {{ isEditing ? '공지사항 편집' : '공지사항 상세' }}
           <v-spacer />
-          <v-btn v-if="!isEditing" icon="mdi-pencil" variant="text" @click="startEdit" />
+          <v-btn
+            v-if="!isEditing"
+            icon="mdi-pencil"
+            variant="text"
+            @click="startEdit"
+          />
           <v-btn icon="mdi-close" variant="text" @click="closeDialog" />
         </v-card-title>
 
@@ -290,9 +344,21 @@
             </v-row>
 
             <div class="d-flex gap-4 mb-3">
-              <v-switch v-model="selectedNotice.isPinned" label="상단 고정" color="warning" />
-              <v-switch v-model="selectedNotice.isPopup" label="팝업 표시" color="error" />
-              <v-switch v-model="selectedNotice.isActive" label="활성 상태" color="success" />
+              <v-switch
+                v-model="selectedNotice.isPinned"
+                label="상단 고정"
+                color="warning"
+              />
+              <v-switch
+                v-model="selectedNotice.isPopup"
+                label="팝업 표시"
+                color="error"
+              />
+              <v-switch
+                v-model="selectedNotice.isActive"
+                label="활성 상태"
+                color="success"
+              />
             </div>
           </v-form>
 
@@ -300,7 +366,11 @@
             <div class="mb-4">
               <h3 class="text-h5 mb-2">{{ selectedNotice.title }}</h3>
               <div class="d-flex align-center flex-wrap gap-2 mb-3">
-                <v-chip :color="getTypeColor(selectedNotice.type)" size="small" variant="elevated">
+                <v-chip
+                  :color="getTypeColor(selectedNotice.type)"
+                  size="small"
+                  variant="elevated"
+                >
                   {{ getTypeText(selectedNotice.type) }}
                 </v-chip>
                 <v-chip
@@ -318,7 +388,12 @@
                 >
                   고정
                 </v-chip>
-                <v-chip v-if="selectedNotice.isPopup" color="error" size="small" variant="elevated">
+                <v-chip
+                  v-if="selectedNotice.isPopup"
+                  color="error"
+                  size="small"
+                  variant="elevated"
+                >
                   팝업
                 </v-chip>
               </div>
@@ -328,9 +403,10 @@
               </div>
             </div>
 
-            <div class="notice-content-detail">
-              {{ selectedNotice.content }}
-            </div>
+            <div
+              class="notice-content-detail"
+              v-html="selectedNotice.content"
+            ></div>
 
             <v-divider class="my-4" />
 
@@ -343,7 +419,10 @@
                   종료일: {{ formatDate(selectedNotice.endDate) }}
                 </div>
               </div>
-              <v-chip :color="selectedNotice.isActive ? 'success' : 'error'" variant="elevated">
+              <v-chip
+                :color="selectedNotice.isActive ? 'success' : 'error'"
+                variant="elevated"
+              >
                 {{ selectedNotice.isActive ? '활성' : '비활성' }}
               </v-chip>
             </div>
@@ -353,7 +432,9 @@
         <v-card-actions v-if="isEditing">
           <v-spacer />
           <v-btn @click="cancelEdit">취소</v-btn>
-          <v-btn color="primary" @click="saveNotice" :loading="saveLoading">저장</v-btn>
+          <v-btn color="primary" @click="saveNotice" :loading="saveLoading"
+            >저장</v-btn
+          >
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -361,25 +442,25 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { adminService } from '@/services/admin'
-import { useUserStore } from '@/stores/user'
+import { ref, computed, onMounted } from 'vue';
+import { adminService } from '@/services/admin';
+import { useUserStore } from '@/stores/user';
 
-const emit = defineEmits(['notice-updated'])
+const emit = defineEmits(['notice-updated']);
 
-const userStore = useUserStore()
-const loading = ref(false)
-const createLoading = ref(false)
-const saveLoading = ref(false)
-const notices = ref([])
-const searchTerm = ref('')
-const typeFilter = ref('all')
-const statusFilter = ref('all')
+const userStore = useUserStore();
+const loading = ref(false);
+const createLoading = ref(false);
+const saveLoading = ref(false);
+const notices = ref([]);
+const searchTerm = ref('');
+const typeFilter = ref('all');
+const statusFilter = ref('all');
 
 // 다이얼로그 상태
-const detailDialog = ref(false)
-const selectedNotice = ref(null)
-const isEditing = ref(false)
+const detailDialog = ref(false);
+const selectedNotice = ref(null);
+const isEditing = ref(false);
 
 // 새 공지사항 데이터
 const newNotice = ref({
@@ -391,7 +472,7 @@ const newNotice = ref({
   endDate: '',
   isPinned: false,
   isPopup: false,
-})
+});
 
 // 옵션들
 const noticeTypeOptions = [
@@ -400,138 +481,157 @@ const noticeTypeOptions = [
   { title: '이벤트', value: 'event' },
   { title: '점검', value: 'maintenance' },
   { title: '긴급', value: 'urgent' },
-]
+];
 
-const typeFilterOptions = [{ title: '전체', value: 'all' }, ...noticeTypeOptions]
+const typeFilterOptions = [
+  { title: '전체', value: 'all' },
+  ...noticeTypeOptions,
+];
 
 const priorityOptions = [
   { title: '낮음', value: 'low' },
   { title: '보통', value: 'normal' },
   { title: '높음', value: 'high' },
   { title: '긴급', value: 'urgent' },
-]
+];
 
 const statusOptions = [
   { title: '전체', value: 'all' },
   { title: '활성', value: 'active' },
   { title: '비활성', value: 'inactive' },
-]
+];
 
 // 필터링된 공지사항 목록
 const filteredNotices = computed(() => {
-  let filtered = notices.value
+  let filtered = notices.value;
 
   // 검색어 필터
   if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     filtered = filtered.filter(
       (notice) =>
-        notice.title?.toLowerCase().includes(term) || notice.content?.toLowerCase().includes(term),
-    )
+        notice.title?.toLowerCase().includes(term) ||
+        notice.content?.toLowerCase().includes(term),
+    );
   }
 
   // 유형 필터
   if (typeFilter.value !== 'all') {
-    filtered = filtered.filter((notice) => notice.type === typeFilter.value)
+    filtered = filtered.filter((notice) => notice.type === typeFilter.value);
   }
 
   // 상태 필터
   if (statusFilter.value !== 'all') {
-    const isActive = statusFilter.value === 'active'
-    filtered = filtered.filter((notice) => notice.isActive === isActive)
+    const isActive = statusFilter.value === 'active';
+    filtered = filtered.filter((notice) => notice.isActive === isActive);
   }
 
   return filtered.sort((a, b) => {
     // 고정된 공지사항을 먼저 표시
-    if (a.isPinned && !b.isPinned) return -1
-    if (!a.isPinned && b.isPinned) return 1
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
 
     // 우선순위 순으로 정렬
-    const priorityOrder = { urgent: 4, high: 3, normal: 2, low: 1 }
-    const aPriority = priorityOrder[a.priority] || 2
-    const bPriority = priorityOrder[b.priority] || 2
+    const priorityOrder = { urgent: 4, high: 3, normal: 2, low: 1 };
+    const aPriority = priorityOrder[a.priority] || 2;
+    const bPriority = priorityOrder[b.priority] || 2;
 
-    if (aPriority !== bPriority) return bPriority - aPriority
+    if (aPriority !== bPriority) return bPriority - aPriority;
 
     // 생성일 순으로 정렬
-    return new Date(b.createdAt) - new Date(a.createdAt)
-  })
-})
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+});
 
 // 유형 색상
 const getTypeColor = (type) => {
   switch (type) {
     case 'urgent':
-      return 'error'
+      return 'error';
     case 'maintenance':
-      return 'warning'
+      return 'warning';
     case 'event':
-      return 'success'
+      return 'success';
     case 'update':
-      return 'info'
+      return 'info';
     default:
-      return 'primary'
+      return 'primary';
   }
-}
+};
 
 // 유형 아이콘
 const getTypeIcon = (type) => {
   switch (type) {
     case 'urgent':
-      return 'mdi-alert'
+      return 'mdi-alert';
     case 'maintenance':
-      return 'mdi-wrench'
+      return 'mdi-wrench';
     case 'event':
-      return 'mdi-calendar-star'
+      return 'mdi-calendar-star';
     case 'update':
-      return 'mdi-update'
+      return 'mdi-update';
     default:
-      return 'mdi-information'
+      return 'mdi-information';
   }
-}
+};
 
 // 유형 텍스트
 const getTypeText = (type) => {
-  const option = noticeTypeOptions.find((opt) => opt.value === type)
-  return option ? option.title : '일반'
-}
+  const option = noticeTypeOptions.find((opt) => opt.value === type);
+  return option ? option.title : '일반';
+};
 
 // 우선순위 색상
 const getPriorityColor = (priority) => {
   switch (priority) {
     case 'urgent':
-      return 'error'
+      return 'error';
     case 'high':
-      return 'warning'
+      return 'warning';
     case 'normal':
-      return 'info'
+      return 'info';
     case 'low':
-      return 'success'
+      return 'success';
     default:
-      return 'grey'
+      return 'grey';
   }
-}
+};
 
 // 우선순위 텍스트
 const getPriorityText = (priority) => {
-  const option = priorityOptions.find((opt) => opt.value === priority)
-  return option ? option.title : '보통'
-}
+  const option = priorityOptions.find((opt) => opt.value === priority);
+  return option ? option.title : '보통';
+};
 
 // 날짜 포맷팅
 const formatDate = (timestamp) => {
-  if (!timestamp) return '-'
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return date.toLocaleString('ko-KR')
-}
+  if (!timestamp) return '-';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString('ko-KR');
+};
+
+// 내용 미리보기 (HTML 태그 제거 후 길이 제한)
+const getContentPreview = (content) => {
+  if (!content) return '';
+
+  // HTML 태그 제거
+  const textContent = content.replace(/<[^>]*>/g, '');
+
+  // 길이 제한
+  if (textContent.length > 100) {
+    return textContent.substring(0, 100) + '...';
+  }
+
+  return textContent;
+};
 
 // 공지사항 목록 로드
 const loadNotices = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    notices.value = await adminService.getNotices({ includeInactive: true })
+    notices.value = await adminService.getNotices({ includeInactive: true });
   } catch (error) {
-    console.error('Failed to load notices:', error)
+    console.error('Failed to load notices:', error);
     // 임시 데이터
     notices.value = [
       {
@@ -552,7 +652,8 @@ const loadNotices = async () => {
       {
         id: '2',
         title: '새로운 아이콘 추가',
-        content: 'AS 로마 관련 새로운 아이콘들이 추가되었습니다. 아이콘 상점에서 확인해보세요!',
+        content:
+          'AS 로마 관련 새로운 아이콘들이 추가되었습니다. 아이콘 상점에서 확인해보세요!',
         type: 'update',
         priority: 'normal',
         isPinned: false,
@@ -561,17 +662,17 @@ const loadNotices = async () => {
         views: 89,
         createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
       },
-    ]
+    ];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 공지사항 생성
 const createNotice = async () => {
-  createLoading.value = true
+  createLoading.value = true;
   try {
-    await adminService.createNotice(newNotice.value, userStore.user.uid)
+    await adminService.createNotice(userStore.user.uid, newNotice.value);
 
     // 폼 초기화
     newNotice.value = {
@@ -583,79 +684,81 @@ const createNotice = async () => {
       endDate: '',
       isPinned: false,
       isPopup: false,
-    }
+    };
 
     // 목록 새로고침
-    loadNotices()
-    emit('notice-updated')
+    loadNotices();
+    emit('notice-updated');
   } catch (error) {
-    console.error('Failed to create notice:', error)
+    console.error('Failed to create notice:', error);
   } finally {
-    createLoading.value = false
+    createLoading.value = false;
   }
-}
+};
 
 // 공지사항 보기
 const viewNotice = (notice) => {
-  selectedNotice.value = { ...notice }
-  isEditing.value = false
-  detailDialog.value = true
-}
+  selectedNotice.value = { ...notice };
+  isEditing.value = false;
+  detailDialog.value = true;
+};
 
 // 공지사항 편집 시작
 const editNotice = (notice) => {
-  selectedNotice.value = { ...notice }
-  isEditing.value = true
-  detailDialog.value = true
-}
+  selectedNotice.value = { ...notice };
+  isEditing.value = true;
+  detailDialog.value = true;
+};
 
 const startEdit = () => {
-  isEditing.value = true
-}
+  isEditing.value = true;
+};
 
 const cancelEdit = () => {
-  isEditing.value = false
-}
+  isEditing.value = false;
+};
 
 // 공지사항 저장
 const saveNotice = async () => {
-  saveLoading.value = true
+  saveLoading.value = true;
   try {
     // 실제 구현에서는 공지사항 업데이트 API 호출
-    console.log('Save notice:', selectedNotice.value)
+    console.log('Save notice:', selectedNotice.value);
 
     // 로컬 상태 업데이트
-    const index = notices.value.findIndex((n) => n.id === selectedNotice.value.id)
+    const index = notices.value.findIndex(
+      (n) => n.id === selectedNotice.value.id,
+    );
     if (index !== -1) {
-      notices.value[index] = { ...selectedNotice.value }
+      notices.value[index] = { ...selectedNotice.value };
     }
 
-    isEditing.value = false
-    emit('notice-updated')
+    isEditing.value = false;
+    emit('notice-updated');
   } catch (error) {
-    console.error('Failed to save notice:', error)
+    console.error('Failed to save notice:', error);
   } finally {
-    saveLoading.value = false
+    saveLoading.value = false;
   }
-}
+};
 
 // 공지사항 상태 토글
 const toggleNoticeStatus = async (notice) => {
   try {
     // 실제 구현에서는 공지사항 상태 업데이트 API 호출
-    const newStatus = !notice.isActive
+    const newStatus = !notice.isActive;
 
     // 로컬 상태 업데이트
-    const index = notices.value.findIndex((n) => n.id === notice.id)
+    const index = notices.value.findIndex((n) => n.id === notice.id);
     if (index !== -1) {
-      notices.value[index].isActive = newStatus
+      notices.value[index].isActive = newStatus;
     }
 
-    emit('notice-updated')
+    emit('notice-updated');
   } catch (error) {
-    console.error('Failed to toggle notice status:', error)
+    console.error('Failed to toggle notice status:', error);
   }
-}
+};
 
 // 공지사항 삭제
 const deleteNotice = async (notice) => {
@@ -664,28 +767,28 @@ const deleteNotice = async (notice) => {
       // 실제 구현에서는 공지사항 삭제 API 호출
 
       // 로컬 상태에서 제거
-      const index = notices.value.findIndex((n) => n.id === notice.id)
+      const index = notices.value.findIndex((n) => n.id === notice.id);
       if (index !== -1) {
-        notices.value.splice(index, 1)
+        notices.value.splice(index, 1);
       }
 
-      emit('notice-updated')
+      emit('notice-updated');
     } catch (error) {
-      console.error('Failed to delete notice:', error)
+      console.error('Failed to delete notice:', error);
     }
   }
-}
+};
 
 // 다이얼로그 닫기
 const closeDialog = () => {
-  detailDialog.value = false
-  isEditing.value = false
-  selectedNotice.value = null
-}
+  detailDialog.value = false;
+  isEditing.value = false;
+  selectedNotice.value = null;
+};
 
 onMounted(() => {
-  loadNotices()
-})
+  loadNotices();
+});
 </script>
 
 <style scoped>
@@ -715,11 +818,36 @@ onMounted(() => {
 
 .notice-content-detail {
   line-height: 1.6;
-  white-space: pre-wrap;
   background-color: rgba(var(--v-theme-surface), 0.5);
   border: 1px solid rgba(var(--v-border-color), 0.12);
   border-radius: 8px;
   padding: 16px;
+  word-break: break-word;
+}
+
+.notice-content-detail :deep(p) {
+  margin-bottom: 1em;
+}
+
+.notice-content-detail :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.notice-content-detail :deep(br) {
+  line-height: 1.6;
+}
+
+.notice-content-detail :deep(ul),
+.notice-content-detail :deep(ol) {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.notice-content-detail :deep(blockquote) {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid rgba(var(--v-theme-primary), 0.5);
+  font-style: italic;
 }
 
 .text-medium-emphasis {
