@@ -38,15 +38,14 @@
         <!-- Meta Info -->
         <div class="post-meta d-flex align-center flex-shrink-0">
           <!-- Author -->
-          <div class="d-flex align-center me-4" style="width: 140px">
+          <div class="d-flex align-start me-4" style="width: 140px">
             <UserAvatar
               :user-id="post.authorId"
               :display-name="post.authorName"
               :photo-u-r-l="post.authorPhotoURL"
               :static-icon-url="post.authorIcon"
               size="20"
-              icon-size="14"
-              avatar-class="me-2"
+              avatar-class="me-2 avatar-aligned"
             />
             <span class="text-truncate">{{ post.authorName || '익명' }}</span>
           </div>
@@ -98,15 +97,14 @@
           class="post-meta-mobile d-flex align-center justify-space-between text-caption"
         >
           <!-- Author (Left) -->
-          <div class="d-flex align-center">
+          <div class="d-flex align-start">
             <UserAvatar
               :user-id="post.authorId"
               :display-name="post.authorName"
               :photo-u-r-l="post.authorPhotoURL"
               :static-icon-url="post.authorIcon"
               size="16"
-              icon-size="12"
-              avatar-class="me-1"
+              avatar-class="me-1 avatar-aligned"
             />
             <span>{{ post.authorName || '익명' }}</span>
           </div>
@@ -178,6 +176,10 @@ function formatDate(timestamp) {
 </script>
 
 <style scoped>
+.avatar-aligned {
+  margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
+}
+
 .post-list-item {
   cursor: pointer;
   border-bottom: 1px solid rgba(var(--v-border-color), 0.12);

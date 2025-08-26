@@ -35,15 +35,14 @@
           <div class="d-none d-md-flex align-center justify-space-between">
             <div class="d-flex align-center">
               <!-- 작성자 -->
-              <div class="d-flex align-center me-6">
+              <div class="d-flex align-start me-6">
                 <UserAvatar
                   :user-id="post.authorId"
                   :display-name="post.authorName"
                   :photo-u-r-l="post.authorPhotoURL"
                   :static-icon-url="post.authorIcon"
                   size="24"
-                  icon-size="16"
-                  avatar-class="me-2"
+                  avatar-class="me-2 avatar-aligned"
                 />
                 <span class="text-subtitle-1 font-weight-medium">{{
                   post.authorName || '익명'
@@ -92,14 +91,14 @@
           <div class="d-md-none">
             <!-- 작성자 정보 -->
             <div class="d-flex align-center justify-space-between mb-2">
-              <div class="d-flex align-center">
+              <div class="d-flex align-start">
                 <UserAvatar
                   :user-id="post.authorId"
                   :display-name="post.authorName"
                   :photo-u-r-l="post.authorPhotoURL"
                   :static-icon-url="post.authorIcon"
                   size="22"
-                  icon-size="14"
+                  avatar-class="me-2 avatar-aligned"
                   avatar-class="me-2"
                 />
                 <span class="text-body-1 font-weight-medium">{{
@@ -496,6 +495,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.avatar-aligned {
+  margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
+}
+
 .post-detail {
   max-width: 100%;
 }

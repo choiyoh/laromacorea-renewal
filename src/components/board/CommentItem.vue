@@ -8,9 +8,9 @@
           :display-name="comment.authorName"
           :static-icon-url="comment.authorIcon"
           :size="comment.level > 0 ? 20 : 24"
-          :icon-size="comment.level > 0 ? 14 : 16"
           default-icon="mdi-account-circle"
-          avatar-class="me-2"
+          avatar-class="me-2 avatar-aligned"
+          class="mt-2"
         />
 
         <div class="flex-grow-1">
@@ -325,6 +325,10 @@ onMounted(() => {
   background-repeat: repeat-x;
   background-position: center;
   width: 100%;
+}
+
+.avatar-aligned {
+  margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
 }
 
 .replies {

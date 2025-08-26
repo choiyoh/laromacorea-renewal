@@ -158,7 +158,6 @@
                 :display-name="replyTarget?.authorName"
                 :static-icon-url="replyTarget?.authorIcon"
                 size="20"
-                icon-size="14"
                 default-icon="mdi-account-circle"
                 avatar-class="me-2"
               />

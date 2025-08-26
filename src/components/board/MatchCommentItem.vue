@@ -16,8 +16,8 @@
             :display-name="comment.authorName"
             :static-icon-url="comment.authorIcon"
             size="24"
-            icon-size="16"
             default-icon="mdi-account-circle"
+            avatar-class="avatar-aligned"
           />
 
           <!-- 응원 타입 배지 -->
@@ -321,6 +321,10 @@ function confirmDelete() {
 </script>
 
 <style scoped>
+.avatar-aligned {
+  margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
+}
+
 .match-comment-item {
   transition: all 0.2s ease;
   position: relative;
