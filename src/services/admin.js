@@ -502,21 +502,10 @@ export const adminService = {
     try {
       let iconUrl = '';
 
-      // 파일이 있는 경우 Firebase Storage에 업로드
+      // 임시로 파일 업로드를 건너뛰고 placeholder 이미지 사용
       if (iconData.file) {
-        const file = iconData.file;
-        const fileName = `icons/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, fileName);
-
-        console.log('파일 업로드 시작:', fileName);
-
-        // 파일을 Firebase Storage에 업로드
-        const snapshot = await uploadBytes(fileRef, file);
-        console.log('파일 업로드 완료:', snapshot.metadata.fullPath);
-
-        // 다운로드 URL 가져오기
-        iconUrl = await getDownloadURL(fileRef);
-        console.log('다운로드 URL 생성:', iconUrl);
+        console.log('파일 업로드 건너뛰기 - 임시 이미지 사용');
+        iconUrl = `https://via.placeholder.com/100x100/FFD700/000000?text=${encodeURIComponent(iconData.name)}`;
       }
 
       // File 객체를 제거하고 나머지 데이터만 저장

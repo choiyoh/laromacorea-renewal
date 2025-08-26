@@ -46,10 +46,10 @@ service firebase.storage {
                                     (isValidImageFile() || isValidVideoFile());
     }
 
-    // Icon images (admin only)
+    // Icon images (temporarily allow authenticated users for development)
     match /icons/{fileName} {
       allow read: if true;
-      allow write, delete: if isAdmin() && isValidImageFile();
+      allow write, delete: if isAuthenticated() && isValidImageFile();
     }
 
     // Temporary uploads (for processing)
