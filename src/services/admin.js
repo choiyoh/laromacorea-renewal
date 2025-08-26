@@ -18,7 +18,12 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import {
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from 'firebase/storage';
+import { db, storage } from './firebase';
 import { collections } from './database';
 
 export const adminService = {
@@ -497,16 +502,24 @@ export const adminService = {
     try {
       let iconUrl = '';
 
-      // 파일이 있는 경우 업로드 처리
+      // 파일이 있는 경우 Firebase Storage에 업로드
       if (iconData.file) {
-        // 실제 구현에서는 Firebase Storage에 업로드
-        // 현재는 임시로 placeholder URL 사용
-        const fileName = `${Date.now()}_${iconData.file.name}`;
-        iconUrl = `https://via.placeholder.com/100x100/FFD700/000000?text=${encodeURIComponent(iconData.name)}`;
-        console.log('파일 업로드 시뮬레이션:', fileName);
+        const file = iconData.file;
+        const fileName = `icons/${Date.now()}_${file.name}`;
+        const fileRef = storageRef(storage, fileName);
+
+        console.log('파일 업로드 시작:', fileName);
+
+        // 파일을 Firebase Storage에 업로드
+        const snapshot = await uploadBytes(fileRef, file);
+        console.log('파일 업로드 완료:', snapshot.metadata.fullPath);
+
+        // 다운로드 URL 가져오기
+        iconUrl = await getDownloadURL(fileRef);
+        console.log('다운로드 URL 생성:', iconUrl);
       }
 
-      // 파일 정보 제거 후 데이터베이스에 저장
+      // File 객체를 제거하고 나머지 데이터만 저장
       const { ...dataToSave } = iconData;
 
       const docRef = await addDoc(collection(db, collections.icons), {

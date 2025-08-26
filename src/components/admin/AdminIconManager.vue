@@ -417,7 +417,12 @@ const loadIcons = async () => {
 
 // 아이콘 업로드
 const uploadIcon = async () => {
-  if (!newIcon.value.file || !newIcon.value.name || !newIcon.value.price) {
+  // 파일 처리: v-file-input은 배열로 반환할 수 있음
+  const file = Array.isArray(newIcon.value.file)
+    ? newIcon.value.file[0]
+    : newIcon.value.file;
+
+  if (!file || !newIcon.value.name || !newIcon.value.price) {
     console.warn('필수 필드가 누락되었습니다');
     return;
   }
@@ -430,7 +435,7 @@ const uploadIcon = async () => {
       price: Number(newIcon.value.price),
       category: newIcon.value.category,
       description: newIcon.value.description?.trim() || '',
-      file: newIcon.value.file[0] || newIcon.value.file, // v-file-input은 배열로 반환할 수 있음
+      file: file, // 실제 File 객체 전달
     };
 
     console.log('아이콘 업로드 시작:', iconData.name);
