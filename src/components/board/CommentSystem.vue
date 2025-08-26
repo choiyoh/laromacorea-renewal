@@ -5,7 +5,7 @@
       <div class="text-body-1 font-weight-medium mb-3">
         댓글 <span class="text-grey-darken-1">{{ comments.length }}</span>
       </div>
-      <v-divider />
+      <div class="custom-divider"></div>
     </div>
 
     <!-- 댓글 작성 폼 -->
@@ -77,7 +77,7 @@
           </v-btn>
         </div>
       </div>
-      <v-divider class="mt-6" />
+      <div class="custom-divider mt-6"></div>
     </div>
 
     <!-- 비인증 회원 안내 -->
@@ -92,14 +92,14 @@
       <p class="text-body-2 text-grey-darken-1">
         관리자 승인을 통해 인증회원으로 등급을 변경할 수 있습니다.
       </p>
-      <v-divider class="mt-6" />
+      <div class="custom-divider mt-6"></div>
     </div>
 
     <!-- 로그인 안내 -->
     <div v-else class="login-prompt mb-6 text-center py-6">
       <p class="text-body-1 mb-4">댓글을 작성하려면 로그인이 필요합니다.</p>
       <v-btn color="primary" @click="$emit('login-required')">로그인</v-btn>
-      <v-divider class="mt-6" />
+      <div class="custom-divider mt-6"></div>
     </div>
 
     <!-- 댓글 목록 -->
@@ -467,6 +467,14 @@ async function handleLikeComment(comment) {
 <style scoped>
 .comment-system {
   max-width: 100%;
+}
+
+.custom-divider {
+  height: 2px;
+  background-image: url('/images/s_top_bg.gif');
+  background-repeat: repeat-x;
+  background-position: center;
+  width: 100%;
 }
 
 .comment-form .v-textarea {

@@ -144,7 +144,7 @@
           </div>
         </div>
 
-        <v-divider class="mb-6" />
+        <div class="custom-divider mb-6"></div>
       </div>
 
       <!-- 게시글 내용 -->
@@ -156,7 +156,7 @@
           v-if="post.mediaUrls && post.mediaUrls.length > 0"
           class="media-attachments mb-6"
         >
-          <v-divider class="mb-4" />
+          <div class="custom-divider mb-4"></div>
           <h3 class="text-h6 mb-4">첨부파일</h3>
           <div class="media-grid">
             <div
@@ -184,7 +184,7 @@
 
         <!-- 태그 -->
         <div v-if="post.tags && post.tags.length > 0" class="post-tags mb-6">
-          <v-divider class="mb-4" />
+          <div class="custom-divider mb-4"></div>
           <div class="d-flex flex-wrap gap-2">
             <v-chip
               v-for="tag in post.tags"
@@ -565,6 +565,14 @@ onMounted(async () => {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.custom-divider {
+  height: 2px;
+  background-image: url('/images/s_top_bg.gif');
+  background-repeat: repeat-x;
+  background-position: center;
+  width: 100%;
 }
 
 .post-tags .v-chip {

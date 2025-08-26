@@ -145,7 +145,7 @@
           </div>
         </div>
       </div>
-      <v-divider class="mt-2" />
+      <div class="custom-divider mt-2"></div>
     </div>
 
     <!-- 답글 목록 -->
@@ -276,6 +276,14 @@ async function handleLike() {
 .comment-actions .v-btn {
   min-width: auto;
   padding: 0 8px;
+}
+
+.custom-divider {
+  height: 2px;
+  background-image: url('/images/s_top_bg.gif');
+  background-repeat: repeat-x;
+  background-position: center;
+  width: 100%;
 }
 
 .replies {

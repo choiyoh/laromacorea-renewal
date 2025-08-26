@@ -19,7 +19,7 @@
         </div>
       </v-card-title>
 
-      <v-divider />
+      <div class="custom-divider"></div>
 
       <v-card-text>
         <v-form ref="form" v-model="valid" @submit.prevent="handleSubmit">
@@ -120,7 +120,7 @@
         </v-form>
       </v-card-text>
 
-      <v-divider />
+      <div class="custom-divider"></div>
 
       <v-card-actions class="pa-4">
         <v-btn variant="outlined" @click="saveDraft" :disabled="loading">
@@ -575,6 +575,14 @@ onUnmounted(() => {
 <style scoped>
 .post-editor {
   max-width: 100%;
+}
+
+.custom-divider {
+  height: 2px;
+  background-image: url('/images/s_top_bg.gif');
+  background-repeat: repeat-x;
+  background-position: center;
+  width: 100%;
 }
 
 .editor-container {
