@@ -29,7 +29,11 @@
                   <template #append-inner>
                     <v-icon
                       v-if="isSignUp && username && !checkingUsername"
-                      :icon="usernameAvailable ? 'mdi-check-circle' : 'mdi-close-circle'"
+                      :icon="
+                        usernameAvailable
+                          ? 'mdi-check-circle'
+                          : 'mdi-close-circle'
+                      "
                       :color="usernameAvailable ? 'success' : 'error'"
                     />
                   </template>
@@ -46,8 +50,22 @@
                     class="mb-3"
                     :rules="emailRules"
                     :error-messages="emailError"
+                    :loading="checkingEmail"
+                    @blur="checkEmailAvailability"
                     required
-                  />
+                  >
+                    <template #append-inner>
+                      <v-icon
+                        v-if="email && !checkingEmail"
+                        :icon="
+                          emailAvailable
+                            ? 'mdi-check-circle'
+                            : 'mdi-close-circle'
+                        "
+                        :color="emailAvailable ? 'success' : 'error'"
+                      />
+                    </template>
+                  </v-text-field>
 
                   <!-- 닉네임 입력 -->
                   <v-text-field
@@ -56,6 +74,7 @@
                     variant="outlined"
                     class="mb-3"
                     :rules="displayNameRules"
+                    :error-messages="displayNameError"
                     :loading="checkingDisplayName"
                     @blur="checkDisplayNameAvailability"
                     required
@@ -63,7 +82,11 @@
                     <template #append-inner>
                       <v-icon
                         v-if="displayName && !checkingDisplayName"
-                        :icon="displayNameAvailable ? 'mdi-check-circle' : 'mdi-close-circle'"
+                        :icon="
+                          displayNameAvailable
+                            ? 'mdi-check-circle'
+                            : 'mdi-close-circle'
+                        "
                         :color="displayNameAvailable ? 'success' : 'error'"
                       />
                     </template>
@@ -94,9 +117,19 @@
                   required
                 />
 
-                <v-alert v-if="errorMessage" type="error" class="mb-4" :text="errorMessage" />
+                <v-alert
+                  v-if="errorMessage"
+                  type="error"
+                  class="mb-4"
+                  :text="errorMessage"
+                />
 
-                <v-alert v-if="successMessage" type="success" class="mb-4" :text="successMessage" />
+                <v-alert
+                  v-if="successMessage"
+                  type="success"
+                  class="mb-4"
+                  :text="successMessage"
+                />
 
                 <v-btn
                   type="submit"
@@ -140,7 +173,9 @@
             <v-card>
               <v-card-title>비밀번호 재설정</v-card-title>
               <v-card-text>
-                <p class="text-body-2 mb-4">가입 시 사용한 이메일 주소를 입력해주세요.</p>
+                <p class="text-body-2 mb-4">
+                  가입 시 사용한 이메일 주소를 입력해주세요.
+                </p>
                 <v-text-field
                   v-model="resetEmail"
                   label="이메일"
@@ -152,7 +187,11 @@
               <v-card-actions>
                 <v-spacer />
                 <v-btn @click="showResetPassword = false">취소</v-btn>
-                <v-btn color="primary" @click="handlePasswordReset" :loading="resetLoading">
+                <v-btn
+                  color="primary"
+                  @click="handlePasswordReset"
+                  :loading="resetLoading"
+                >
                   재설정 이메일 발송
                 </v-btn>
               </v-card-actions>
@@ -165,37 +204,39 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { AuthService } from '@/services/auth'
-import { useUserStore } from '@/stores/user'
-import { useErrorStore } from '@/stores/error'
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { AuthService } from '@/services/auth';
+import { useUserStore } from '@/stores/user';
+import { useErrorStore } from '@/stores/error';
 
-const router = useRouter()
-const userStore = useUserStore()
-const errorStore = useErrorStore()
+const router = useRouter();
+const userStore = useUserStore();
+const errorStore = useErrorStore();
 
 // Form state
-const isSignUp = ref(false)
-const username = ref('')
-const email = ref('')
-const displayName = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const loading = ref(false)
-const errorMessage = ref('')
-const successMessage = ref('')
+const isSignUp = ref(false);
+const username = ref('');
+const email = ref('');
+const displayName = ref('');
+const password = ref('');
+const confirmPassword = ref('');
+const loading = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
 
 // Availability checking
-const checkingUsername = ref(false)
-const checkingDisplayName = ref(false)
-const usernameAvailable = ref(null)
-const displayNameAvailable = ref(null)
+const checkingUsername = ref(false);
+const checkingEmail = ref(false);
+const checkingDisplayName = ref(false);
+const usernameAvailable = ref(null);
+const emailAvailable = ref(null);
+const displayNameAvailable = ref(null);
 
 // Password reset
-const showResetPassword = ref(false)
-const resetEmail = ref('')
-const resetLoading = ref(false)
+const showResetPassword = ref(false);
+const resetEmail = ref('');
+const resetLoading = ref(false);
 
 // Form validation rules
 const usernameRules = [
@@ -204,43 +245,62 @@ const usernameRules = [
   (v) => {
     // 로그인 시에는 이메일도 허용 (기존 계정 호환성)
     if (!isSignUp.value) {
-      return (v && v.length <= 50) || '아이디/이메일은 50자 이하여야 합니다'
+      return (v && v.length <= 50) || '아이디/이메일은 50자 이하여야 합니다';
     }
     // 회원가입 시에는 20자 제한
-    return (v && v.length <= 20) || '아이디는 20자 이하여야 합니다'
+    return (v && v.length <= 20) || '아이디는 20자 이하여야 합니다';
   },
   (v) => {
     // 로그인 시에는 이메일 형식도 허용
     if (!isSignUp.value) {
-      return /^[a-zA-Z0-9_@.]+$/.test(v) || '아이디 또는 이메일을 입력해주세요'
+      return /^[a-zA-Z0-9_@.]+$/.test(v) || '아이디 또는 이메일을 입력해주세요';
     }
     // 회원가입 시에는 아이디 형식만 허용
-    return /^[a-zA-Z0-9_]+$/.test(v) || '아이디는 영문, 숫자, 언더스코어(_)만 사용 가능합니다'
+    return (
+      /^[a-zA-Z0-9_]+$/.test(v) ||
+      '아이디는 영문, 숫자, 언더스코어(_)만 사용 가능합니다'
+    );
   },
-  () => !isSignUp.value || usernameAvailable.value === true || '이미 사용 중인 아이디입니다',
-]
+  () => {
+    // 로그인 모드이거나, 회원가입 모드에서 중복 체크가 완료되지 않았거나 사용 가능한 경우만 통과
+    if (!isSignUp.value) return true;
+    if (usernameAvailable.value === null) return true; // 아직 체크하지 않음
+    return usernameAvailable.value === true;
+  },
+];
 
 const emailRules = [
   (v) => !!v || '이메일을 입력해주세요',
   (v) => /.+@.+\..+/.test(v) || '유효한 이메일을 입력해주세요',
-]
+  () => {
+    // 로그인 모드이거나, 회원가입 모드에서 중복 체크가 완료되지 않았거나 사용 가능한 경우만 통과
+    if (!isSignUp.value) return true;
+    if (emailAvailable.value === null) return true; // 아직 체크하지 않음
+    return emailAvailable.value === true;
+  },
+];
 
 const displayNameRules = [
   (v) => !!v || '닉네임을 입력해주세요',
   (v) => (v && v.length >= 2) || '닉네임은 2자 이상이어야 합니다',
   (v) => (v && v.length <= 20) || '닉네임은 20자 이하여야 합니다',
-  () => !isSignUp.value || displayNameAvailable.value === true || '이미 사용 중인 닉네임입니다',
-]
+  () => {
+    // 로그인 모드이거나, 회원가입 모드에서 중복 체크가 완료되지 않았거나 사용 가능한 경우만 통과
+    if (!isSignUp.value) return true;
+    if (displayNameAvailable.value === null) return true; // 아직 체크하지 않음
+    return displayNameAvailable.value === true;
+  },
+];
 
 const passwordRules = [
   (v) => !!v || '비밀번호를 입력해주세요',
   (v) => (v && v.length >= 6) || '비밀번호는 6자 이상이어야 합니다',
-]
+];
 
 const confirmPasswordRules = [
   (v) => !!v || '비밀번호 확인을 입력해주세요',
   (v) => v === password.value || '비밀번호가 일치하지 않습니다',
-]
+];
 
 // Computed properties
 const isFormValid = computed(() => {
@@ -252,220 +312,282 @@ const isFormValid = computed(() => {
       password.value &&
       confirmPassword.value &&
       password.value === confirmPassword.value &&
-      usernameAvailable.value === true &&
-      displayNameAvailable.value === true &&
+      // 중복 체크: null(미체크) 또는 true(사용가능)인 경우만 허용
+      (usernameAvailable.value === null || usernameAvailable.value === true) &&
+      (emailAvailable.value === null || emailAvailable.value === true) &&
+      (displayNameAvailable.value === null ||
+        displayNameAvailable.value === true) &&
       usernameRules.every((rule) => rule(username.value) === true) &&
       emailRules.every((rule) => rule(email.value) === true) &&
       displayNameRules.every((rule) => rule(displayName.value) === true) &&
       passwordRules.every((rule) => rule(password.value) === true)
-    )
+    );
   } else {
     return (
       username.value &&
       password.value &&
-      usernameRules.slice(0, 4).every((rule) => rule(username.value) === true) &&
+      usernameRules
+        .slice(0, 4)
+        .every((rule) => rule(username.value) === true) &&
       passwordRules.every((rule) => rule(password.value) === true)
-    )
+    );
   }
-})
+});
 
 const usernameError = computed(() => {
   if (errorMessage.value && errorMessage.value.includes('아이디')) {
-    return errorMessage.value
+    return errorMessage.value;
   }
-  return ''
-})
+  // 회원가입 모드에서 중복 체크 결과에 따른 에러 메시지
+  if (isSignUp.value && usernameAvailable.value === false) {
+    return '이미 사용 중인 아이디입니다';
+  }
+  return '';
+});
 
 const emailError = computed(() => {
   if (errorMessage.value && errorMessage.value.includes('이메일')) {
-    return errorMessage.value
+    return errorMessage.value;
   }
-  return ''
-})
+  // 회원가입 모드에서 중복 체크 결과에 따른 에러 메시지
+  if (isSignUp.value && emailAvailable.value === false) {
+    return '이미 사용 중인 이메일입니다';
+  }
+  return '';
+});
+
+const displayNameError = computed(() => {
+  if (errorMessage.value && errorMessage.value.includes('닉네임')) {
+    return errorMessage.value;
+  }
+  // 회원가입 모드에서 중복 체크 결과에 따른 에러 메시지
+  if (isSignUp.value && displayNameAvailable.value === false) {
+    return '이미 사용 중인 닉네임입니다';
+  }
+  return '';
+});
 
 const passwordError = computed(() => {
   if (errorMessage.value && errorMessage.value.includes('비밀번호')) {
-    return errorMessage.value
+    return errorMessage.value;
   }
-  return ''
-})
+  return '';
+});
 
 // Methods
 const toggleMode = () => {
-  isSignUp.value = !isSignUp.value
-  clearMessages()
-  clearForm()
-}
+  isSignUp.value = !isSignUp.value;
+  clearMessages();
+  clearForm();
+};
 
 const clearMessages = () => {
-  errorMessage.value = ''
-  successMessage.value = ''
-}
+  errorMessage.value = '';
+  successMessage.value = '';
+};
 
 const clearForm = () => {
-  username.value = ''
-  email.value = ''
-  displayName.value = ''
-  password.value = ''
-  confirmPassword.value = ''
-  usernameAvailable.value = null
-  displayNameAvailable.value = null
-}
+  username.value = '';
+  email.value = '';
+  displayName.value = '';
+  password.value = '';
+  confirmPassword.value = '';
+  usernameAvailable.value = null;
+  emailAvailable.value = null;
+  displayNameAvailable.value = null;
+};
 
 // 아이디 중복 체크
 const checkUsernameAvailability = async () => {
   if (!username.value || username.value.length < 3) {
-    usernameAvailable.value = null
-    return
+    usernameAvailable.value = null;
+    return;
   }
 
-  checkingUsername.value = true
+  checkingUsername.value = true;
   try {
-    const isAvailable = await AuthService.checkUsernameAvailability(username.value)
-    usernameAvailable.value = isAvailable
+    const isAvailable = await AuthService.checkUsernameAvailability(
+      username.value,
+    );
+    usernameAvailable.value = isAvailable;
   } catch (error) {
-    console.error('Username availability check failed:', error)
-    usernameAvailable.value = null
+    console.error('Username availability check failed:', error);
+    usernameAvailable.value = null;
   } finally {
-    checkingUsername.value = false
+    checkingUsername.value = false;
   }
-}
+};
+
+// 이메일 중복 체크
+const checkEmailAvailability = async () => {
+  if (!email.value || !/.+@.+\..+/.test(email.value)) {
+    emailAvailable.value = null;
+    return;
+  }
+
+  checkingEmail.value = true;
+  try {
+    const isAvailable = await AuthService.checkEmailAvailability(email.value);
+    emailAvailable.value = isAvailable;
+  } catch (error) {
+    console.error('Email availability check failed:', error);
+    emailAvailable.value = null;
+  } finally {
+    checkingEmail.value = false;
+  }
+};
 
 // 닉네임 중복 체크
 const checkDisplayNameAvailability = async () => {
   if (!displayName.value || displayName.value.length < 2) {
-    displayNameAvailable.value = null
-    return
+    displayNameAvailable.value = null;
+    return;
   }
 
-  checkingDisplayName.value = true
+  checkingDisplayName.value = true;
   try {
-    const isAvailable = await AuthService.checkDisplayNameAvailability(displayName.value)
-    displayNameAvailable.value = isAvailable
+    const isAvailable = await AuthService.checkDisplayNameAvailability(
+      displayName.value,
+    );
+    displayNameAvailable.value = isAvailable;
   } catch (error) {
-    console.error('Display name availability check failed:', error)
-    displayNameAvailable.value = null
+    console.error('Display name availability check failed:', error);
+    displayNameAvailable.value = null;
   } finally {
-    checkingDisplayName.value = false
+    checkingDisplayName.value = false;
   }
-}
+};
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
 
-  loading.value = true
-  clearMessages()
+  loading.value = true;
+  clearMessages();
 
   console.log('Auth form submitted:', {
     isSignUp: isSignUp.value,
     username: username.value,
     email: email.value,
     displayName: displayName.value,
-  })
+  });
 
   try {
     if (isSignUp.value) {
-      console.log('Attempting sign up...')
+      console.log('Attempting sign up...');
 
       // 최종 중복 체크
-      const [usernameCheck, displayNameCheck] = await Promise.all([
+      const [usernameCheck, emailCheck, displayNameCheck] = await Promise.all([
         AuthService.checkUsernameAvailability(username.value),
+        AuthService.checkEmailAvailability(email.value),
         AuthService.checkDisplayNameAvailability(displayName.value),
-      ])
+      ]);
 
       if (!usernameCheck) {
-        errorMessage.value = '이미 사용 중인 아이디입니다.'
-        return
+        errorMessage.value = '이미 사용 중인 아이디입니다.';
+        return;
+      }
+
+      if (!emailCheck) {
+        errorMessage.value = '이미 사용 중인 이메일입니다.';
+        return;
       }
 
       if (!displayNameCheck) {
-        errorMessage.value = '이미 사용 중인 닉네임입니다.'
-        return
+        errorMessage.value = '이미 사용 중인 닉네임입니다.';
+        return;
       }
 
       // 회원가입 진행 - 아이디 기반으로 임시 이메일 생성
-      const tempEmail = `${username.value}@laromacorea.temp`
+      const tempEmail = `${username.value}@laromacorea.temp`;
       const user = await AuthService.signUp(
         tempEmail,
         password.value,
         displayName.value,
         username.value,
         email.value,
-      )
+      );
 
-      console.log('Sign up successful:', user)
-      successMessage.value = '회원가입이 완료되었습니다!'
+      console.log('Sign up successful:', user);
+      successMessage.value = '회원가입이 완료되었습니다!';
 
       // Switch to login mode after successful signup
       setTimeout(() => {
-        isSignUp.value = false
-        clearForm()
-        successMessage.value = ''
-      }, 2000)
+        isSignUp.value = false;
+        clearForm();
+        successMessage.value = '';
+      }, 2000);
     } else {
-      console.log('Attempting sign in with username...')
+      console.log('Attempting sign in with username...');
 
       // AuthService에서 아이디/이메일 자동 판별하여 로그인
-      const user = await AuthService.signIn(username.value, password.value)
-      console.log('Sign in successful:', user)
+      const user = await AuthService.signIn(username.value, password.value);
+      console.log('Sign in successful:', user);
 
       // Wait for user store to update
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      successMessage.value = '로그인되었습니다!'
+      successMessage.value = '로그인되었습니다!';
 
       // Redirect to home page
       setTimeout(() => {
-        router.push('/')
-      }, 1000)
+        router.push('/');
+      }, 1000);
     }
   } catch (error) {
     console.error('Auth error details:', {
       code: error.code,
       message: error.message,
       originalError: error.originalError || error,
-    })
+    });
 
-    let errorMsg = '오류가 발생했습니다.'
+    let errorMsg = '오류가 발생했습니다.';
 
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-      errorMsg = '아이디 또는 비밀번호가 올바르지 않습니다.'
+    if (
+      error.code === 'auth/user-not-found' ||
+      error.code === 'auth/wrong-password'
+    ) {
+      errorMsg = '아이디 또는 비밀번호가 올바르지 않습니다.';
     } else if (error.code === 'auth/email-already-in-use') {
-      errorMsg = '이미 사용 중인 이메일입니다.'
+      errorMsg = '이미 사용 중인 이메일입니다.';
     } else if (error.code === 'auth/weak-password') {
-      errorMsg = '비밀번호가 너무 약합니다.'
+      errorMsg = '비밀번호가 너무 약합니다.';
     } else if (error.message) {
-      errorMsg = error.message
+      errorMsg = error.message;
     }
 
-    errorMessage.value = errorMsg
-    errorStore.addError(error, 'AUTH_ERROR', isSignUp.value ? 'Sign Up' : 'Sign In')
+    errorMessage.value = errorMsg;
+    errorStore.addError(
+      error,
+      'AUTH_ERROR',
+      isSignUp.value ? 'Sign Up' : 'Sign In',
+    );
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handlePasswordReset = async () => {
   if (!resetEmail.value) {
-    errorMessage.value = '이메일을 입력해주세요'
-    return
+    errorMessage.value = '이메일을 입력해주세요';
+    return;
   }
 
-  resetLoading.value = true
-  clearMessages()
+  resetLoading.value = true;
+  clearMessages();
 
   try {
-    await AuthService.resetPassword(resetEmail.value)
-    successMessage.value = '비밀번호 재설정 이메일이 발송되었습니다.'
-    showResetPassword.value = false
-    resetEmail.value = ''
+    await AuthService.resetPassword(resetEmail.value);
+    successMessage.value = '비밀번호 재설정 이메일이 발송되었습니다.';
+    showResetPassword.value = false;
+    resetEmail.value = '';
   } catch (error) {
-    console.error('Password reset error:', error)
-    errorMessage.value = error.message || '비밀번호 재설정 중 오류가 발생했습니다.'
+    console.error('Password reset error:', error);
+    errorMessage.value =
+      error.message || '비밀번호 재설정 중 오류가 발생했습니다.';
   } finally {
-    resetLoading.value = false
+    resetLoading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>
