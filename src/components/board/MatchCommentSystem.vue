@@ -80,7 +80,7 @@
     <v-card class="comment-form mb-4" variant="outlined">
       <v-card-text class="pa-3">
         <div class="d-flex align-start">
-          <v-avatar size="32" class="me-3">
+          <v-avatar size="24" class="me-3">
             <v-img
               v-if="userStore.user?.photoURL"
               :src="userStore.user.photoURL"

@@ -7,7 +7,7 @@
           {{ isEdit ? '게시글 수정' : '게시글 작성' }}
         </div>
         <div v-if="userStore.user" class="d-flex align-center text-caption">
-          <v-avatar size="24" class="me-2">
+          <v-avatar size="20" class="me-2">
             <v-img
               v-if="userStore.user.photoURL"
               :src="userStore.user.photoURL"

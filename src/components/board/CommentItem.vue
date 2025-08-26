@@ -3,9 +3,13 @@
     <div class="comment-wrapper py-2">
       <div class="d-flex align-start">
         <!-- 작성자 아바타 -->
-        <v-avatar :size="comment.level > 0 ? 28 : 32" class="me-2">
+        <v-avatar :size="comment.level > 0 ? 20 : 24" class="me-2">
           <v-img v-if="comment.authorIcon" :src="comment.authorIcon" />
-          <v-icon v-else icon="mdi-account-circle" />
+          <v-icon
+            v-else
+            icon="mdi-account-circle"
+            :size="comment.level > 0 ? 14 : 16"
+          />
         </v-avatar>
 
         <div class="flex-grow-1">
@@ -242,7 +246,7 @@ async function handleLike() {
 
   try {
     // Toggle like status optimistically
-    const wasLiked = isLiked.value;
+
     isLiked.value = !isLiked.value;
     likeCount.value += isLiked.value ? 1 : -1;
 

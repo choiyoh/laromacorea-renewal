@@ -39,13 +39,13 @@
         <div class="post-meta d-flex align-center flex-shrink-0">
           <!-- Author -->
           <div class="d-flex align-center me-4" style="width: 140px">
-            <v-avatar size="24" class="me-2">
+            <v-avatar size="20" class="me-2">
               <v-img
                 v-if="post.authorPhotoURL || post.authorIcon"
                 :src="post.authorPhotoURL || post.authorIcon"
                 :alt="post.authorName || '익명'"
               />
-              <v-icon v-else icon="mdi-account" size="16" />
+              <v-icon v-else icon="mdi-account" size="14" />
             </v-avatar>
             <span class="text-truncate">{{ post.authorName || '익명' }}</span>
           </div>

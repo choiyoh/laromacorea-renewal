@@ -11,9 +11,9 @@
       <div class="d-flex align-start">
         <!-- 사용자 아바타 -->
         <div class="comment-avatar me-3">
-          <v-avatar size="32">
+          <v-avatar size="24">
             <v-img v-if="comment.authorIcon" :src="comment.authorIcon" />
-            <v-icon v-else icon="mdi-account-circle" />
+            <v-icon v-else icon="mdi-account-circle" size="16" />
           </v-avatar>
 
           <!-- 응원 타입 배지 -->
@@ -31,9 +31,13 @@
         <!-- 댓글 내용 -->
         <div class="comment-content flex-grow-1">
           <!-- 작성자 정보 -->
-          <div class="comment-header d-flex align-center justify-space-between mb-2">
+          <div
+            class="comment-header d-flex align-center justify-space-between mb-2"
+          >
             <div class="d-flex align-center">
-              <span class="font-weight-medium text-body-2">{{ comment.authorName }}</span>
+              <span class="font-weight-medium text-body-2">{{
+                comment.authorName
+              }}</span>
 
               <!-- 빠른 응원 표시 -->
               <v-chip
@@ -55,7 +59,12 @@
             <!-- 액션 메뉴 -->
             <v-menu v-if="canEditOrDelete">
               <template #activator="{ props }">
-                <v-btn icon="mdi-dots-vertical" size="x-small" variant="text" v-bind="props" />
+                <v-btn
+                  icon="mdi-dots-vertical"
+                  size="x-small"
+                  variant="text"
+                  v-bind="props"
+                />
               </template>
               <v-list density="compact">
                 <v-list-item v-if="canEdit" @click="$emit('edit', comment)">
@@ -76,7 +85,10 @@
 
           <!-- 댓글 텍스트 -->
           <div class="comment-text mb-2">
-            <p class="text-body-2 mb-0" v-html="formatCommentContent(comment.content)"></p>
+            <p
+              class="text-body-2 mb-0"
+              v-html="formatCommentContent(comment.content)"
+            ></p>
           </div>
 
           <!-- 댓글 액션 -->
@@ -108,7 +120,10 @@
             </v-btn>
 
             <!-- 응원 강도 표시 (로마 응원 댓글용) -->
-            <div v-if="comment.cheerType === 'roma'" class="cheer-intensity ml-auto">
+            <div
+              v-if="comment.cheerType === 'roma'"
+              class="cheer-intensity ml-auto"
+            >
               <div class="d-flex align-center">
                 <v-icon
                   v-for="n in getCheerIntensity(comment.content)"
@@ -125,7 +140,10 @@
     </v-card-text>
 
     <!-- 답글 목록 (향후 구현) -->
-    <div v-if="comment.replies && comment.replies.length > 0" class="replies-section">
+    <div
+      v-if="comment.replies && comment.replies.length > 0"
+      class="replies-section"
+    >
       <v-divider />
       <div class="pa-2 pl-6">
         <!-- 답글 구현 예정 -->
@@ -148,8 +166,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useUserStore } from '@/stores/user'
+import { ref, computed } from 'vue';
+import { useUserStore } from '@/stores/user';
 
 const props = defineProps({
   comment: {
@@ -160,134 +178,140 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-})
+});
 
-const emit = defineEmits(['like', 'reply', 'edit', 'delete'])
+const emit = defineEmits(['like', 'reply', 'edit', 'delete']);
 
 // Stores
-const userStore = useUserStore()
+const userStore = useUserStore();
 
 // State
-const deleteDialog = ref(false)
+const deleteDialog = ref(false);
 
 // Computed
 const canEdit = computed(() => {
-  return userStore.isAuthenticated && userStore.user?.uid === props.comment.authorId
-})
+  return (
+    userStore.isAuthenticated && userStore.user?.uid === props.comment.authorId
+  );
+});
 
 const canDelete = computed(() => {
   return (
     userStore.isAuthenticated &&
-    (userStore.user?.uid === props.comment.authorId || userStore.user?.role === 'admin')
-  )
-})
+    (userStore.user?.uid === props.comment.authorId ||
+      userStore.user?.role === 'admin')
+  );
+});
 
 const canEditOrDelete = computed(() => {
-  return canEdit.value || canDelete.value
-})
+  return canEdit.value || canDelete.value;
+});
 
 // Methods
 function getCheerTypeColor(type) {
   switch (type) {
     case 'roma':
-      return 'error'
+      return 'error';
     case 'prediction':
-      return 'primary'
+      return 'primary';
     default:
-      return 'warning'
+      return 'warning';
   }
 }
 
 function getCheerTypeEmoji(type) {
   switch (type) {
     case 'roma':
-      return '❤️'
+      return '❤️';
     case 'prediction':
-      return '🎯'
+      return '🎯';
     default:
-      return '💛'
+      return '💛';
   }
 }
 
 function formatCommentTime(timestamp) {
-  if (!timestamp) return ''
+  if (!timestamp) return '';
 
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  const now = new Date()
-  const diffInMinutes = Math.floor((now - date) / (1000 * 60))
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
   if (diffInMinutes < 1) {
-    return '방금 전'
+    return '방금 전';
   } else if (diffInMinutes < 60) {
-    return `${diffInMinutes}분 전`
+    return `${diffInMinutes}분 전`;
   } else if (diffInMinutes < 1440) {
-    const hours = Math.floor(diffInMinutes / 60)
-    return `${hours}시간 전`
+    const hours = Math.floor(diffInMinutes / 60);
+    return `${hours}시간 전`;
   } else {
     return date.toLocaleDateString('ko-KR', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    })
+    });
   }
 }
 
 function formatCommentContent(content) {
-  if (!content) return ''
+  if (!content) return '';
 
   // Convert line breaks to <br>
-  let formatted = content.replace(/\n/g, '<br>')
+  let formatted = content.replace(/\n/g, '<br>');
 
   // Highlight mentions
-  formatted = formatted.replace(/@(\w+)/g, '<span class="mention">@$1</span>')
+  formatted = formatted.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
 
   // Add emphasis to Roma-related keywords
-  const romaKeywords = ['로마', 'ROMA', 'FORZA', 'DAJE', '로마니스타']
+  const romaKeywords = ['로마', 'ROMA', 'FORZA', 'DAJE', '로마니스타'];
   romaKeywords.forEach((keyword) => {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'gi')
-    formatted = formatted.replace(regex, `<strong class="roma-keyword">${keyword}</strong>`)
-  })
+    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+    formatted = formatted.replace(
+      regex,
+      `<strong class="roma-keyword">${keyword}</strong>`,
+    );
+  });
 
-  return formatted
+  return formatted;
 }
 
 function getCheerIntensity(content) {
-  if (!content) return 0
+  if (!content) return 0;
 
   // Calculate cheer intensity based on content
-  let intensity = 0
+  let intensity = 0;
 
   // Check for exclamation marks
-  const exclamations = (content.match(/!/g) || []).length
-  intensity += Math.min(exclamations, 3)
+  const exclamations = (content.match(/!/g) || []).length;
+  intensity += Math.min(exclamations, 3);
 
   // Check for Roma keywords
-  const romaKeywords = ['FORZA', 'DAJE', '로마니스타', '승리']
+  const romaKeywords = ['FORZA', 'DAJE', '로마니스타', '승리'];
   romaKeywords.forEach((keyword) => {
     if (content.toUpperCase().includes(keyword)) {
-      intensity += 1
+      intensity += 1;
     }
-  })
+  });
 
   // Check for emojis
   const emojiCount = (
     content.match(
       /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
     ) || []
-  ).length
-  intensity += Math.min(Math.floor(emojiCount / 2), 2)
+  ).length;
+  intensity += Math.min(Math.floor(emojiCount / 2), 2);
 
-  return Math.min(Math.max(intensity, 1), 5) // Min 1, Max 5
+  return Math.min(Math.max(intensity, 1), 5); // Min 1, Max 5
 }
 
 function handleDelete() {
-  deleteDialog.value = true
+  deleteDialog.value = true;
 }
 
 function confirmDelete() {
-  emit('delete', props.comment.id)
-  deleteDialog.value = false
+  emit('delete', props.comment.id);
+  deleteDialog.value = false;
 }
 </script>
 
@@ -303,12 +327,20 @@ function confirmDelete() {
 
 .roma-comment {
   border-left: 3px solid #dc143c;
-  background: linear-gradient(90deg, rgba(220, 20, 60, 0.05) 0%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(220, 20, 60, 0.05) 0%,
+    transparent 100%
+  );
 }
 
 .prediction-comment {
   border-left: 3px solid rgb(var(--v-theme-primary));
-  background: linear-gradient(90deg, rgba(var(--v-theme-primary), 0.05) 0%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(var(--v-theme-primary), 0.05) 0%,
+    transparent 100%
+  );
 }
 
 .comment-avatar {

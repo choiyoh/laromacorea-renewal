@@ -36,13 +36,13 @@
             <div class="d-flex align-center">
               <!-- 작성자 -->
               <div class="d-flex align-center me-6">
-                <v-avatar size="32" class="me-2">
+                <v-avatar size="24" class="me-2">
                   <v-img
                     v-if="post.authorPhotoURL || post.authorIcon"
                     :src="post.authorPhotoURL || post.authorIcon"
                     :alt="post.authorName || '익명'"
                   />
-                  <v-icon v-else icon="mdi-account" size="20" />
+                  <v-icon v-else icon="mdi-account" size="16" />
                 </v-avatar>
                 <span class="text-subtitle-1 font-weight-medium">{{
                   post.authorName || '익명'
@@ -92,13 +92,13 @@
             <!-- 작성자 정보 -->
             <div class="d-flex align-center justify-space-between mb-2">
               <div class="d-flex align-center">
-                <v-avatar size="28" class="me-2">
+                <v-avatar size="22" class="me-2">
                   <v-img
                     v-if="post.authorPhotoURL || post.authorIcon"
                     :src="post.authorPhotoURL || post.authorIcon"
                     :alt="post.authorName || '익명'"
                   />
-                  <v-icon v-else icon="mdi-account" size="18" />
+                  <v-icon v-else icon="mdi-account" size="14" />
                 </v-avatar>
                 <span class="text-body-1 font-weight-medium">{{
                   post.authorName || '익명'

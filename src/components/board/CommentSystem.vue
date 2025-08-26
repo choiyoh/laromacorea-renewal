@@ -15,7 +15,7 @@
     >
       <!-- Desktop Layout -->
       <div class="d-none d-md-flex align-start">
-        <v-avatar size="40" class="me-3">
+        <v-avatar size="32" class="me-3">
           <v-img
             v-if="userStore.userIcon?.url"
             :src="userStore.userIcon.url"
@@ -53,7 +53,7 @@
       <!-- Mobile Layout -->
       <div class="d-md-none">
         <div class="d-flex align-center mb-3">
-          <v-avatar size="32" class="me-2">
+          <v-avatar size="24" class="me-2">
             <v-img
               v-if="userStore.userIcon?.url"
               :src="userStore.userIcon.url"
@@ -153,7 +153,7 @@
           <!-- 원본 댓글 -->
           <div class="original-comment mb-4 pa-3 bg-grey-lighten-4 rounded">
             <div class="d-flex align-center mb-2">
-              <v-avatar size="24" class="me-2">
+              <v-avatar size="20" class="me-2">
                 <v-img
                   v-if="replyTarget?.authorIcon"
                   :src="replyTarget.authorIcon"
@@ -169,7 +169,7 @@
 
           <!-- 답글 입력 -->
           <div class="d-flex align-start">
-            <v-avatar size="32" class="me-3 mt-1">
+            <v-avatar size="24" class="me-3 mt-1">
               <v-img
                 v-if="userStore.userIcon?.url"
                 :src="userStore.userIcon.url"
