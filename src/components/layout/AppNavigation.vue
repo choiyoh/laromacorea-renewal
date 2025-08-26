@@ -103,6 +103,20 @@
           </template>
           <v-list-item-title>아이콘 상점</v-list-item-title>
         </v-list-item>
+
+        <!-- Admin Menu (only for admin users) -->
+        <v-list-item
+          v-if="userStore.isAdmin"
+          :to="`/admin`"
+          @click="closeDrawer"
+          class="admin-menu-item"
+        >
+          <template v-slot:prepend>
+            <v-icon>mdi-shield-crown</v-icon>
+          </template>
+          <v-list-item-title>관리자</v-list-item-title>
+        </v-list-item>
+
         <v-list-item @click="handleSignOut">
           <template v-slot:prepend>
             <v-icon>mdi-logout</v-icon>
@@ -180,5 +194,19 @@ const handleSignOut = async () => {
 .v-list-item--active .v-list-item-title {
   color: #990a2c !important;
   font-weight: bold;
+}
+
+/* Admin menu item styling */
+.admin-menu-item {
+  background-color: rgba(153, 10, 44, 0.05) !important;
+}
+
+.admin-menu-item .v-list-item-title {
+  color: #990a2c !important;
+  font-weight: bold !important;
+}
+
+.admin-menu-item .v-icon {
+  color: #990a2c !important;
 }
 </style>

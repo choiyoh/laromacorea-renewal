@@ -414,6 +414,23 @@ export const adminService = {
     return this.updateUserRoleWithHistory('admin', userId, role, reason);
   },
 
+  // 사용자 인증 상태 업데이트
+  async updateUserVerification(userId, verified) {
+    try {
+      const userRef = doc(db, collections.users, userId);
+      await updateDoc(userRef, {
+        verified: verified,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log(`사용자 ${userId}의 인증 상태를 ${verified}로 변경했습니다.`);
+      return true;
+    } catch (error) {
+      console.error('사용자 인증 상태 업데이트 실패:', error);
+      throw error;
+    }
+  },
+
   // 게시글 목록 조회
   async getPosts(options = {}) {
     try {

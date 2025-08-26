@@ -1,7 +1,7 @@
 <template>
   <div class="user-manager-container">
     <!-- 검색 및 필터 -->
-    <v-row class="mb-4">
+    <v-row class="mb-4 pt-3">
       <v-col cols="12" md="6">
         <v-text-field
           v-model="searchTerm"
@@ -88,6 +88,16 @@
           </v-chip>
         </template>
 
+        <template v-slot:item.verified="{ item }">
+          <v-chip
+            :color="getVerificationColor(item)"
+            size="small"
+            variant="elevated"
+          >
+            {{ getVerificationText(item) }}
+          </v-chip>
+        </template>
+
         <template v-slot:item.isActive="{ item }">
           <v-chip
             :color="item.isActive ? 'success' : 'error'"
@@ -137,6 +147,21 @@
                   <v-icon icon="mdi-star" />
                 </template>
                 <v-list-item-title>포인트 조정</v-list-item-title>
+              </v-list-item>
+              <v-list-item
+                @click="toggleVerificationStatus(item)"
+                v-if="item.role !== 'admin'"
+              >
+                <template v-slot:prepend>
+                  <v-icon
+                    :icon="
+                      item.verified ? 'mdi-shield-remove' : 'mdi-shield-check'
+                    "
+                  />
+                </template>
+                <v-list-item-title>
+                  {{ item.verified ? '인증 해제' : '인증 승인' }}
+                </v-list-item-title>
               </v-list-item>
               <v-list-item @click="toggleUserStatus(item)">
                 <template v-slot:prepend>
@@ -524,6 +549,7 @@ const headers = [
   { title: '아바타', key: 'avatar', sortable: false },
   { title: '사용자', key: 'displayName' },
   { title: '역할', key: 'role' },
+  { title: '인증상태', key: 'verified' },
   { title: '상태', key: 'isActive' },
   { title: '포인트', key: 'points' },
   { title: '가입일', key: 'createdAt' },
@@ -646,6 +672,22 @@ const getRoleText = (role) => {
   }
 };
 
+// 인증 상태 색상
+const getVerificationColor = (user) => {
+  if (user.role === 'admin' || user.verified) {
+    return 'success';
+  }
+  return 'warning';
+};
+
+// 인증 상태 텍스트
+const getVerificationText = (user) => {
+  if (user.role === 'admin') {
+    return '관리자';
+  }
+  return user.verified ? '인증회원' : '비인증회원';
+};
+
 // 날짜 포맷팅
 const formatDate = (timestamp) => {
   if (!timestamp) return '-';
@@ -734,6 +776,30 @@ const toggleUserStatus = async (user) => {
   } catch (error) {
     console.error('Failed to toggle user status:', error);
     alert('사용자 상태 변경에 실패했습니다: ' + error.message);
+  }
+};
+
+// 인증 상태 토글
+const toggleVerificationStatus = async (user) => {
+  try {
+    const newVerified = !user.verified;
+    console.log(
+      `사용자 ${user.displayName}의 인증 상태를 ${newVerified ? '인증회원' : '비인증회원'}으로 변경합니다.`,
+    );
+
+    await adminService.updateUserVerification(user.id, newVerified);
+
+    // 로컬 상태 업데이트
+    const index = users.value.findIndex((u) => u.id === user.id);
+    if (index !== -1) {
+      users.value[index].verified = newVerified;
+    }
+
+    emit('user-updated');
+    console.log('사용자 인증 상태 변경 완료');
+  } catch (error) {
+    console.error('Failed to toggle verification status:', error);
+    alert('인증 상태 변경에 실패했습니다: ' + error.message);
   }
 };
 

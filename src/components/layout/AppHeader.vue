@@ -35,6 +35,18 @@
         >
           {{ board.name }}
         </v-btn>
+
+        <!-- Admin Menu (only for admin users) -->
+        <v-btn
+          v-if="userStore.isAdmin"
+          to="/admin"
+          variant="text"
+          class="text-black mx-1 touch-friendly admin-btn"
+          :class="{ 'v-btn--active': $route.path.startsWith('/admin') }"
+          min-width="60"
+        >
+          ADMIN
+        </v-btn>
       </div>
 
       <v-spacer />
@@ -274,5 +286,15 @@ const boards = [
 .v-btn:focus-visible {
   outline: 2px solid var(--v-theme-primary);
   outline-offset: 2px;
+}
+
+/* Admin button styling */
+.admin-btn {
+  color: #990a2c !important;
+  font-weight: bold !important;
+}
+
+.admin-btn:hover {
+  background-color: rgba(153, 10, 44, 0.1) !important;
 }
 </style>

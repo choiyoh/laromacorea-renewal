@@ -240,6 +240,7 @@ export class AuthService {
         selectedIcon: null,
         points: 100, // Initial points for new users
         role: 'user',
+        verified: false, // 기본적으로 비인증 회원으로 시작
         authMethod: username ? 'username' : 'email', // 인증 방식
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),

@@ -235,6 +235,7 @@
         :post-id="post.id"
         :comments="comments"
         :loading="commentsLoading"
+        :board-type="post.boardType"
         @comment-added="handleCommentAdded"
         @comment-updated="handleCommentUpdated"
         @comment-deleted="handleCommentDeleted"

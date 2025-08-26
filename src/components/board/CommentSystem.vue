@@ -9,7 +9,10 @@
     </div>
 
     <!-- 댓글 작성 폼 -->
-    <div v-if="userStore.isAuthenticated" class="comment-form mb-6">
+    <div
+      v-if="userStore.isAuthenticated && canWriteComment"
+      class="comment-form mb-6"
+    >
       <!-- Desktop Layout -->
       <div class="d-none d-md-flex align-start">
         <v-avatar size="40" class="me-3">
@@ -74,6 +77,21 @@
           </v-btn>
         </div>
       </div>
+      <v-divider class="mt-6" />
+    </div>
+
+    <!-- 비인증 회원 안내 -->
+    <div
+      v-else-if="userStore.isAuthenticated && !canWriteComment"
+      class="verification-prompt mb-6 text-center py-6"
+    >
+      <v-alert type="info" variant="tonal" class="mb-4">
+        <v-icon icon="mdi-shield-check" class="me-2" />
+        인증회원만 댓글 작성이 가능합니다
+      </v-alert>
+      <p class="text-body-2 text-grey-darken-1">
+        관리자 승인을 통해 인증회원으로 등급을 변경할 수 있습니다.
+      </p>
       <v-divider class="mt-6" />
     </div>
 
@@ -232,6 +250,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  boardType: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits([
@@ -259,6 +281,15 @@ const updatingComment = ref(false);
 const deleteDialog = ref(false);
 const deleteTarget = ref(null);
 const deletingComment = ref(false);
+
+// 댓글 작성 권한 체크
+const canWriteComment = computed(() => {
+  if (!userStore.isAuthenticated) return false;
+  if (userStore.isVerified) return true; // 관리자도 isVerified에 포함됨
+  // 비인증 회원은 공지사항에만 댓글 작성 가능
+  if (props.boardType === 'notice') return true;
+  return false;
+});
 
 // Computed
 const sortedComments = computed(() => {
