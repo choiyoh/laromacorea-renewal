@@ -346,7 +346,7 @@ async function handleSubmitComment() {
       postId: props.postId,
       content: newCommentContent.value.trim(),
       authorId: userStore.user.uid,
-      authorName: userStore.user.displayName || userStore.user.email,
+      authorName: userStore.userDisplayName,
       authorIcon: userStore.user.selectedIconData?.url || null,
     };
 
@@ -383,7 +383,7 @@ async function handleSubmitReply() {
       parentId: replyTarget.value.id,
       content: replyContent.value.trim(),
       authorId: userStore.user.uid,
-      authorName: userStore.user.displayName || userStore.user.email,
+      authorName: userStore.userDisplayName,
       authorIcon: userStore.user.selectedIconData?.url || null,
     };
 

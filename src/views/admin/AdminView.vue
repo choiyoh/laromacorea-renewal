@@ -24,6 +24,7 @@
           <v-tab value="icons">아이콘 상점</v-tab>
           <v-tab value="points">포인트 관리</v-tab>
           <v-tab value="users">사용자 관리</v-tab>
+          <v-tab value="data">데이터 관리</v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab" class="mt-4">
@@ -51,6 +52,11 @@
           <v-tabs-window-item value="users">
             <AdminUserManager @user-updated="handleUserUpdated" />
           </v-tabs-window-item>
+
+          <!-- 데이터 관리 탭 -->
+          <v-tabs-window-item value="data">
+            <AdminDataManager />
+          </v-tabs-window-item>
         </v-tabs-window>
       </v-col>
     </v-row>
@@ -64,6 +70,7 @@ import AdminNoticeManager from '@/components/admin/AdminNoticeManager.vue';
 import AdminIconManager from '@/components/admin/AdminIconManager.vue';
 import AdminPointsManager from '@/components/admin/AdminPointsManager.vue';
 import AdminUserManager from '@/components/admin/AdminUserManager.vue';
+import AdminDataManager from '@/components/admin/AdminDataManager.vue';
 
 // 활성 탭
 const activeTab = ref('dashboard');

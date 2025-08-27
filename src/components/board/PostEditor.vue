@@ -366,10 +366,7 @@ async function handleSubmit() {
       tags: formData.value.tags || [],
       mediaUrls: formData.value.mediaUrls || [],
       authorId: userStore.user.uid,
-      authorName:
-        userStore.user.displayName ||
-        userStore.user.email?.split('@')[0] ||
-        '익명',
+      authorName: userStore.userDisplayName,
       authorEmail: userStore.user.email,
       authorPhotoURL: userStore.user.photoURL || null,
       authorIcon: userStore.user.selectedIconData?.url || null,

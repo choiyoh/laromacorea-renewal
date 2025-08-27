@@ -794,6 +794,71 @@ export const adminService = {
       throw error;
     }
   },
+
+  // 댓글 작성자명 정리 (이메일 주소를 닉네임으로 변경)
+  async fixCommentAuthorNames() {
+    try {
+      console.log('🔧 댓글 작성자명 정리를 시작합니다...');
+
+      // 모든 댓글 조회
+      const commentsSnapshot = await getDocs(
+        collection(db, collections.comments),
+      );
+      let fixedCount = 0;
+
+      for (const commentDoc of commentsSnapshot.docs) {
+        const commentData = commentDoc.data();
+
+        // authorName이 이메일 형식인지 확인 (@ 포함하고 .temp 또는 실제 도메인 포함)
+        if (commentData.authorName && commentData.authorName.includes('@')) {
+          let newAuthorName = commentData.authorName;
+
+          // .temp 이메일인 경우 @ 앞부분만 사용
+          if (commentData.authorName.includes('.temp')) {
+            newAuthorName = commentData.authorName.split('@')[0];
+          }
+          // 실제 이메일인 경우도 @ 앞부분만 사용
+          else {
+            newAuthorName = commentData.authorName.split('@')[0];
+          }
+
+          // 작성자 ID로 실제 사용자 정보 조회해서 displayName 사용
+          if (commentData.authorId) {
+            try {
+              const userDoc = await getDoc(
+                doc(db, collections.users, commentData.authorId),
+              );
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                newAuthorName = userData.displayName || newAuthorName;
+              }
+            } catch (userError) {
+              console.warn(
+                `Failed to get user data for ${commentData.authorId}:`,
+                userError,
+              );
+            }
+          }
+
+          // 댓글 업데이트
+          await updateDoc(doc(db, collections.comments, commentDoc.id), {
+            authorName: newAuthorName,
+          });
+
+          console.log(
+            `Fixed comment ${commentDoc.id}: ${commentData.authorName} -> ${newAuthorName}`,
+          );
+          fixedCount++;
+        }
+      }
+
+      console.log(`✅ 완료: ${fixedCount}개 댓글의 작성자명이 수정되었습니다.`);
+      return fixedCount;
+    } catch (error) {
+      console.error('❌ 댓글 작성자명 정리 실패:', error);
+      throw error;
+    }
+  },
 };
 
 /**
