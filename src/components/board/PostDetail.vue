@@ -238,7 +238,7 @@
                   <div class="nav-post-title me-3 flex-grow-1">
                     {{ adjacentPosts.prevPost.title }}
                     <v-icon icon="mdi-comment-outline" size="12" class="me-1" />
-                    <span>{{ adjacentPosts.nextPost.commentCount || 0 }}</span>
+                    <span>{{ adjacentPosts.prevPost.commentCount || 0 }}</span>
                   </div>
                   <div class="nav-post-meta">
                     <div
