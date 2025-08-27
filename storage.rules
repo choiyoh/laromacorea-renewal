@@ -35,7 +35,8 @@ service firebase.storage {
     // Post media files
     match /posts/{fileName} {
       allow read: if true;
-      allow write: if true; // 임시로 모든 사용자에게 허용 (테스트용)
+      allow write: if isAuthenticated() && 
+                      (isValidImageFile() || isValidVideoFile());
       allow delete: if isAuthenticated();
     }
 

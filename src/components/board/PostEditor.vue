@@ -164,7 +164,7 @@ import { useUserStore } from '@/stores/user';
 import { postService } from '@/services/database';
 import { storageService } from '@/services/storage';
 import { matchService } from '@/services/match';
-import { auth } from '@/services/firebase';
+
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import MediaUploader from '../common/MediaUploader.vue';
@@ -318,10 +318,6 @@ async function handleImageInsert() {
     }
 
     try {
-      // 사용자 인증 상태 디버깅
-      console.log('User store user:', userStore.user);
-      console.log('Firebase auth user:', auth.currentUser);
-
       // 업로드 진행 상태를 HTML로 직접 추가 (Quill API 사용하지 않음)
       const currentContent = quillEditor.value.root.innerHTML;
       const uploadingHtml = '<p><em>이미지 업로드 중...</em></p>';
