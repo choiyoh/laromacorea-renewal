@@ -868,40 +868,41 @@ async function handleEditImageInsert() {
 const loadNotices = async () => {
   loading.value = true;
   try {
-    notices.value = await adminService.getNotices({ includeInactive: true });
+    const allNotices = await adminService.getNotices({ includeInactive: true });
+
+    // 삭제되지 않은 공지사항만 필터링하고 기본값 설정
+    notices.value = allNotices
+      .filter((notice) => !notice.isDeleted)
+      .map((notice) => ({
+        ...notice,
+        // 기본값 설정
+        type: notice.type || 'general',
+        priority: notice.priority || 'normal',
+        isPinned: notice.isPinned || false,
+        isPopup: notice.isPopup || false,
+        isActive: notice.isActive !== undefined ? notice.isActive : true,
+        views: notice.viewCount || notice.views || 0,
+        // 날짜 정규화
+        createdAt: notice.createdAt?.toDate
+          ? notice.createdAt.toDate()
+          : notice.createdAt || new Date(),
+        startDate: notice.startDate || '',
+        endDate: notice.endDate || '',
+      }));
+
+    console.log('공지사항 목록 로드 완료:', notices.value.length, '개');
   } catch (error) {
-    // Failed to load notices
-    // 임시 데이터
-    notices.value = [
-      {
-        id: '1',
-        title: '시스템 점검 안내',
-        content:
-          '2025년 1월 15일 오전 2시부터 4시까지 시스템 점검이 진행됩니다. 점검 시간 동안 서비스 이용이 제한될 수 있습니다.',
-        type: 'maintenance',
-        priority: 'high',
-        isPinned: true,
-        isPopup: false,
-        isActive: true,
-        views: 150,
-        createdAt: new Date(),
-        startDate: '2025-01-15T02:00',
-        endDate: '2025-01-15T04:00',
-      },
-      {
-        id: '2',
-        title: '새로운 아이콘 추가',
-        content:
-          'AS 로마 관련 새로운 아이콘들이 추가되었습니다. 아이콘 상점에서 확인해보세요!',
-        type: 'update',
-        priority: 'normal',
-        isPinned: false,
-        isPopup: true,
-        isActive: true,
-        views: 89,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      },
-    ];
+    console.error('공지사항 목록 로드 실패:', error);
+
+    // 에러 발생 시 빈 배열로 초기화
+    notices.value = [];
+
+    // 사용자에게 에러 알림 (선택적)
+    if (error.message && !error.message.includes('permission')) {
+      alert(
+        '공지사항 목록을 불러오는데 실패했습니다. 새로고침을 시도해주세요.',
+      );
+    }
   } finally {
     loading.value = false;
   }
@@ -935,10 +936,13 @@ const createNotice = async () => {
     }
 
     // 목록 새로고침
-    loadNotices();
+    await loadNotices();
     emit('notice-updated');
+
+    alert('공지사항이 등록되었습니다.');
   } catch (error) {
-    // Failed to create notice
+    console.error('공지사항 생성 실패:', error);
+    alert(`공지사항 등록에 실패했습니다: ${error.message}`);
   } finally {
     createLoading.value = false;
   }
@@ -992,20 +996,33 @@ const saveNotice = async () => {
 
   saveLoading.value = true;
   try {
-    // 실제 구현에서는 공지사항 업데이트 API 호출
-
-    // 로컬 상태 업데이트
-    const index = notices.value.findIndex(
-      (n) => n.id === selectedNotice.value.id,
+    // 실제 API 호출로 공지사항 업데이트
+    await adminService.updateNotice(
+      userStore.user.uid,
+      selectedNotice.value.id,
+      {
+        title: selectedNotice.value.title,
+        content: selectedNotice.value.content,
+        type: selectedNotice.value.type,
+        priority: selectedNotice.value.priority,
+        startDate: selectedNotice.value.startDate,
+        endDate: selectedNotice.value.endDate,
+        isPinned: selectedNotice.value.isPinned,
+        isPopup: selectedNotice.value.isPopup,
+        isActive: selectedNotice.value.isActive,
+      },
     );
-    if (index !== -1) {
-      notices.value[index] = { ...selectedNotice.value };
-    }
+
+    // 목록 새로고침
+    await loadNotices();
 
     isEditing.value = false;
     emit('notice-updated');
+
+    alert('공지사항이 수정되었습니다.');
   } catch (error) {
-    // Failed to save notice
+    console.error('공지사항 수정 실패:', error);
+    alert(`공지사항 수정에 실패했습니다: ${error.message}`);
   } finally {
     saveLoading.value = false;
   }
@@ -1014,18 +1031,23 @@ const saveNotice = async () => {
 // 공지사항 상태 토글
 const toggleNoticeStatus = async (notice) => {
   try {
-    // 실제 구현에서는 공지사항 상태 업데이트 API 호출
     const newStatus = !notice.isActive;
 
-    // 로컬 상태 업데이트
-    const index = notices.value.findIndex((n) => n.id === notice.id);
-    if (index !== -1) {
-      notices.value[index].isActive = newStatus;
-    }
+    // 실제 API 호출로 공지사항 상태 업데이트
+    await adminService.updateNotice(userStore.user.uid, notice.id, {
+      isActive: newStatus,
+    });
+
+    // 목록 새로고침
+    await loadNotices();
 
     emit('notice-updated');
+
+    const statusText = newStatus ? '활성화' : '비활성화';
+    alert(`공지사항이 ${statusText}되었습니다.`);
   } catch (error) {
-    // Failed to toggle notice status
+    console.error('공지사항 상태 변경 실패:', error);
+    alert(`공지사항 상태 변경에 실패했습니다: ${error.message}`);
   }
 };
 
@@ -1033,17 +1055,18 @@ const toggleNoticeStatus = async (notice) => {
 const deleteNotice = async (notice) => {
   if (confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
     try {
-      // 실제 구현에서는 공지사항 삭제 API 호출
+      // 실제 API 호출로 공지사항 삭제 (소프트 삭제)
+      await adminService.deleteNotice(userStore.user.uid, notice.id);
 
-      // 로컬 상태에서 제거
-      const index = notices.value.findIndex((n) => n.id === notice.id);
-      if (index !== -1) {
-        notices.value.splice(index, 1);
-      }
+      // 목록 새로고침
+      await loadNotices();
 
       emit('notice-updated');
+
+      alert('공지사항이 삭제되었습니다.');
     } catch (error) {
-      // Failed to delete notice
+      console.error('공지사항 삭제 실패:', error);
+      alert(`공지사항 삭제에 실패했습니다: ${error.message}`);
     }
   }
 };

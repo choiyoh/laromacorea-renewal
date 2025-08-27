@@ -63,66 +63,154 @@ export const adminService = {
         throw new Error('유효하지 않은 공지사항 데이터입니다.');
       }
 
+      // 필수 필드 확인
+      if (!noticeData.title || !noticeData.content) {
+        throw new Error('제목과 내용은 필수입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {
         throw new Error('관리자 권한이 필요합니다.');
       }
 
+      // 관리자 정보 가져오기
+      const adminDoc = await getDoc(doc(db, collections.users, adminUserId));
+      const adminData = adminDoc.data();
+
       const docRef = await addDoc(collection(db, collections.posts), {
-        ...noticeData,
+        title: noticeData.title,
+        content: noticeData.content,
         boardType: 'notice',
-        isPinned: true, // 공지사항은 기본적으로 상단 고정
+
+        // 공지사항 특성
+        type: noticeData.type || 'general',
+        priority: noticeData.priority || 'normal',
+        isPinned:
+          noticeData.isPinned !== undefined ? noticeData.isPinned : true,
+        isPopup: noticeData.isPopup || false,
+        isActive:
+          noticeData.isActive !== undefined ? noticeData.isActive : true,
+
+        // 날짜 설정
+        startDate: noticeData.startDate || null,
+        endDate: noticeData.endDate || null,
+
+        // 기본 게시글 필드
         isDeleted: false,
         viewCount: 0,
         likeCount: 0,
         commentCount: 0,
+
+        // 작성자 정보
+        authorId: adminUserId,
+        authorName: adminData?.displayName || '관리자',
+        authorEmail: adminData?.email || '',
+        authorPhotoURL: adminData?.photoURL || null,
+
+        // 타임스탬프
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
       return docRef.id;
     } catch (error) {
+      console.error('공지사항 생성 실패:', error);
       throw error;
     }
   },
 
   async updateNotice(adminUserId, postId, updateData) {
     try {
+      // 매개변수 유효성 검사
+      if (!adminUserId || typeof adminUserId !== 'string') {
+        throw new Error('유효하지 않은 관리자 ID입니다.');
+      }
+
+      if (!postId || typeof postId !== 'string') {
+        throw new Error('유효하지 않은 게시글 ID입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {
         throw new Error('관리자 권한이 필요합니다.');
       }
 
+      // 게시글 존재 확인
       const postRef = doc(db, collections.posts, postId);
-      await updateDoc(postRef, {
+      const postDoc = await getDoc(postRef);
+
+      if (!postDoc.exists()) {
+        throw new Error('공지사항을 찾을 수 없습니다.');
+      }
+
+      const postData = postDoc.data();
+      if (postData.boardType !== 'notice') {
+        throw new Error('공지사항이 아닙니다.');
+      }
+
+      // 업데이트할 데이터 준비
+      const updateFields = {
         ...updateData,
         updatedAt: serverTimestamp(),
-      });
+        updatedBy: adminUserId,
+      };
+
+      // 날짜 필드 처리
+      if (updateData.startDate === '') updateFields.startDate = null;
+      if (updateData.endDate === '') updateFields.endDate = null;
+
+      await updateDoc(postRef, updateFields);
 
       return true;
     } catch (error) {
+      console.error('공지사항 수정 실패:', error);
       throw error;
     }
   },
 
   async deleteNotice(adminUserId, postId) {
     try {
+      // 매개변수 유효성 검사
+      if (!adminUserId || typeof adminUserId !== 'string') {
+        throw new Error('유효하지 않은 관리자 ID입니다.');
+      }
+
+      if (!postId || typeof postId !== 'string') {
+        throw new Error('유효하지 않은 게시글 ID입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {
         throw new Error('관리자 권한이 필요합니다.');
       }
 
+      // 게시글 존재 확인
       const postRef = doc(db, collections.posts, postId);
+      const postDoc = await getDoc(postRef);
+
+      if (!postDoc.exists()) {
+        throw new Error('공지사항을 찾을 수 없습니다.');
+      }
+
+      const postData = postDoc.data();
+      if (postData.boardType !== 'notice') {
+        throw new Error('공지사항이 아닙니다.');
+      }
+
+      // 소프트 삭제 (실제로는 삭제하지 않고 isDeleted 플래그만 설정)
       await updateDoc(postRef, {
         isDeleted: true,
+        deletedAt: serverTimestamp(),
+        deletedBy: adminUserId,
         updatedAt: serverTimestamp(),
       });
 
       return true;
     } catch (error) {
+      console.error('공지사항 삭제 실패:', error);
       throw error;
     }
   },
@@ -592,15 +680,44 @@ export const adminService = {
   // 공지사항 관리
   async getNotices(options = {}) {
     try {
-      const q = query(
-        collection(db, collections.posts),
-        where('boardType', '==', 'notice'),
-        orderBy('createdAt', 'desc'),
-        limit(options.limitCount || 20),
-      );
+      let q;
+
+      if (options.includeInactive) {
+        // 관리자용: 삭제되지 않은 모든 공지사항 (활성/비활성 포함)
+        q = query(
+          collection(db, collections.posts),
+          where('boardType', '==', 'notice'),
+          where('isDeleted', '==', false),
+          orderBy('createdAt', 'desc'),
+          limit(options.limitCount || 50),
+        );
+      } else {
+        // 일반 사용자용: 활성화된 공지사항만
+        q = query(
+          collection(db, collections.posts),
+          where('boardType', '==', 'notice'),
+          where('isDeleted', '==', false),
+          where('isActive', '==', true),
+          orderBy('createdAt', 'desc'),
+          limit(options.limitCount || 20),
+        );
+      }
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // 타임스탬프 정규화
+          createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate()
+            : data.createdAt,
+          updatedAt: data.updatedAt?.toDate
+            ? data.updatedAt.toDate()
+            : data.updatedAt,
+        };
+      });
     } catch (error) {
       console.error('공지사항 목록 조회 실패:', error);
       throw error;
