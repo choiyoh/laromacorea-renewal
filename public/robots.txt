@@ -16,7 +16,7 @@ Allow: /board/special
 Allow: /board/media
 
 # Sitemap location
-Sitemap: https://laromacorea.com/sitemap.xml
+Sitemap: https://laromacorea.co.kr/sitemap.xml
 
 # Crawl delay (optional)
 Crawl-delay: 1

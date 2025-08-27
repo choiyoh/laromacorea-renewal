@@ -2,7 +2,7 @@
 
 ## Introduction
 
-AS 로마 한국 팬 커뮤니티 사이트(laromacorea.com)의 전면 리뉴얼 프로젝트입니다. Vue.js를 기반으로 한 모바일 반응형 웹사이트로, Firebase를 활용한 실시간 데이터 관리와 팬 커뮤니티 기능을 제공합니다. serieamania.com을 참고하여 현대적이고 사용자 친화적인 축구 팬 커뮤니티 플랫폼을 구축합니다.
+AS 로마 한국 팬 커뮤니티 사이트(laromacorea.co.kr)의 전면 리뉴얼 프로젝트입니다. Vue.js를 기반으로 한 모바일 반응형 웹사이트로, Firebase를 활용한 실시간 데이터 관리와 팬 커뮤니티 기능을 제공합니다. serieamania.com을 참고하여 현대적이고 사용자 친화적인 축구 팬 커뮤니티 플랫폼을 구축합니다.
 
 ## Requirements
 

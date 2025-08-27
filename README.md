@@ -177,6 +177,6 @@ Firestore 보안 규칙이 적용되어 있어 인증된 사용자만 데이터�
 
 ## 📞 연락처
 
-La Roma Corea - [웹사이트](https://laromacorea.com)
+La Roma Corea - [웹사이트](https://laromacorea.co.kr)
 
 프로젝트 링크: [GitHub Repository](https://github.com/your-username/laromacorea-renewal)

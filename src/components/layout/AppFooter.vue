@@ -61,7 +61,7 @@
       <!-- Mobile Footer - Copyright Only -->
       <div class="d-md-none text-center mobile-footer-minimal">
         <p class="text-caption mb-0">
-          © {{ currentYear }} www.laromacorea.com All Rights reserved.
+          © {{ currentYear }} www.laromacorea.co.kr All Rights reserved.
         </p>
       </div>
 
@@ -71,7 +71,7 @@
         <v-row>
           <v-col cols="12" class="text-center py-1">
             <p class="text-caption mt-1">
-              © {{ currentYear }} www.laromacorea.com All Rights reserved.
+              © {{ currentYear }} www.laromacorea.co.kr All Rights reserved.
             </p>
           </v-col>
         </v-row>
