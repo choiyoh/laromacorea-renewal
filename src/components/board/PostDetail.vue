@@ -575,6 +575,12 @@ onMounted(async () => {
   padding: 0;
 }
 
+@media (min-width: 960px) {
+  .post-body :deep(img) {
+    max-width: 60%;
+  }
+}
+
 @media (max-width: 768px) {
   .post-header h1 {
     font-size: 1.5rem !important;
