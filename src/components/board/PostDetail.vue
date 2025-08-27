@@ -519,10 +519,6 @@ onMounted(async () => {
   margin: 16px 0;
 }
 
-.post-body :deep(p) {
-  margin-bottom: 1.2rem;
-}
-
 .post-body :deep(h1),
 .post-body :deep(h2),
 .post-body :deep(h3),
