@@ -1,8 +1,9 @@
-import { fileURLToPath, URL } from 'node:url'
+import { fileURLToPath, URL } from 'node:url';
 
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import vueDevTools from 'vite-plugin-vue-devtools';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,6 +18,104 @@ export default defineConfig({
       },
     }),
     vueDevTools(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: [
+          '**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}',
+        ],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'firebase-storage-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+              },
+            },
+          },
+        ],
+      },
+      includeAssets: [
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'pwa-*.png',
+        'images/lupi.svg',
+      ],
+      manifest: {
+        name: 'AS 로마 한국 팬 커뮤니티',
+        short_name: 'AS 로마 코리아',
+        description: 'AS 로마 한국 팬들을 위한 커뮤니티 플랫폼',
+        theme_color: '#730c0a',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
+        icons: [
+          {
+            src: '/images/lupi.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+          },
+          {
+            src: '/pwa-144x144.png',
+            sizes: '144x144',
+            type: 'image/png',
+          },
+          {
+            src: '/pwa-152x152.png',
+            sizes: '152x152',
+            type: 'image/png',
+          },
+        ],
+        categories: ['sports', 'social', 'entertainment'],
+        lang: 'ko',
+        dir: 'ltr',
+      },
+    }),
   ],
   resolve: {
     alias: {
@@ -45,23 +144,26 @@ export default defineConfig({
         },
         // Optimize chunk file names
         chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId
+          const facadeModuleId = chunkInfo.facadeModuleId;
           if (facadeModuleId) {
-            const fileName = facadeModuleId.split('/').pop().replace('.vue', '')
-            return `js/${fileName}-[hash].js`
+            const fileName = facadeModuleId
+              .split('/')
+              .pop()
+              .replace('.vue', '');
+            return `js/${fileName}-[hash].js`;
           }
-          return 'js/[name]-[hash].js'
+          return 'js/[name]-[hash].js';
         },
         assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.')
-          const ext = info[info.length - 1]
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
           if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
-            return `images/[name]-[hash].${ext}`
+            return `images/[name]-[hash].${ext}`;
           }
           if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-            return `fonts/[name]-[hash].${ext}`
+            return `fonts/[name]-[hash].${ext}`;
           }
-          return `assets/[name]-[hash].${ext}`
+          return `assets/[name]-[hash].${ext}`;
         },
       },
     },
@@ -92,4 +194,4 @@ export default defineConfig({
     ],
     exclude: ['@vueuse/core'],
   },
-})
+});

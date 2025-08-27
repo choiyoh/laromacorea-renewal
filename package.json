@@ -28,7 +28,8 @@
     "create-test-users": "node scripts/create-test-users.js",
     "check-admin-user": "node scripts/check-admin-user.js",
     "update-posts-icons": "node scripts/update-existing-posts-icons.js",
-    "check-user-icons": "node scripts/check-user-icons.js"
+    "check-user-icons": "node scripts/check-user-icons.js",
+    "generate-pwa-icons": "node scripts/generate-pwa-icons.js"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -56,7 +57,9 @@
     "jsdom": "^26.1.0",
     "prettier": "3.6.2",
     "sass-embedded": "^1.90.0",
+    "sharp": "^0.34.3",
     "vite": "^7.0.6",
+    "vite-plugin-pwa": "^1.0.3",
     "vite-plugin-vue-devtools": "^8.0.0",
     "vitest": "^3.2.4"
   }

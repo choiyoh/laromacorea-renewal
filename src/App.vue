@@ -9,6 +9,8 @@ import AppNavigation from '@/components/layout/AppNavigation.vue';
 import AppFooter from '@/components/layout/AppFooter.vue';
 import ErrorNotification from '@/components/common/ErrorNotification.vue';
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue';
+import PWAUpdatePrompt from '@/components/common/PWAUpdatePrompt.vue';
+import PWAInstallPrompt from '@/components/common/PWAInstallPrompt.vue';
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -109,6 +111,10 @@ const handleDrawerOverlayClick = () => {
 
     <!-- Global Error Notifications -->
     <ErrorNotification />
+
+    <!-- PWA Components -->
+    <PWAUpdatePrompt />
+    <PWAInstallPrompt />
   </v-app>
 </template>
 
