@@ -23,6 +23,7 @@
             :post-id="postId"
             @edit-post="handleEditPost"
             @delete-post="handleDeletePost"
+            @navigate-to-post="handleNavigateToPost"
           />
         </v-col>
       </v-row>
@@ -70,6 +71,11 @@ function handleEditPost() {
 function handleDeletePost(postId) {
   // Navigate back to board list after deletion
   router.push(`/board/${props.boardType}`);
+}
+
+function handleNavigateToPost(postId) {
+  // Navigate to the selected post
+  router.push(`/board/${props.boardType}/post/${postId}`);
 }
 </script>
 
