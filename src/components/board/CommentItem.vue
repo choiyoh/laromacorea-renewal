@@ -347,11 +347,9 @@ onMounted(() => {
   }
 
   .comment-wrapper {
-    padding: 14px 0 !important;
   }
 
   .comment-wrapper:hover {
-    padding: 14px 4px !important;
     margin: 0 -4px;
   }
 
