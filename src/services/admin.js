@@ -45,7 +45,6 @@ export const adminService = {
       const userData = userDoc.data();
       return userData.role === 'admin';
     } catch (error) {
-      console.error('관리자 권한 확인 실패:', error);
       throw error;
     }
   },
@@ -84,7 +83,6 @@ export const adminService = {
 
       return docRef.id;
     } catch (error) {
-      console.error('공지사항 작성 실패:', error);
       throw error;
     }
   },
@@ -105,7 +103,6 @@ export const adminService = {
 
       return true;
     } catch (error) {
-      console.error('공지사항 수정 실패:', error);
       throw error;
     }
   },
@@ -126,7 +123,6 @@ export const adminService = {
 
       return true;
     } catch (error) {
-      console.error('공지사항 삭제 실패:', error);
       throw error;
     }
   },
@@ -147,7 +143,6 @@ export const adminService = {
 
       return true;
     } catch (error) {
-      console.error('공지사항 고정 설정 실패:', error);
       throw error;
     }
   },
@@ -182,10 +177,8 @@ export const adminService = {
         };
       });
 
-      console.log(`아이콘 목록 조회 완료: ${icons.length}개`);
       return icons;
     } catch (error) {
-      console.error('아이콘 목록 조회 실패:', error);
       // 빈 배열 반환하여 UI가 깨지지 않도록 함
       return [];
     }
@@ -254,7 +247,6 @@ export const adminService = {
 
       return true;
     } catch (error) {
-      console.error('아이콘 상태 변경 실패:', error);
       throw error;
     }
   },
@@ -291,7 +283,6 @@ export const adminService = {
       const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-      console.error('사용자 목록 조회 실패:', error);
       throw error;
     }
   },
@@ -317,7 +308,6 @@ export const adminService = {
 
       return true;
     } catch (error) {
-      console.error('사용자 역할 변경 실패:', error);
       throw error;
     }
   },
@@ -329,10 +319,10 @@ export const adminService = {
         try {
           const isAdmin = await this.checkAdminPermission(adminUserId);
           if (!isAdmin) {
-            console.warn('관리자 권한이 없지만 개발 환경에서 허용합니다.');
+            // 관리자 권한이 없지만 개발 환경에서 허용
           }
         } catch (error) {
-          console.warn('권한 확인 실패, 개발 환경에서 계속 진행합니다:', error);
+          // 권한 확인 실패, 개발 환경에서 계속 진행
         }
       }
 
@@ -343,12 +333,8 @@ export const adminService = {
         updatedBy: adminUserId,
       });
 
-      console.log(
-        `사용자 ${targetUserId} 상태를 ${isActive ? '활성화' : '비활성화'}로 변경했습니다.`,
-      );
       return true;
     } catch (error) {
-      console.error('사용자 상태 변경 실패:', error);
       throw error;
     }
   },
@@ -413,7 +399,6 @@ export const adminService = {
 
       return stats;
     } catch (error) {
-      console.error('대시보드 통계 조회 실패:', error);
       throw error;
     }
   },
@@ -438,7 +423,6 @@ export const adminService = {
           user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     } catch (error) {
-      console.error('사용자 검색 실패:', error);
       throw error;
     }
   },
@@ -462,10 +446,8 @@ export const adminService = {
         updatedAt: serverTimestamp(),
       });
 
-      console.log(`사용자 ${userId}의 인증 상태를 ${verified}로 변경했습니다.`);
       return true;
     } catch (error) {
-      console.error('사용자 인증 상태 업데이트 실패:', error);
       throw error;
     }
   },
@@ -482,7 +464,6 @@ export const adminService = {
       const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-      console.error('게시글 목록 조회 실패:', error);
       throw error;
     }
   },

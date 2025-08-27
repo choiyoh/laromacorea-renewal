@@ -527,7 +527,7 @@ const loadStats = async () => {
     todayEarned.value = 150;
     todaySpent.value = 80;
   } catch (error) {
-    console.error('Failed to load stats:', error);
+    // Failed to load stats
   }
 };
 
@@ -559,7 +559,7 @@ const loadHistory = async () => {
       },
     ];
   } catch (error) {
-    console.error('Failed to load history:', error);
+    // Failed to load history
   } finally {
     loading.value = false;
   }
@@ -575,7 +575,7 @@ const loadUsers = async () => {
       email: user.email,
     }));
   } catch (error) {
-    console.error('Failed to load users:', error);
+    // Failed to load users
   }
 };
 
@@ -584,9 +584,6 @@ const bulkAwardPoints = async () => {
   bulkLoading.value = true;
   try {
     // 실제 구현에서는 일괄 지급 API 호출
-    console.log('Bulk award:', {
-      bulkTarget: bulkTarget.value,
-      bulkPoints: bulkPoints.value,
       bulkReason: bulkReason.value,
     });
 
@@ -596,7 +593,7 @@ const bulkAwardPoints = async () => {
 
     emit('points-updated');
   } catch (error) {
-    console.error('Failed to bulk award points:', error);
+    // Failed to bulk award points
   } finally {
     bulkLoading.value = false;
   }
@@ -621,7 +618,7 @@ const awardIndividualPoints = async () => {
     emit('points-updated');
     loadHistory();
   } catch (error) {
-    console.error('Failed to award individual points:', error);
+    // Failed to award individual points
   } finally {
     individualLoading.value = false;
   }
@@ -632,9 +629,8 @@ const saveSettings = async () => {
   settingsLoading.value = true;
   try {
     // 실제 구현에서는 설정 저장 API 호출
-    console.log('Save settings:', settings.value);
   } catch (error) {
-    console.error('Failed to save settings:', error);
+    // Failed to save settings
   } finally {
     settingsLoading.value = false;
   }

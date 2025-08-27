@@ -132,7 +132,6 @@ async function fetchPost() {
     post.value = fetchedPost;
   } catch (err) {
     error.value = '게시글을 불러오는 중 오류가 발생했습니다.';
-    console.error('Error fetching post:', err);
   } finally {
     loading.value = false;
   }

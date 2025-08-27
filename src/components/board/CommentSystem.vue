@@ -320,11 +320,9 @@ const canWriteComment = computed(() => {
 
 // Computed
 const sortedComments = computed(() => {
-  console.log('CommentSystem - props.comments:', props.comments);
   const topLevelComments = props.comments.filter(
     (comment) => !comment.parentId,
   );
-  console.log('CommentSystem - topLevelComments:', topLevelComments);
 
   // 기본적으로 오래된 순으로 정렬
   return topLevelComments.sort(
@@ -363,7 +361,6 @@ async function handleSubmitComment() {
     // 댓글 추가 이벤트 발생
     emit('comment-added', commentId);
   } catch (err) {
-    console.error('Error creating comment:', err);
     // Show error message
   } finally {
     submittingComment.value = false;
@@ -399,7 +396,6 @@ async function handleSubmitReply() {
     // 댓글 목록 새로고침 요청
     emit('refresh-comments');
   } catch (err) {
-    console.error('Error creating reply:', err);
     // Show error message
   } finally {
     submittingReply.value = false;
@@ -434,7 +430,6 @@ async function handleUpdateComment() {
     editTarget.value = null;
     editContent.value = '';
   } catch (err) {
-    console.error('Error updating comment:', err);
     // Show error message
   } finally {
     updatingComment.value = false;
@@ -456,7 +451,6 @@ async function handleConfirmDelete() {
     deleteDialog.value = false;
     deleteTarget.value = null;
   } catch (err) {
-    console.error('Error deleting comment:', err);
     // Show error message
   } finally {
     deletingComment.value = false;
@@ -485,7 +479,6 @@ async function handleLikeComment(comment) {
 
     emit('comment-updated', updatedComment);
   } catch (err) {
-    console.error('Error toggling comment like:', err);
     // Show error message
   }
 }

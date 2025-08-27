@@ -15,8 +15,8 @@ import {
   writeBatch,
   increment,
   serverTimestamp,
-} from 'firebase/firestore'
-import { db } from './firebase'
+} from 'firebase/firestore';
+import { db } from './firebase';
 
 // 포인트 지급 규칙
 export const POINT_RULES = {
@@ -26,7 +26,7 @@ export const POINT_RULES = {
   COMMENT_LIKED: 1, // 댓글 좋아요 받음
   DAILY_LOGIN: 2, // 일일 로그인 보너스
   ADMIN_BONUS: 0, // 관리자 지급 (가변)
-}
+};
 
 // 포인트 변동 사유
 export const POINT_REASONS = {
@@ -39,7 +39,7 @@ export const POINT_REASONS = {
   ADMIN_BONUS: 'admin_bonus',
   ADMIN_PENALTY: 'admin_penalty',
   ADMIN_ADJUSTMENT: 'admin_adjustment',
-}
+};
 
 export const pointsService = {
   /**
@@ -52,21 +52,21 @@ export const pointsService = {
    */
   async awardPoints(userId, points, reason, relatedId = null, adminId = null) {
     if (points <= 0) {
-      throw new Error('포인트는 양수여야 합니다.')
+      throw new Error('포인트는 양수여야 합니다.');
     }
 
-    const batch = writeBatch(db)
+    const batch = writeBatch(db);
 
     try {
       // 사용자 포인트 증가
-      const userRef = doc(db, 'users', userId)
+      const userRef = doc(db, 'users', userId);
       batch.update(userRef, {
         points: increment(points),
         lastPointsUpdate: serverTimestamp(),
-      })
+      });
 
       // 포인트 내역 추가
-      const historyRef = doc(collection(db, 'points_history'))
+      const historyRef = doc(collection(db, 'points_history'));
       batch.set(historyRef, {
         userId,
         type: 'earned',
@@ -75,13 +75,12 @@ export const pointsService = {
         relatedId,
         adminId,
         createdAt: serverTimestamp(),
-      })
+      });
 
-      await batch.commit()
-      return true
+      await batch.commit();
+      return true;
     } catch (error) {
-      console.error('포인트 지급 실패:', error)
-      throw new Error('포인트 지급에 실패했습니다.')
+      throw new Error('포인트 지급에 실패했습니다.');
     }
   },
 
@@ -94,32 +93,32 @@ export const pointsService = {
    */
   async deductPoints(userId, points, reason, relatedId = null) {
     if (points <= 0) {
-      throw new Error('포인트는 양수여야 합니다.')
+      throw new Error('포인트는 양수여야 합니다.');
     }
 
     // 사용자 현재 포인트 확인
-    const userDoc = await getDoc(doc(db, 'users', userId))
+    const userDoc = await getDoc(doc(db, 'users', userId));
     if (!userDoc.exists()) {
-      throw new Error('사용자를 찾을 수 없습니다.')
+      throw new Error('사용자를 찾을 수 없습니다.');
     }
 
-    const currentPoints = userDoc.data().points || 0
+    const currentPoints = userDoc.data().points || 0;
     if (currentPoints < points) {
-      throw new Error('포인트가 부족합니다.')
+      throw new Error('포인트가 부족합니다.');
     }
 
-    const batch = writeBatch(db)
+    const batch = writeBatch(db);
 
     try {
       // 사용자 포인트 차감
-      const userRef = doc(db, 'users', userId)
+      const userRef = doc(db, 'users', userId);
       batch.update(userRef, {
         points: increment(-points),
         lastPointsUpdate: serverTimestamp(),
-      })
+      });
 
       // 포인트 내역 추가
-      const historyRef = doc(collection(db, 'points_history'))
+      const historyRef = doc(collection(db, 'points_history'));
       batch.set(historyRef, {
         userId,
         type: 'spent',
@@ -128,13 +127,12 @@ export const pointsService = {
         relatedId,
         adminId: null,
         createdAt: serverTimestamp(),
-      })
+      });
 
-      await batch.commit()
-      return true
+      await batch.commit();
+      return true;
     } catch (error) {
-      console.error('포인트 차감 실패:', error)
-      throw new Error('포인트 차감에 실패했습니다.')
+      throw new Error('포인트 차감에 실패했습니다.');
     }
   },
 
@@ -147,49 +145,49 @@ export const pointsService = {
    */
   async adminAdjustPoints(userId, points, adminId, note = '') {
     if (points === 0) {
-      throw new Error('조정할 포인트가 0입니다.')
+      throw new Error('조정할 포인트가 0입니다.');
     }
 
     // 포인트 차감시 잔액 확인
     if (points < 0) {
-      const userDoc = await getDoc(doc(db, 'users', userId))
+      const userDoc = await getDoc(doc(db, 'users', userId));
       if (!userDoc.exists()) {
-        throw new Error('사용자를 찾을 수 없습니다.')
+        throw new Error('사용자를 찾을 수 없습니다.');
       }
 
-      const currentPoints = userDoc.data().points || 0
+      const currentPoints = userDoc.data().points || 0;
       if (currentPoints < Math.abs(points)) {
-        throw new Error('사용자의 포인트가 부족합니다.')
+        throw new Error('사용자의 포인트가 부족합니다.');
       }
     }
 
-    const batch = writeBatch(db)
+    const batch = writeBatch(db);
 
     try {
       // 사용자 포인트 조정
-      const userRef = doc(db, 'users', userId)
+      const userRef = doc(db, 'users', userId);
       batch.update(userRef, {
         points: increment(points),
         lastPointsUpdate: serverTimestamp(),
-      })
+      });
 
       // 포인트 내역 추가
-      const historyRef = doc(collection(db, 'points_history'))
+      const historyRef = doc(collection(db, 'points_history'));
       batch.set(historyRef, {
         userId,
         type: 'admin_adjustment',
         amount: points,
-        reason: points > 0 ? POINT_REASONS.ADMIN_BONUS : POINT_REASONS.ADMIN_PENALTY,
+        reason:
+          points > 0 ? POINT_REASONS.ADMIN_BONUS : POINT_REASONS.ADMIN_PENALTY,
         note,
         adminId,
         createdAt: serverTimestamp(),
-      })
+      });
 
-      await batch.commit()
-      return true
+      await batch.commit();
+      return true;
     } catch (error) {
-      console.error('관리자 포인트 조정 실패:', error)
-      throw new Error('포인트 조정에 실패했습니다.')
+      throw new Error('포인트 조정에 실패했습니다.');
     }
   },
 
@@ -205,17 +203,16 @@ export const pointsService = {
         where('userId', '==', userId),
         orderBy('createdAt', 'desc'),
         limit(limitCount),
-      )
+      );
 
-      const snapshot = await getDocs(q)
+      const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
-      }))
+      }));
     } catch (error) {
-      console.error('포인트 내역 조회 실패:', error)
-      throw new Error('포인트 내역을 불러올 수 없습니다.')
+      throw new Error('포인트 내역을 불러올 수 없습니다.');
     }
   },
 
@@ -229,17 +226,16 @@ export const pointsService = {
         collection(db, 'points_history'),
         orderBy('createdAt', 'desc'),
         limit(limitCount),
-      )
+      );
 
-      const snapshot = await getDocs(q)
+      const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
-      }))
+      }));
     } catch (error) {
-      console.error('전체 포인트 내역 조회 실패:', error)
-      throw new Error('포인트 내역을 불러올 수 없습니다.')
+      throw new Error('포인트 내역을 불러올 수 없습니다.');
     }
   },
 
@@ -249,14 +245,13 @@ export const pointsService = {
    */
   async getUserPoints(userId) {
     try {
-      const userDoc = await getDoc(doc(db, 'users', userId))
+      const userDoc = await getDoc(doc(db, 'users', userId));
       if (!userDoc.exists()) {
-        throw new Error('사용자를 찾을 수 없습니다.')
+        throw new Error('사용자를 찾을 수 없습니다.');
       }
-      return userDoc.data().points || 0
+      return userDoc.data().points || 0;
     } catch (error) {
-      console.error('사용자 포인트 조회 실패:', error)
-      throw new Error('포인트 정보를 불러올 수 없습니다.')
+      throw new Error('포인트 정보를 불러올 수 없습니다.');
     }
   },
 
@@ -266,31 +261,31 @@ export const pointsService = {
   async getPointsStatistics() {
     try {
       // 전체 포인트 내역 조회
-      const historySnapshot = await getDocs(collection(db, 'points_history'))
-      const history = historySnapshot.docs.map((doc) => doc.data())
+      const historySnapshot = await getDocs(collection(db, 'points_history'));
+      const history = historySnapshot.docs.map((doc) => doc.data());
 
       // 통계 계산
       const totalEarned = history
         .filter((h) => h.type === 'earned')
-        .reduce((sum, h) => sum + h.amount, 0)
+        .reduce((sum, h) => sum + h.amount, 0);
 
       const totalSpent = history
         .filter((h) => h.type === 'spent')
-        .reduce((sum, h) => sum + Math.abs(h.amount), 0)
+        .reduce((sum, h) => sum + Math.abs(h.amount), 0);
 
       const totalAdjustments = history
         .filter((h) => h.type === 'admin_adjustment')
-        .reduce((sum, h) => sum + h.amount, 0)
+        .reduce((sum, h) => sum + h.amount, 0);
 
       // 사유별 통계
-      const reasonStats = {}
+      const reasonStats = {};
       history.forEach((h) => {
         if (!reasonStats[h.reason]) {
-          reasonStats[h.reason] = { count: 0, total: 0 }
+          reasonStats[h.reason] = { count: 0, total: 0 };
         }
-        reasonStats[h.reason].count++
-        reasonStats[h.reason].total += h.amount
-      })
+        reasonStats[h.reason].count++;
+        reasonStats[h.reason].total += h.amount;
+      });
 
       return {
         totalEarned,
@@ -299,10 +294,9 @@ export const pointsService = {
         netPoints: totalEarned - totalSpent + totalAdjustments,
         reasonStats,
         totalTransactions: history.length,
-      }
+      };
     } catch (error) {
-      console.error('포인트 통계 조회 실패:', error)
-      throw new Error('포인트 통계를 불러올 수 없습니다.')
+      throw new Error('포인트 통계를 불러올 수 없습니다.');
     }
   },
 
@@ -313,22 +307,21 @@ export const pointsService = {
    * @param {string} relatedId - 관련 문서 ID
    */
   async autoAwardPoints(userId, action, relatedId = null) {
-    const pointsToAward = POINT_RULES[action]
+    const pointsToAward = POINT_RULES[action];
     if (!pointsToAward || pointsToAward <= 0) {
-      return false
+      return false;
     }
 
-    const reason = POINT_REASONS[action]
+    const reason = POINT_REASONS[action];
     if (!reason) {
-      return false
+      return false;
     }
 
     try {
-      await this.awardPoints(userId, pointsToAward, reason, relatedId)
-      return true
+      await this.awardPoints(userId, pointsToAward, reason, relatedId);
+      return true;
     } catch (error) {
-      console.error(`자동 포인트 지급 실패 (${action}):`, error)
-      return false
+      return false;
     }
   },
-}
+};

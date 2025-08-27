@@ -1,5 +1,11 @@
 <template>
-  <v-footer color="primary" dark app class="pa-2">
+  <v-footer
+    color="primary"
+    dark
+    app
+    class="footer-container footer-transition"
+    :class="{ 'footer-hidden': mobile && isScrollingDown }"
+  >
     <v-container>
       <!-- Desktop Footer -->
       <v-row class="d-none d-md-flex justify-space-between">
@@ -52,53 +58,36 @@
         </v-col>
       </v-row>
 
-      <!-- Mobile Footer -->
-      <div class="d-md-none text-center">
-        <div class="mobile-footer-title">
-          <img
-            src="/favicon.ico"
-            alt="AS Roma Logo"
-            width="20"
-            height="20"
-            class="footer-logo"
-          />
-          <div class="text-wrapper">
-            <span class="font-weight-bold footer-text">La Roma Corea</span>
-          </div>
-        </div>
-
-        <!-- Mobile Social Links -->
-        <div class="d-flex justify-center mb-3">
-          <v-btn
-            v-for="social in socialLinks"
-            :key="social.name"
-            :href="social.url"
-            target="_blank"
-            icon
-            variant="text"
-            size="small"
-            class="mx-1"
-          >
-            <v-icon size="20">{{ social.icon }}</v-icon>
-          </v-btn>
-        </div>
+      <!-- Mobile Footer - Copyright Only -->
+      <div class="d-md-none text-center mobile-footer-minimal">
+        <p class="text-caption mb-0">
+          © {{ currentYear }} www.laromacorea.com All Rights reserved.
+        </p>
       </div>
 
-      <!-- Copyright -->
-      <v-divider class="my-2" />
-      <v-row>
-        <v-col cols="12" class="text-center py-1">
-          <p class="text-caption mt-1">
-            © {{ currentYear }} www.laromacorea.com All Rights reserved.
-          </p>
-        </v-col>
-      </v-row>
+      <!-- Desktop Copyright -->
+      <div class="d-none d-md-block">
+        <v-divider class="my-2" />
+        <v-row>
+          <v-col cols="12" class="text-center py-1">
+            <p class="text-caption mt-1">
+              © {{ currentYear }} www.laromacorea.com All Rights reserved.
+            </p>
+          </v-col>
+        </v-row>
+      </div>
     </v-container>
   </v-footer>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { useDisplay } from 'vuetify';
+import { useScrollDirection } from '@/composables/useScrollDirection';
+
+// Composables
+const { mobile } = useDisplay();
+const { isScrollingDown } = useScrollDirection();
 
 // Computed
 const currentYear = computed(() => new Date().getFullYear());
@@ -129,6 +118,10 @@ const socialLinks = [
 </script>
 
 <style scoped>
+/* 전역 스타일로 Vuetify 오버라이드 */
+</style>
+
+<style>
 .v-footer a:hover {
   text-decoration: underline !important;
 }
@@ -137,45 +130,83 @@ const socialLinks = [
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Mobile Footer Styling */
-.mobile-footer-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+/* Footer Container */
+.footer-container {
+  padding: 8px; /* Desktop padding */
 }
 
-.text-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+/* Mobile Footer - Minimal */
+.mobile-footer-minimal {
+  padding: 8px 0;
 }
 
-.footer-logo {
-  flex-shrink: 0;
+.mobile-footer-minimal .text-caption {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  opacity: 0.8;
 }
 
-.footer-text {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-/* Ensure proper alignment on all mobile devices */
+/* Mobile specific styles */
 @media (max-width: 599px) {
-  .mobile-footer-title {
-    align-items: center;
-    min-height: 32px;
+  .footer-container {
+    padding: 4px 8px; /* Minimal padding on mobile */
+    min-height: auto;
   }
 
-  .footer-logo {
-    margin-top: 0;
-    margin-bottom: 0;
+  .mobile-footer-minimal {
+    padding: 4px 0;
   }
 
-  .footer-text {
-    margin-top: 0;
-    margin-bottom: 0;
+  .mobile-footer-minimal .text-caption {
+    font-size: 0.65rem;
+  }
+}
+
+/* Tablet specific styles */
+@media (min-width: 600px) and (max-width: 959px) {
+  .footer-container {
+    padding: 6px;
+  }
+}
+
+/* Footer scroll animation */
+.footer-transition {
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  will-change: transform;
+}
+
+.footer-hidden {
+  transform: translateY(100%) !important;
+}
+
+/* 모바일 푸터 스크롤 애니메이션 - 전역 스타일 */
+@media (max-width: 599px) {
+  .v-footer.footer-hidden {
+    transform: translateY(100%) !important;
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
+
+  .v-footer.footer-transition {
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
+
+  /* 더 구체적인 선택자 */
+  .v-application .v-footer.footer-hidden {
+    transform: translateY(100%) !important;
+  }
+
+  .v-application .v-footer.footer-transition {
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
+}
+
+@media (min-width: 600px) {
+  .footer-hidden {
+    transform: none !important;
+  }
+
+  .footer-transition {
+    transition: none !important;
   }
 }
 </style>

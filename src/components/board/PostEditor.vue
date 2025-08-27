@@ -314,7 +314,6 @@ async function handleImageInsert() {
       quillEditor.value.deleteText(range.index, '이미지 업로드 중...'.length);
       quillEditor.value.insertEmbed(range.index, 'image', downloadURL);
     } catch (error) {
-      console.error('Image upload error:', error);
       alert('이미지 업로드에 실패했습니다.');
     }
   };
@@ -329,7 +328,6 @@ function onMediaUploadComplete(fileData) {
 }
 
 function onMediaUploadError({ file, error }) {
-  console.error('Media upload error:', error);
   alert(
     `${file.name} 업로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`,
   );
@@ -385,16 +383,12 @@ async function handleSubmit() {
       postData.isMatchPost = true;
     }
 
-    console.log('게시글 저장 데이터:', postData);
-
     let result;
     if (props.isEdit) {
       result = await postService.updatePost(props.post.id, postData);
     } else {
       result = await postService.createPost(postData);
     }
-
-    console.log('게시글 저장 완료:', result);
 
     // 성공 메시지 표시
     const message = props.isEdit
@@ -411,7 +405,6 @@ async function handleSubmit() {
 
     emit('submit', result);
   } catch (error) {
-    console.error('Post submission error:', error);
     alert(`게시글 저장에 실패했습니다: ${error.message}`);
   } finally {
     loading.value = false;
@@ -451,7 +444,7 @@ function loadDraft() {
         }
       });
     } catch (error) {
-      console.error('Error loading draft:', error);
+      // Error loading draft
     }
   }
 }
@@ -469,24 +462,17 @@ function handleBoardTypeChange(boardType) {
 
 async function loadAvailableMatches() {
   try {
-    console.log('Loading available matches...');
-
     // Get upcoming matches
     let matches = await matchService.getUpcomingMatches();
-    console.log('Loaded matches:', matches);
 
     // If no matches from API, use mock data
     if (!matches || matches.length === 0) {
-      console.log('No matches from API, using mock data');
       matches = matchService.getMockMatches();
     }
 
     availableMatches.value = matches;
-    console.log('Available matches set:', availableMatches.value);
   } catch (error) {
-    console.error('Error loading matches:', error);
     // Fallback to sample data
-    console.log('Using fallback mock data');
     availableMatches.value = matchService.getMockMatches();
   }
 }
@@ -518,7 +504,6 @@ onMounted(async () => {
 
   // Match 게시판이면 경기 데이터 미리 로드
   if (props.boardType === 'match' || formData.value.boardType === 'match') {
-    console.log('Loading matches for match board...');
     await loadAvailableMatches();
   }
 

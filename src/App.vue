@@ -75,7 +75,10 @@ const handleDrawerOverlayClick = () => {
 <template>
   <v-app class="responsive-app">
     <!-- Global Loading Overlay for Auth Initialization -->
-    <LoadingOverlay :is-active="!authInitialized" message="인증 정보를 확인하는 중..." />
+    <LoadingOverlay
+      :is-active="!authInitialized"
+      message="인증 정보를 확인하는 중..."
+    />
 
     <!-- Main App Content (only when auth is initialized) -->
     <template v-if="authInitialized">
@@ -163,6 +166,8 @@ const handleDrawerOverlayClick = () => {
   .responsive-main {
     min-height: calc(100vh - 56px - 100px); /* Mobile header - Mobile footer */
     min-height: calc(calc(var(--vh, 1vh) * 100) - 56px - 100px);
+    /* 스크롤 시 헤더/푸터가 숨겨져도 충분한 공간 확보 */
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 }
 

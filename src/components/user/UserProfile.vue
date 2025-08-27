@@ -384,7 +384,6 @@ const loadUserProfile = async () => {
       await loadSelectedIcon(user.value.selectedIcon);
     }
   } catch (error) {
-    console.error('Error loading user profile:', error);
     showSnackbar('프로필 정보를 불러오는데 실패했습니다', 'error');
   } finally {
     loading.value = false;
@@ -396,7 +395,7 @@ const loadSelectedIcon = async (iconId) => {
     const icons = await iconService.getActiveIcons();
     selectedIcon.value = icons.find((icon) => icon.id === iconId) || null;
   } catch (error) {
-    console.error('Error loading selected icon:', error);
+    // Error loading selected icon
   }
 };
 
@@ -417,7 +416,6 @@ const updateProfile = async () => {
     await updateAuthProfile(updates);
     showSnackbar('프로필이 성공적으로 업데이트되었습니다');
   } catch (error) {
-    console.error('Error updating profile:', error);
     showSnackbar('프로필 업데이트에 실패했습니다', 'error');
   } finally {
     loading.value = false;
@@ -440,7 +438,6 @@ const updatePassword = async () => {
 
     showSnackbar('비밀번호가 성공적으로 변경되었습니다');
   } catch (error) {
-    console.error('Error updating password:', error);
     showSnackbar('비밀번호 변경에 실패했습니다', 'error');
   } finally {
     loading.value = false;
@@ -459,7 +456,6 @@ const removeIcon = async () => {
 
     showSnackbar('아이콘이 해제되었습니다');
   } catch (error) {
-    console.error('Error removing icon:', error);
     showSnackbar('아이콘 해제에 실패했습니다', 'error');
   } finally {
     loading.value = false;

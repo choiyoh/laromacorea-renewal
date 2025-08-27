@@ -411,7 +411,6 @@ const checkUsernameAvailability = async () => {
     );
     usernameAvailable.value = isAvailable;
   } catch (error) {
-    console.error('Username availability check failed:', error);
     usernameAvailable.value = null;
   } finally {
     checkingUsername.value = false;
@@ -430,7 +429,6 @@ const checkEmailAvailability = async () => {
     const isAvailable = await AuthService.checkEmailAvailability(email.value);
     emailAvailable.value = isAvailable;
   } catch (error) {
-    console.error('Email availability check failed:', error);
     emailAvailable.value = null;
   } finally {
     checkingEmail.value = false;
@@ -451,7 +449,6 @@ const checkDisplayNameAvailability = async () => {
     );
     displayNameAvailable.value = isAvailable;
   } catch (error) {
-    console.error('Display name availability check failed:', error);
     displayNameAvailable.value = null;
   } finally {
     checkingDisplayName.value = false;
@@ -464,17 +461,8 @@ const handleSubmit = async () => {
   loading.value = true;
   clearMessages();
 
-  console.log('Auth form submitted:', {
-    isSignUp: isSignUp.value,
-    username: username.value,
-    email: email.value,
-    displayName: displayName.value,
-  });
-
   try {
     if (isSignUp.value) {
-      console.log('Attempting sign up...');
-
       // 최종 중복 체크
       const [usernameCheck, emailCheck, displayNameCheck] = await Promise.all([
         AuthService.checkUsernameAvailability(username.value),
@@ -507,7 +495,6 @@ const handleSubmit = async () => {
         email.value,
       );
 
-      console.log('Sign up successful:', user);
       successMessage.value = '회원가입이 완료되었습니다!';
 
       // Switch to login mode after successful signup
@@ -517,11 +504,8 @@ const handleSubmit = async () => {
         successMessage.value = '';
       }, 2000);
     } else {
-      console.log('Attempting sign in with username...');
-
       // AuthService에서 아이디/이메일 자동 판별하여 로그인
       const user = await AuthService.signIn(username.value, password.value);
-      console.log('Sign in successful:', user);
 
       // Wait for user store to update
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -534,12 +518,6 @@ const handleSubmit = async () => {
       }, 1000);
     }
   } catch (error) {
-    console.error('Auth error details:', {
-      code: error.code,
-      message: error.message,
-      originalError: error.originalError || error,
-    });
-
     let errorMsg = '오류가 발생했습니다.';
 
     // 제재된 계정 메시지를 우선적으로 처리
@@ -584,7 +562,6 @@ const handlePasswordReset = async () => {
     showResetPassword.value = false;
     resetEmail.value = '';
   } catch (error) {
-    console.error('Password reset error:', error);
     errorMessage.value =
       error.message || '비밀번호 재설정 중 오류가 발생했습니다.';
   } finally {

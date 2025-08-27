@@ -1,5 +1,12 @@
 <template>
-  <v-app-bar color="secondary" dark app elevation="2">
+  <v-app-bar
+    color="secondary"
+    dark
+    app
+    elevation="2"
+    :class="{ 'header-hidden': mobile && isScrollingDown }"
+    class="header-transition"
+  >
     <!-- Desktop Layout -->
     <template v-if="!mobile">
       <!-- Mobile Menu Button (hidden on desktop) -->
@@ -190,12 +197,14 @@
 <script setup>
 import { useDisplay } from 'vuetify';
 import { useUserStore } from '@/stores/user';
+import { useScrollDirection } from '@/composables/useScrollDirection';
 
 // Emits
 defineEmits(['toggle-drawer']);
 
 // Composables
 const { mobile } = useDisplay();
+const { isScrollingDown } = useScrollDirection();
 
 const userStore = useUserStore();
 
@@ -212,6 +221,10 @@ const boards = [
 </script>
 
 <style scoped>
+/* 전역 스타일로 Vuetify 오버라이드 */
+</style>
+
+<style>
 .v-btn--active {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
@@ -296,5 +309,46 @@ const boards = [
 
 .admin-btn:hover {
   background-color: rgba(153, 10, 44, 0.1) !important;
+}
+
+/* Header scroll animation */
+.header-transition {
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  will-change: transform;
+}
+
+.header-hidden {
+  transform: translateY(-100%) !important;
+}
+
+/* 모바일 헤더 스크롤 애니메이션 - 전역 스타일 */
+@media (max-width: 599px) {
+  .v-app-bar.header-hidden {
+    transform: translateY(-100%) !important;
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
+
+  .v-app-bar.header-transition {
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
+
+  /* 더 구체적인 선택자 */
+  .v-application .v-app-bar.header-hidden {
+    transform: translateY(-100%) !important;
+  }
+
+  .v-application .v-app-bar.header-transition {
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
+}
+
+@media (min-width: 600px) {
+  .header-hidden {
+    transform: none !important;
+  }
+
+  .header-transition {
+    transition: none !important;
+  }
 }
 </style>

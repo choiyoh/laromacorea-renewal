@@ -152,7 +152,6 @@ async function syncCommentCounts() {
     const result = await adminService.syncAllPostCommentCounts();
     syncResult.value = result;
   } catch (error) {
-    console.error('Error syncing comment counts:', error);
     alert('댓글 수 동기화 중 오류가 발생했습니다.');
   } finally {
     syncingComments.value = false;
@@ -175,7 +174,6 @@ async function cleanupTestPosts() {
     const result = await adminService.cleanupTestPosts();
     cleanupResult.value = result;
   } catch (error) {
-    console.error('Error cleaning up test posts:', error);
     alert('테스트 게시글 정리 중 오류가 발생했습니다.');
   } finally {
     cleaningPosts.value = false;
@@ -190,7 +188,6 @@ async function fixPostAuthorInfo() {
     const result = await adminService.fixPostAuthorInfo();
     fixResult.value = result;
   } catch (error) {
-    console.error('Error fixing post author info:', error);
     alert('게시글 정보 수정 중 오류가 발생했습니다.');
   } finally {
     fixingPosts.value = false;
@@ -225,7 +222,6 @@ async function runFullCleanup() {
       sync,
     };
   } catch (error) {
-    console.error('Error running full cleanup:', error);
     alert('전체 정리 중 오류가 발생했습니다.');
   } finally {
     runningFullCleanup.value = false;

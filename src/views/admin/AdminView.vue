@@ -70,7 +70,7 @@ const activeTab = ref('dashboard');
 
 // 사용자 업데이트 핸들러
 const handleUserUpdated = () => {
-  console.log('사용자 정보가 업데이트되었습니다.');
+  // 사용자 정보가 업데이트되었습니다.
 };
 </script>
 

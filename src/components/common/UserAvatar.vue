@@ -76,7 +76,6 @@ async function loadUserIcon() {
     const iconData = await getUserCurrentIcon(props.userId);
     currentIcon.value = iconData;
   } catch (error) {
-    console.error('Error loading user icon:', error);
     // fallback으로 정적 아이콘 사용
     if (props.staticIconUrl) {
       currentIcon.value = { url: props.staticIconUrl };

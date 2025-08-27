@@ -5,7 +5,9 @@
       <v-col cols="12" md="3">
         <v-card class="text-center">
           <v-card-text>
-            <v-icon size="40" color="primary" class="mb-2">mdi-account-group</v-icon>
+            <v-icon size="40" color="primary" class="mb-2"
+              >mdi-account-group</v-icon
+            >
             <div class="text-h4 font-weight-bold">
               {{ stats.totalUsers.toLocaleString() }}
             </div>
@@ -17,7 +19,9 @@
       <v-col cols="12" md="3">
         <v-card class="text-center">
           <v-card-text>
-            <v-icon size="40" color="success" class="mb-2">mdi-file-document</v-icon>
+            <v-icon size="40" color="success" class="mb-2"
+              >mdi-file-document</v-icon
+            >
             <div class="text-h4 font-weight-bold">
               {{ stats.totalPosts.toLocaleString() }}
             </div>
@@ -143,7 +147,12 @@
                 </v-btn>
               </v-col>
               <v-col cols="12" md="3">
-                <v-btn color="info" variant="outlined" block @click="$emit('change-tab', 'users')">
+                <v-btn
+                  color="info"
+                  variant="outlined"
+                  block
+                  @click="$emit('change-tab', 'users')"
+                >
                   <v-icon start>mdi-account-cog</v-icon>
                   사용자 관리
                 </v-btn>
@@ -162,15 +171,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { adminService } from '@/services/admin'
+import { ref, reactive, onMounted } from 'vue';
+import { adminService } from '@/services/admin';
 
 // 이벤트 정의
-const emit = defineEmits(['change-tab'])
+const emit = defineEmits(['change-tab']);
 
 // 상태
-const loading = ref(false)
-const lastUpdated = ref('')
+const loading = ref(false);
+const lastUpdated = ref('');
 
 // 통계 데이터
 const stats = reactive({
@@ -180,22 +189,22 @@ const stats = reactive({
   totalIcons: 0,
   activeUsers: 0,
   recentPosts: 0,
-})
+});
 
 // 스낵바
 const snackbar = reactive({
   show: false,
   message: '',
   color: 'success',
-})
+});
 
 // 통계 로드
 const loadStats = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const dashboardStats = await adminService.getDashboardStats()
+    const dashboardStats = await adminService.getDashboardStats();
 
-    Object.assign(stats, dashboardStats)
+    Object.assign(stats, dashboardStats);
 
     lastUpdated.value = new Date().toLocaleString('ko-KR', {
       year: 'numeric',
@@ -203,28 +212,27 @@ const loadStats = async () => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-    })
+    });
 
-    showSnackbar('통계가 업데이트되었습니다.', 'success')
+    showSnackbar('통계가 업데이트되었습니다.', 'success');
   } catch (error) {
-    console.error('통계 로드 실패:', error)
-    showSnackbar('통계를 불러올 수 없습니다.', 'error')
+    showSnackbar('통계를 불러올 수 없습니다.', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 유틸리티 함수
 const showSnackbar = (message, color = 'success') => {
-  snackbar.message = message
-  snackbar.color = color
-  snackbar.show = true
-}
+  snackbar.message = message;
+  snackbar.color = color;
+  snackbar.show = true;
+};
 
 // 컴포넌트 마운트 시 통계 로드
 onMounted(() => {
-  loadStats()
-})
+  loadStats();
+});
 </script>
 
 <style scoped>

@@ -631,7 +631,7 @@ const loadNotices = async () => {
   try {
     notices.value = await adminService.getNotices({ includeInactive: true });
   } catch (error) {
-    console.error('Failed to load notices:', error);
+    // Failed to load notices
     // 임시 데이터
     notices.value = [
       {
@@ -690,7 +690,7 @@ const createNotice = async () => {
     loadNotices();
     emit('notice-updated');
   } catch (error) {
-    console.error('Failed to create notice:', error);
+    // Failed to create notice
   } finally {
     createLoading.value = false;
   }
@@ -723,7 +723,6 @@ const saveNotice = async () => {
   saveLoading.value = true;
   try {
     // 실제 구현에서는 공지사항 업데이트 API 호출
-    console.log('Save notice:', selectedNotice.value);
 
     // 로컬 상태 업데이트
     const index = notices.value.findIndex(
@@ -736,7 +735,7 @@ const saveNotice = async () => {
     isEditing.value = false;
     emit('notice-updated');
   } catch (error) {
-    console.error('Failed to save notice:', error);
+    // Failed to save notice
   } finally {
     saveLoading.value = false;
   }
@@ -756,7 +755,7 @@ const toggleNoticeStatus = async (notice) => {
 
     emit('notice-updated');
   } catch (error) {
-    console.error('Failed to toggle notice status:', error);
+    // Failed to toggle notice status
   }
 };
 
@@ -774,7 +773,7 @@ const deleteNotice = async (notice) => {
 
       emit('notice-updated');
     } catch (error) {
-      console.error('Failed to delete notice:', error);
+      // Failed to delete notice
     }
   }
 };

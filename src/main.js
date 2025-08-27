@@ -90,7 +90,6 @@ monitorMemoryUsage();
 
 // Global error handler
 app.config.errorHandler = (error, instance, info) => {
-  console.error('Global error:', error, info);
   const errorStore = useErrorStore();
   errorStore.addError(
     error,
@@ -102,13 +101,12 @@ app.config.errorHandler = (error, instance, info) => {
 // Global warning handler (development only)
 if (import.meta.env.DEV) {
   app.config.warnHandler = (msg, instance, trace) => {
-    console.warn('Vue warning:', msg, trace);
+    // Vue warning handler for development
   };
 }
 
 // Unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
   const errorStore = useErrorStore();
   errorStore.addError(
     event.reason,

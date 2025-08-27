@@ -46,7 +46,12 @@
         <v-icon icon="mdi-post" class="mr-2" />
         게시글 관리
         <v-spacer />
-        <v-btn icon="mdi-refresh" variant="text" @click="loadPosts" :loading="loading" />
+        <v-btn
+          icon="mdi-refresh"
+          variant="text"
+          @click="loadPosts"
+          :loading="loading"
+        />
       </v-card-title>
 
       <v-data-table
@@ -59,10 +64,20 @@
         <template #item.title="{ item }">
           <div class="post-title-cell">
             <div class="d-flex align-center mb-1">
-              <v-chip v-if="item.isPinned" color="error" size="x-small" class="mr-2"> 고정 </v-chip>
+              <v-chip
+                v-if="item.isPinned"
+                color="error"
+                size="x-small"
+                class="mr-2"
+              >
+                고정
+              </v-chip>
               <span
                 class="font-weight-medium"
-                :class="{ 'text-decoration-line-through text-medium-emphasis': item.isDeleted }"
+                :class="{
+                  'text-decoration-line-through text-medium-emphasis':
+                    item.isDeleted,
+                }"
               >
                 {{ item.title }}
               </span>
@@ -75,10 +90,19 @@
 
         <template #item.status="{ item }">
           <div class="d-flex flex-column gap-1">
-            <v-chip :color="item.isDeleted ? 'error' : 'success'" size="small" variant="elevated">
+            <v-chip
+              :color="item.isDeleted ? 'error' : 'success'"
+              size="small"
+              variant="elevated"
+            >
               {{ item.isDeleted ? '삭제됨' : '활성' }}
             </v-chip>
-            <v-chip v-if="item.isPinned" color="warning" size="small" variant="elevated">
+            <v-chip
+              v-if="item.isPinned"
+              color="warning"
+              size="small"
+              variant="elevated"
+            >
               고정됨
             </v-chip>
           </div>
@@ -108,7 +132,12 @@
         <template #item.actions="{ item }">
           <v-menu>
             <template #activator="{ props }">
-              <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" />
+              <v-btn
+                icon="mdi-dots-vertical"
+                variant="text"
+                size="small"
+                v-bind="props"
+              />
             </template>
             <v-list>
               <v-list-item @click="viewPost(item)">
@@ -127,7 +156,9 @@
               </v-list-item>
               <v-list-item @click="toggleDelete(item)">
                 <template #prepend>
-                  <v-icon :icon="item.isDeleted ? 'mdi-restore' : 'mdi-delete'" />
+                  <v-icon
+                    :icon="item.isDeleted ? 'mdi-restore' : 'mdi-delete'"
+                  />
                 </template>
                 <v-list-item-title>
                   {{ item.isDeleted ? '복원' : '삭제' }}
@@ -154,9 +185,16 @@
         <v-card-text class="pa-6">
           <div class="mb-4">
             <h3 class="text-h6 mb-2">{{ selectedPost.title }}</h3>
-            <div class="d-flex align-center text-caption text-medium-emphasis mb-3">
-              <v-chip size="small" class="mr-2">{{ selectedPost.board }}</v-chip>
-              <span>{{ selectedPost.authorName }} • {{ formatDate(selectedPost.createdAt) }}</span>
+            <div
+              class="d-flex align-center text-caption text-medium-emphasis mb-3"
+            >
+              <v-chip size="small" class="mr-2">{{
+                selectedPost.board
+              }}</v-chip>
+              <span
+                >{{ selectedPost.authorName }} •
+                {{ formatDate(selectedPost.createdAt) }}</span
+              >
             </div>
           </div>
 
@@ -187,7 +225,10 @@
                 size="small"
                 @click="togglePin(selectedPost)"
               >
-                <v-icon :icon="selectedPost.isPinned ? 'mdi-pin-off' : 'mdi-pin'" class="mr-1" />
+                <v-icon
+                  :icon="selectedPost.isPinned ? 'mdi-pin-off' : 'mdi-pin'"
+                  class="mr-1"
+                />
                 {{ selectedPost.isPinned ? '고정 해제' : '고정' }}
               </v-btn>
               <v-btn
@@ -211,21 +252,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { adminService } from '@/services/admin'
+import { ref, computed, onMounted } from 'vue';
+import { adminService } from '@/services/admin';
 
-const emit = defineEmits(['post-updated'])
+const emit = defineEmits(['post-updated']);
 
-const loading = ref(false)
-const posts = ref([])
-const searchTerm = ref('')
-const boardFilter = ref('all')
-const statusFilter = ref('all')
-const includeDeleted = ref(false)
+const loading = ref(false);
+const posts = ref([]);
+const searchTerm = ref('');
+const boardFilter = ref('all');
+const statusFilter = ref('all');
+const includeDeleted = ref(false);
 
 // 다이얼로그 상태
-const viewDialog = ref(false)
-const selectedPost = ref(null)
+const viewDialog = ref(false);
+const selectedPost = ref(null);
 
 // 테이블 헤더
 const headers = [
@@ -234,7 +275,7 @@ const headers = [
   { title: '통계', key: 'stats', width: '15%' },
   { title: '작성일', key: 'createdAt', width: '15%' },
   { title: '작업', key: 'actions', width: '15%', sortable: false },
-]
+];
 
 // 필터 옵션
 const boardOptions = [
@@ -243,126 +284,127 @@ const boardOptions = [
   { title: '경기분석', value: 'analysis' },
   { title: '이적소식', value: 'transfer' },
   { title: '팬아트', value: 'fanart' },
-]
+];
 
 const statusOptions = [
   { title: '전체', value: 'all' },
   { title: '활성', value: 'active' },
   { title: '고정', value: 'pinned' },
   { title: '삭제됨', value: 'deleted' },
-]
+];
 
 // 필터링된 게시글 목록
 const filteredPosts = computed(() => {
-  let filtered = posts.value
+  let filtered = posts.value;
 
   // 검색어 필터
   if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     filtered = filtered.filter(
       (post) =>
-        post.title?.toLowerCase().includes(term) || post.authorName?.toLowerCase().includes(term),
-    )
+        post.title?.toLowerCase().includes(term) ||
+        post.authorName?.toLowerCase().includes(term),
+    );
   }
 
   // 게시판 필터
   if (boardFilter.value !== 'all') {
-    filtered = filtered.filter((post) => post.board === boardFilter.value)
+    filtered = filtered.filter((post) => post.board === boardFilter.value);
   }
 
   // 상태 필터
   if (statusFilter.value !== 'all') {
     switch (statusFilter.value) {
       case 'active':
-        filtered = filtered.filter((post) => !post.isDeleted && !post.isPinned)
-        break
+        filtered = filtered.filter((post) => !post.isDeleted && !post.isPinned);
+        break;
       case 'pinned':
-        filtered = filtered.filter((post) => post.isPinned)
-        break
+        filtered = filtered.filter((post) => post.isPinned);
+        break;
       case 'deleted':
-        filtered = filtered.filter((post) => post.isDeleted)
-        break
+        filtered = filtered.filter((post) => post.isDeleted);
+        break;
     }
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // 게시글 목록 로드
 const loadPosts = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     posts.value = await adminService.getPosts({
       limitCount: 100,
       includeDeleted: includeDeleted.value,
-    })
+    });
   } catch (error) {
-    console.error('Failed to load posts:', error)
+    // Failed to load posts
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 날짜 포맷팅
 const formatDate = (timestamp) => {
-  if (!timestamp) return '-'
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return date.toLocaleDateString('ko-KR')
-}
+  if (!timestamp) return '-';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString('ko-KR');
+};
 
 // 게시글 보기
 const viewPost = (post) => {
-  selectedPost.value = post
-  viewDialog.value = true
-}
+  selectedPost.value = post;
+  viewDialog.value = true;
+};
 
 // 게시글 고정/해제
 const togglePin = async (post) => {
   try {
-    const newPinStatus = !post.isPinned
-    await adminService.togglePostPinned(post.id, newPinStatus)
+    const newPinStatus = !post.isPinned;
+    await adminService.togglePostPinned(post.id, newPinStatus);
 
     // 로컬 상태 업데이트
-    const index = posts.value.findIndex((p) => p.id === post.id)
+    const index = posts.value.findIndex((p) => p.id === post.id);
     if (index !== -1) {
-      posts.value[index].isPinned = newPinStatus
+      posts.value[index].isPinned = newPinStatus;
     }
 
     if (selectedPost.value && selectedPost.value.id === post.id) {
-      selectedPost.value.isPinned = newPinStatus
+      selectedPost.value.isPinned = newPinStatus;
     }
 
-    emit('post-updated')
+    emit('post-updated');
   } catch (error) {
-    console.error('Failed to toggle post pin:', error)
+    // Failed to toggle post pin
   }
-}
+};
 
 // 게시글 삭제/복원
 const toggleDelete = async (post) => {
   try {
-    const newDeleteStatus = !post.isDeleted
-    await adminService.togglePostDeleted(post.id, newDeleteStatus)
+    const newDeleteStatus = !post.isDeleted;
+    await adminService.togglePostDeleted(post.id, newDeleteStatus);
 
     // 로컬 상태 업데이트
-    const index = posts.value.findIndex((p) => p.id === post.id)
+    const index = posts.value.findIndex((p) => p.id === post.id);
     if (index !== -1) {
-      posts.value[index].isDeleted = newDeleteStatus
+      posts.value[index].isDeleted = newDeleteStatus;
     }
 
     if (selectedPost.value && selectedPost.value.id === post.id) {
-      selectedPost.value.isDeleted = newDeleteStatus
+      selectedPost.value.isDeleted = newDeleteStatus;
     }
 
-    emit('post-updated')
+    emit('post-updated');
   } catch (error) {
-    console.error('Failed to toggle post delete:', error)
+    // Failed to toggle post delete
   }
-}
+};
 
 onMounted(() => {
-  loadPosts()
-})
+  loadPosts();
+});
 </script>
 
 <style scoped>

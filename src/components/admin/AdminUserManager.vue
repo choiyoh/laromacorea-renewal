@@ -661,10 +661,8 @@ const loadUsers = async () => {
   loading.value = true;
   try {
     users.value = await adminService.getUsers({ limitCount: 100 });
-    console.log('로드된 사용자 목록:', users.value);
-    console.log('사용자 수:', users.value.length);
   } catch (error) {
-    console.error('Failed to load users:', error);
+    // Failed to load users
   } finally {
     loading.value = false;
   }
@@ -678,7 +676,7 @@ const searchUsers = async () => {
       const searchResults = await adminService.searchUsers(searchTerm.value);
       users.value = searchResults;
     } catch (error) {
-      console.error('Failed to search users:', error);
+      // Failed to search users
     } finally {
       loading.value = false;
     }
@@ -766,7 +764,7 @@ const saveUser = async () => {
     editDialog.value = false;
     emit('user-updated');
   } catch (error) {
-    console.error('Failed to save user:', error);
+    // Failed to save user
   }
 };
 
@@ -798,7 +796,7 @@ const savePointsAdjustment = async () => {
     pointsDialog.value = false;
     emit('user-updated');
   } catch (error) {
-    console.error('Failed to adjust points:', error);
+    // Failed to adjust points
   }
 };
 
@@ -806,9 +804,6 @@ const savePointsAdjustment = async () => {
 const toggleUserStatus = async (user) => {
   try {
     const newStatus = !user.isActive;
-    console.log(
-      `사용자 ${user.displayName}의 상태를 ${newStatus ? '활성화' : '비활성화'}로 변경합니다.`,
-    );
 
     await adminService.updateUserStatus(user.id, newStatus);
 
@@ -816,9 +811,7 @@ const toggleUserStatus = async (user) => {
     await loadUsers();
 
     emit('user-updated');
-    console.log('사용자 상태 변경 완료');
   } catch (error) {
-    console.error('Failed to toggle user status:', error);
     alert('사용자 상태 변경에 실패했습니다: ' + error.message);
   }
 };
@@ -827,9 +820,6 @@ const toggleUserStatus = async (user) => {
 const toggleVerificationStatus = async (user) => {
   try {
     const newVerified = !user.verified;
-    console.log(
-      `사용자 ${user.displayName}의 인증 상태를 ${newVerified ? '인증회원' : '비인증회원'}으로 변경합니다.`,
-    );
 
     await adminService.updateUserVerification(user.id, newVerified);
 
@@ -840,9 +830,7 @@ const toggleVerificationStatus = async (user) => {
     }
 
     emit('user-updated');
-    console.log('사용자 인증 상태 변경 완료');
   } catch (error) {
-    console.error('Failed to toggle verification status:', error);
     alert('인증 상태 변경에 실패했습니다: ' + error.message);
   }
 };
@@ -861,7 +849,6 @@ const openUserDetail = async (user) => {
     const stats = await adminService.getUserStats(user.id);
     selectedUser.value.stats = stats;
   } catch (error) {
-    console.error('Failed to load user stats:', error);
     selectedUser.value.stats = { posts: 0, comments: 0, likes: 0 };
   }
 
@@ -892,7 +879,7 @@ const toggleEditBasicInfo = async () => {
       isEditingBasicInfo.value = false;
       emit('user-updated');
     } catch (error) {
-      console.error('Failed to update nickname:', error);
+      // Failed to update nickname
     }
   } else {
     isEditingBasicInfo.value = true;
@@ -924,7 +911,7 @@ const toggleEditRole = async () => {
       isEditingRole.value = false;
       emit('user-updated');
     } catch (error) {
-      console.error('Failed to update role:', error);
+      // Failed to update role
     }
   } else {
     isEditingRole.value = true;
@@ -944,11 +931,7 @@ const toggleEditStatus = async () => {
     await loadUsers();
 
     emit('user-updated');
-    console.log(
-      `사용자 상태가 ${newStatus ? '활성화' : '비활성화'}되었습니다.`,
-    );
   } catch (error) {
-    console.error('Failed to update status:', error);
     alert('사용자 상태 변경에 실패했습니다: ' + error.message);
   }
 };
@@ -975,7 +958,7 @@ const confirmPasswordReset = async () => {
 
     emit('user-updated');
   } catch (error) {
-    console.error('Failed to reset password:', error);
+    // Failed to reset password
   }
 };
 
@@ -997,7 +980,6 @@ const viewUserHistory = async () => {
     );
     historyDialog.value = true;
   } catch (error) {
-    console.error('Failed to load user history:', error);
     showErrorMessage('사용자 이력을 불러오는데 실패했습니다.');
   }
 };

@@ -345,7 +345,6 @@ async function fetchPost() {
     }
   } catch (err) {
     error.value = '게시글을 불러오는 중 오류가 발생했습니다.';
-    console.error('Error fetching post:', err);
   } finally {
     loading.value = false;
   }
@@ -353,22 +352,16 @@ async function fetchPost() {
 
 async function fetchComments() {
   if (!props.postId) {
-    console.warn('No postId provided for fetchComments');
     return;
   }
 
-  console.log('Fetching comments for post:', props.postId);
   commentsLoading.value = true;
   try {
     const fetchedComments = await commentService.getComments(props.postId);
-    console.log('PostDetail - Fetched comments from service:', fetchedComments);
     comments.value = fetchedComments;
 
     // 댓글 수 동기화 (실제 댓글 수와 게시글의 commentCount 필드 동기화)
     if (post.value && post.value.commentCount !== fetchedComments.length) {
-      console.log(
-        `Syncing comment count: DB shows ${post.value.commentCount}, actual is ${fetchedComments.length}`,
-      );
       try {
         await commentService.syncPostCommentCount(props.postId);
         // 게시글 정보 다시 로드하여 업데이트된 댓글 수 반영
@@ -377,11 +370,11 @@ async function fetchComments() {
           post.value = updatedPost;
         }
       } catch (syncError) {
-        console.warn('Failed to sync comment count:', syncError);
+        // Failed to sync comment count
       }
     }
   } catch (err) {
-    console.error('Error fetching comments:', err);
+    // Error fetching comments
   } finally {
     commentsLoading.value = false;
   }
@@ -445,7 +438,6 @@ async function handleLikePost() {
     } else {
       post.value.likeCount = Math.max((post.value.likeCount || 0) - 1, 0);
     }
-    console.error('Error toggling like:', err);
   }
 }
 
@@ -459,7 +451,6 @@ async function confirmDeletePost() {
     deleteDialog.value = false;
     emit('delete-post', props.postId);
   } catch (err) {
-    console.error('Error deleting post:', err);
     // Show error message
   }
 }

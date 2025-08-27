@@ -112,19 +112,8 @@ import { requireAuth, requireAdmin } from '@/middleware/auth';
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
 
-  console.log('Router guard:', {
-    path: to.path,
-    requiresAuth: to.matched.some((record) => record.meta.requiresAuth),
-    requiresAdmin: to.matched.some((record) => record.meta.requiresAdmin),
-    authInitialized: userStore.authInitialized,
-    isAuthenticated: userStore.isAuthenticated,
-    isAdmin: userStore.isAdmin,
-  });
-
   // Wait for auth initialization if not ready
   if (!userStore.authInitialized) {
-    console.log('Waiting for auth initialization...');
-
     // Wait up to 3 seconds for auth to initialize
     let attempts = 0;
     const maxAttempts = 30; // 3 seconds with 100ms intervals
@@ -135,7 +124,6 @@ router.beforeEach(async (to, from, next) => {
     }
 
     if (!userStore.authInitialized) {
-      console.log('Auth initialization timeout');
       if (
         to.matched.some(
           (record) => record.meta.requiresAuth || record.meta.requiresAdmin,
@@ -150,13 +138,10 @@ router.beforeEach(async (to, from, next) => {
   if (to.matched.some((record) => record.meta.requiresAdmin)) {
     // Admin routes require admin authentication
     if (userStore.isAuthenticated && userStore.isAdmin) {
-      console.log('Admin access granted');
       next();
     } else if (userStore.isAuthenticated) {
-      console.log('User authenticated but not admin');
       next('/home');
     } else {
-      console.log('User not authenticated');
       next('/auth');
     }
   } else if (to.matched.some((record) => record.meta.requiresAuth)) {

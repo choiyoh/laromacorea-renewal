@@ -263,7 +263,6 @@ async function handleLike() {
     // Revert optimistic update on error
     isLiked.value = !isLiked.value;
     likeCount.value += isLiked.value ? 1 : -1;
-    console.error('Error toggling like:', error);
   }
 }
 
@@ -277,7 +276,7 @@ const loadLikeStatus = async () => {
       userStore.user.uid,
     );
   } catch (error) {
-    console.error('Error loading like status:', error);
+    // Error loading like status
   }
 };
 

@@ -307,7 +307,7 @@ async function fetchComments() {
     const fetchedComments = await commentService.getComments(props.postId);
     comments.value = fetchedComments;
   } catch (error) {
-    console.error('Error fetching comments:', error);
+    // Error fetching comments
   } finally {
     loading.value = false;
   }
@@ -341,7 +341,7 @@ async function handleQuickCheer(cheer) {
     comments.value.push(newCommentObj);
     emit('comment-added', newCommentObj);
   } catch (error) {
-    console.error('Error creating quick cheer:', error);
+    // Error creating quick cheer
   }
 }
 
@@ -374,7 +374,7 @@ async function handleSubmitComment() {
     newComment.value = '';
     commentType.value = 'general';
   } catch (error) {
-    console.error('Error creating comment:', error);
+    // Error creating comment
   }
 }
 
@@ -394,7 +394,7 @@ async function handleCommentLike(commentId) {
       comment.isLiked = isLiked;
     }
   } catch (error) {
-    console.error('Error toggling comment like:', error);
+    // Error toggling comment like
   }
 }
 
@@ -406,7 +406,6 @@ function handleCommentReply(comment) {
 
 function handleCommentEdit(comment) {
   // Handle comment editing
-  console.log('Edit comment:', comment);
 }
 
 async function handleCommentDelete(commentId) {
@@ -415,7 +414,7 @@ async function handleCommentDelete(commentId) {
     comments.value = comments.value.filter((c) => c.id !== commentId);
     emit('comment-deleted', commentId);
   } catch (error) {
-    console.error('Error deleting comment:', error);
+    // Error deleting comment
   }
 }
 
@@ -426,7 +425,7 @@ async function loadMoreComments() {
     // For now, just set hasMoreComments to false
     hasMoreComments.value = false;
   } catch (error) {
-    console.error('Error loading more comments:', error);
+    // Error loading more comments
   } finally {
     loadingMore.value = false;
   }

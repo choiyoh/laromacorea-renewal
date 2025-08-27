@@ -1,8 +1,8 @@
 // Firebase configuration and initialization
-import { initializeApp } from 'firebase/app'
-import { getAuth, connectAuthEmulator } from 'firebase/auth'
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
-import { getStorage, connectStorageEmulator } from 'firebase/storage'
+import { initializeApp } from 'firebase/app';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 // Validate Firebase configuration
 const validateConfig = (config) => {
@@ -13,22 +13,20 @@ const validateConfig = (config) => {
     'storageBucket',
     'messagingSenderId',
     'appId',
-  ]
+  ];
   const missingFields = requiredFields.filter(
     (field) =>
-      !config[field] || config[field] === 'your_api_key_here' || config[field].includes('your_'),
-  )
+      !config[field] ||
+      config[field] === 'your_api_key_here' ||
+      config[field].includes('your_'),
+  );
 
   if (missingFields.length > 0) {
-    console.warn(
-      'Firebase configuration incomplete. Missing or placeholder values for:',
-      missingFields,
-    )
-    console.warn('Please update your .env file with actual Firebase project configuration')
+    // Firebase configuration incomplete
   }
 
-  return config
-}
+  return config;
+};
 
 // Firebase configuration
 const firebaseConfig = validateConfig({
@@ -38,15 +36,15 @@ const firebaseConfig = validateConfig({
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-})
+});
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig)
+const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
-export const auth = getAuth(app)
-export const db = getFirestore(app)
-export const storage = getStorage(app)
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // Connect to emulators in development (optional)
 if (
@@ -54,13 +52,12 @@ if (
   import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true'
 ) {
   try {
-    connectAuthEmulator(auth, 'http://localhost:9099')
-    connectFirestoreEmulator(db, 'localhost', 8080)
-    connectStorageEmulator(storage, 'localhost', 9199)
-    console.log('Connected to Firebase emulators')
+    connectAuthEmulator(auth, 'http://localhost:9099');
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    connectStorageEmulator(storage, 'localhost', 9199);
   } catch (error) {
-    console.warn('Failed to connect to Firebase emulators:', error.message)
+    // Failed to connect to Firebase emulators
   }
 }
 
-export default app
+export default app;

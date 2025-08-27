@@ -281,7 +281,6 @@ const loadMatches = async () => {
     const matches = await matchService.getUpcomingMatches();
     nextMatch.value = matches.length > 0 ? matches[0] : null;
   } catch (err) {
-    console.error('Failed to load matches:', err);
     error.value = '경기 일정을 불러올 수 없습니다';
   } finally {
     loading.value = false;
@@ -301,7 +300,6 @@ const loadAllMatches = async () => {
     const matches = await matchService.getUpcomingMatches();
     allMatches.value = matches;
   } catch (err) {
-    console.error('Failed to load all matches:', err);
     allMatches.value = [];
   } finally {
     loadingAll.value = false;

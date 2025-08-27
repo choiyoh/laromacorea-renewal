@@ -367,7 +367,6 @@ async function loadStats() {
     const commentsSnapshot = await getDocs(commentsQuery);
     totalStats.value.comments = commentsSnapshot.size;
   } catch (error) {
-    console.error('Failed to load stats:', error);
     // 에러 발생 시 기본값 유지
     totalStats.value = {
       users: 1247,
@@ -401,7 +400,6 @@ async function loadPostStats(posts) {
           likeCount: likesSnapshot.size,
         };
       } catch (error) {
-        console.error(`Failed to load stats for post ${post.id}:`, error);
         return {
           ...post,
           commentCount: post.commentCount || 0,
@@ -431,7 +429,6 @@ async function loadBoardPosts() {
 
         return { boardId: board.id, posts: postsWithStats };
       } catch (error) {
-        console.error(`Failed to load posts for board ${board.id}:`, error);
         return { boardId: board.id, posts: [] };
       }
     });
@@ -443,8 +440,6 @@ async function loadBoardPosts() {
       boardPosts.value[boardId] = posts;
     });
   } catch (error) {
-    console.error('Failed to load board posts:', error);
-
     // 에러 발생 시 빈 배열로 설정
     boardTypes.value.forEach((board) => {
       boardPosts.value[board.id] = [];

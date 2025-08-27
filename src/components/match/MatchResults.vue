@@ -28,7 +28,12 @@
       <div v-else-if="error" class="text-center py-8">
         <v-icon icon="mdi-alert-circle" color="error" size="48" class="mb-2" />
         <div class="text-body-2 text-error mb-2">{{ error }}</div>
-        <v-btn color="primary" variant="outlined" size="small" @click="refreshResults">
+        <v-btn
+          color="primary"
+          variant="outlined"
+          size="small"
+          @click="refreshResults"
+        >
           다시 시도
         </v-btn>
       </div>
@@ -101,53 +106,54 @@
 
       <div v-else class="text-center py-8">
         <v-icon icon="mdi-calendar-blank" size="48" color="grey" class="mb-2" />
-        <div class="text-body-2 text-medium-emphasis">최근 경기 결과가 없습니다</div>
+        <div class="text-body-2 text-medium-emphasis">
+          최근 경기 결과가 없습니다
+        </div>
       </div>
     </v-card-text>
   </v-card>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { matchService } from '@/services/match'
+import { ref, onMounted } from 'vue';
+import { matchService } from '@/services/match';
 
-const loading = ref(false)
-const error = ref('')
-const results = ref([])
+const loading = ref(false);
+const error = ref('');
+const results = ref([]);
 
 // 경기 결과 로드
 const loadResults = async () => {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = '';
 
   try {
-    const recentResults = await matchService.getRecentResults()
-    results.value = recentResults
+    const recentResults = await matchService.getRecentResults();
+    results.value = recentResults;
   } catch (err) {
-    console.error('Failed to load results:', err)
-    error.value = '경기 결과를 불러올 수 없습니다'
+    error.value = '경기 결과를 불러올 수 없습니다';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 경기 결과 새로고침
 const refreshResults = () => {
-  loadResults()
-}
+  loadResults();
+};
 
 // 날짜 포맷팅
 const formatResultDate = (dateString) => {
-  const date = new Date(dateString)
+  const date = new Date(dateString);
   return date.toLocaleDateString('ko-KR', {
     month: 'short',
     day: 'numeric',
-  })
-}
+  });
+};
 
 onMounted(() => {
-  loadResults()
-})
+  loadResults();
+});
 </script>
 
 <style scoped>

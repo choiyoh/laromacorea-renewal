@@ -392,7 +392,6 @@ const loadIcons = async () => {
     loading.value = true;
     icons.value = await iconService.getActiveIcons();
   } catch (error) {
-    console.error('Error loading icons:', error);
     showSnackbar('아이콘 목록을 불러오는데 실패했습니다', 'error');
   } finally {
     loading.value = false;
@@ -406,7 +405,7 @@ const loadPurchasedIcons = async () => {
     const purchased = await iconService.getUserPurchasedIcons(user.value.uid);
     purchasedIconIds.value = purchased.map((item) => item.iconId);
   } catch (error) {
-    console.error('Error loading purchased icons:', error);
+    // Error loading purchased icons
   }
 };
 
@@ -442,7 +441,6 @@ const purchaseIcon = async () => {
     purchaseDialog.value.show = false;
     showSnackbar(`${icon.name} 아이콘을 구매했습니다!`);
   } catch (error) {
-    console.error('Error purchasing icon:', error);
     showSnackbar('아이콘 구매에 실패했습니다', 'error');
   } finally {
     loading.value = false;
@@ -469,7 +467,6 @@ const selectIcon = async (icon) => {
 
     showSnackbar(`${icon.name} 아이콘을 선택했습니다`);
   } catch (error) {
-    console.error('Error selecting icon:', error);
     showSnackbar('아이콘 선택에 실패했습니다', 'error');
   } finally {
     loading.value = false;
@@ -486,7 +483,7 @@ const refreshUserData = async () => {
       Object.assign(user.value, userData);
     }
   } catch (error) {
-    console.error('Error refreshing user data:', error);
+    // Error refreshing user data
   }
 };
 
