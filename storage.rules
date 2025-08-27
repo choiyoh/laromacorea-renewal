@@ -57,7 +57,7 @@ service firebase.storage {
     // Icon images (for admins only)
     match /icons/{fileName} {
       allow read: if true;
-      allow write: if isAdmin() && isValidImageFile();
+      allow write: if isAdmin();
       allow delete: if isAdmin();
     }
 
