@@ -39,14 +39,16 @@
                 </v-col>
               </v-row>
 
-              <v-textarea
-                v-model="newNotice.content"
-                label="공지사항 내용"
-                variant="outlined"
-                rows="6"
-                class="mb-3"
-                required
-              />
+              <!-- 리치 텍스트 에디터 -->
+              <div class="editor-container mb-3">
+                <label class="editor-label">공지사항 내용 *</label>
+                <div ref="editorContainer" class="editor-wrapper">
+                  <div ref="editor" class="editor" />
+                </div>
+                <div v-if="contentError" class="error-message">
+                  {{ contentError }}
+                </div>
+              </div>
 
               <v-row>
                 <v-col cols="12" md="4">
@@ -316,13 +318,16 @@
               </v-col>
             </v-row>
 
-            <v-textarea
-              v-model="selectedNotice.content"
-              label="내용"
-              variant="outlined"
-              rows="8"
-              class="mb-3"
-            />
+            <!-- 리치 텍스트 에디터 (편집 모드) -->
+            <div class="editor-container mb-3">
+              <label class="editor-label">내용</label>
+              <div ref="editEditorContainer" class="editor-wrapper">
+                <div ref="editEditor" class="editor" />
+              </div>
+              <div v-if="editContentError" class="error-message">
+                {{ editContentError }}
+              </div>
+            </div>
 
             <v-row class="mb-3">
               <v-col cols="6">
@@ -442,9 +447,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { adminService } from '@/services/admin';
 import { useUserStore } from '@/stores/user';
+import { storageService } from '@/services/storage';
+
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
 
 const emit = defineEmits(['notice-updated']);
 
@@ -456,6 +465,16 @@ const notices = ref([]);
 const searchTerm = ref('');
 const typeFilter = ref('all');
 const statusFilter = ref('all');
+
+// Quill 에디터 관련
+const editor = ref(null);
+const editorContainer = ref(null);
+const editEditor = ref(null);
+const editEditorContainer = ref(null);
+const quillEditor = ref(null);
+const editQuillEditor = ref(null);
+const contentError = ref('');
+const editContentError = ref('');
 
 // 다이얼로그 상태
 const detailDialog = ref(false);
@@ -625,6 +644,226 @@ const getContentPreview = (content) => {
   return textContent;
 };
 
+// Quill 에디터 초기화
+function initializeEditor() {
+  if (!editor.value) return;
+
+  const toolbarOptions = [
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote', 'code-block'],
+    [{ indent: '-1' }, { indent: '+1' }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    [{ color: [] }, { background: [] }],
+    [{ align: [] }],
+    ['link', 'image'],
+  ];
+
+  quillEditor.value = new Quill(editor.value, {
+    theme: 'snow',
+    modules: {
+      toolbar: toolbarOptions,
+    },
+    placeholder: '공지사항 내용을 입력해주세요...',
+  });
+
+  // 내용 변경 감지
+  quillEditor.value.on('text-change', () => {
+    newNotice.value.content = quillEditor.value.root.innerHTML;
+    validateContent();
+  });
+
+  // 이미지 업로드 핸들러
+  quillEditor.value.getModule('toolbar').addHandler('image', handleImageInsert);
+}
+
+// 편집용 Quill 에디터 초기화
+function initializeEditEditor() {
+  if (!editEditor.value) return;
+
+  const toolbarOptions = [
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote', 'code-block'],
+    [{ indent: '-1' }, { indent: '+1' }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    [{ color: [] }, { background: [] }],
+    [{ align: [] }],
+    ['link', 'image'],
+  ];
+
+  editQuillEditor.value = new Quill(editEditor.value, {
+    theme: 'snow',
+    modules: {
+      toolbar: toolbarOptions,
+    },
+    placeholder: '공지사항 내용을 입력해주세요...',
+  });
+
+  // 내용 변경 감지
+  editQuillEditor.value.on('text-change', () => {
+    selectedNotice.value.content = editQuillEditor.value.root.innerHTML;
+    validateEditContent();
+  });
+
+  // 이미지 업로드 핸들러
+  editQuillEditor.value
+    .getModule('toolbar')
+    .addHandler('image', handleEditImageInsert);
+}
+
+function validateContent() {
+  if (!quillEditor.value) return false;
+
+  const text = quillEditor.value.getText().trim();
+  if (text.length === 0) {
+    contentError.value = '내용을 입력해주세요';
+    return false;
+  } else if (text.length < 5) {
+    contentError.value = '내용은 5글자 이상이어야 합니다';
+    return false;
+  } else {
+    contentError.value = '';
+    return true;
+  }
+}
+
+function validateEditContent() {
+  if (!editQuillEditor.value) return false;
+
+  const text = editQuillEditor.value.getText().trim();
+  if (text.length === 0) {
+    editContentError.value = '내용을 입력해주세요';
+    return false;
+  } else if (text.length < 5) {
+    editContentError.value = '내용은 5글자 이상이어야 합니다';
+    return false;
+  } else {
+    editContentError.value = '';
+    return true;
+  }
+}
+
+async function handleImageInsert() {
+  if (!quillEditor.value) {
+    alert('에디터가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (!userStore.user) {
+      alert('이미지 업로드를 위해 로그인이 필요합니다.');
+      return;
+    }
+
+    const validation = storageService.validateFile(file, {
+      maxSize: 5 * 1024 * 1024, // 5MB
+      allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+    });
+
+    if (!validation.isValid) {
+      alert(validation.errors.join('\n'));
+      return;
+    }
+
+    try {
+      const currentContent = quillEditor.value.root.innerHTML;
+      const uploadingHtml = '<p><em>이미지 업로드 중...</em></p>';
+      quillEditor.value.root.innerHTML = currentContent + uploadingHtml;
+
+      const fileName = `notices/${Date.now()}_${file.name}`;
+      const downloadURL = await storageService.uploadFile(file, fileName);
+
+      const imageHtml = `<p><img src="${downloadURL}" alt="업로드된 이미지"></p><p><br></p>`;
+      const updatedContent = quillEditor.value.root.innerHTML.replace(
+        uploadingHtml,
+        imageHtml,
+      );
+      quillEditor.value.root.innerHTML = updatedContent;
+
+      newNotice.value.content = quillEditor.value.root.innerHTML;
+    } catch (error) {
+      console.error('Image upload error:', error);
+
+      const currentContent = quillEditor.value.root.innerHTML;
+      const cleanedContent = currentContent.replace(
+        '<p><em>이미지 업로드 중...</em></p>',
+        '',
+      );
+      quillEditor.value.root.innerHTML = cleanedContent;
+
+      alert('이미지 업로드에 실패했습니다.');
+    }
+  };
+}
+
+async function handleEditImageInsert() {
+  if (!editQuillEditor.value) {
+    alert('에디터가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  const input = document.createElement('input');
+  input.setAttribute('type', 'file');
+  input.setAttribute('accept', 'image/*');
+  input.click();
+
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (!userStore.user) {
+      alert('이미지 업로드를 위해 로그인이 필요합니다.');
+      return;
+    }
+
+    const validation = storageService.validateFile(file, {
+      maxSize: 5 * 1024 * 1024, // 5MB
+      allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+    });
+
+    if (!validation.isValid) {
+      alert(validation.errors.join('\n'));
+      return;
+    }
+
+    try {
+      const currentContent = editQuillEditor.value.root.innerHTML;
+      const uploadingHtml = '<p><em>이미지 업로드 중...</em></p>';
+      editQuillEditor.value.root.innerHTML = currentContent + uploadingHtml;
+
+      const fileName = `notices/${Date.now()}_${file.name}`;
+      const downloadURL = await storageService.uploadFile(file, fileName);
+
+      const imageHtml = `<p><img src="${downloadURL}" alt="업로드된 이미지"></p><p><br></p>`;
+      const updatedContent = editQuillEditor.value.root.innerHTML.replace(
+        uploadingHtml,
+        imageHtml,
+      );
+      editQuillEditor.value.root.innerHTML = updatedContent;
+
+      selectedNotice.value.content = editQuillEditor.value.root.innerHTML;
+    } catch (error) {
+      console.error('Image upload error:', error);
+
+      const currentContent = editQuillEditor.value.root.innerHTML;
+      const cleanedContent = currentContent.replace(
+        '<p><em>이미지 업로드 중...</em></p>',
+        '',
+      );
+      editQuillEditor.value.root.innerHTML = cleanedContent;
+
+      alert('이미지 업로드에 실패했습니다.');
+    }
+  };
+}
+
 // 공지사항 목록 로드
 const loadNotices = async () => {
   loading.value = true;
@@ -670,6 +909,10 @@ const loadNotices = async () => {
 
 // 공지사항 생성
 const createNotice = async () => {
+  if (!validateContent()) {
+    return;
+  }
+
   createLoading.value = true;
   try {
     await adminService.createNotice(userStore.user.uid, newNotice.value);
@@ -685,6 +928,11 @@ const createNotice = async () => {
       isPinned: false,
       isPopup: false,
     };
+
+    // 에디터 초기화
+    if (quillEditor.value) {
+      quillEditor.value.root.innerHTML = '';
+    }
 
     // 목록 새로고침
     loadNotices();
@@ -704,14 +952,32 @@ const viewNotice = (notice) => {
 };
 
 // 공지사항 편집 시작
-const editNotice = (notice) => {
+const editNotice = async (notice) => {
   selectedNotice.value = { ...notice };
   isEditing.value = true;
   detailDialog.value = true;
+
+  // 다이얼로그가 열린 후 에디터 초기화
+  await nextTick();
+  initializeEditEditor();
+
+  // 기존 내용 설정
+  if (editQuillEditor.value && notice.content) {
+    editQuillEditor.value.root.innerHTML = notice.content;
+  }
 };
 
-const startEdit = () => {
+const startEdit = async () => {
   isEditing.value = true;
+
+  // 편집 모드로 전환 후 에디터 초기화
+  await nextTick();
+  initializeEditEditor();
+
+  // 기존 내용 설정
+  if (editQuillEditor.value && selectedNotice.value.content) {
+    editQuillEditor.value.root.innerHTML = selectedNotice.value.content;
+  }
 };
 
 const cancelEdit = () => {
@@ -720,6 +986,10 @@ const cancelEdit = () => {
 
 // 공지사항 저장
 const saveNotice = async () => {
+  if (!validateEditContent()) {
+    return;
+  }
+
   saveLoading.value = true;
   try {
     // 실제 구현에서는 공지사항 업데이트 API 호출
@@ -785,8 +1055,21 @@ const closeDialog = () => {
   selectedNotice.value = null;
 };
 
-onMounted(() => {
+onMounted(async () => {
   loadNotices();
+
+  // 에디터 초기화
+  await nextTick();
+  initializeEditor();
+});
+
+onUnmounted(() => {
+  if (quillEditor.value) {
+    quillEditor.value = null;
+  }
+  if (editQuillEditor.value) {
+    editQuillEditor.value = null;
+  }
 });
 </script>
 
@@ -851,5 +1134,54 @@ onMounted(() => {
 
 .text-medium-emphasis {
   opacity: 0.7;
+}
+
+/* Quill 에디터 스타일 */
+.editor-container {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 4px;
+}
+
+.editor-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  margin-bottom: 8px;
+}
+
+.editor-wrapper {
+  min-height: 200px;
+}
+
+.editor {
+  min-height: 150px;
+}
+
+.error-message {
+  color: rgb(var(--v-theme-error));
+  font-size: 0.75rem;
+  margin-top: 4px;
+  padding-left: 12px;
+}
+
+/* Quill editor customization */
+:deep(.ql-editor) {
+  min-height: 150px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+:deep(.ql-toolbar) {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+:deep(.ql-container) {
+  border: none;
+  font-family: inherit;
 }
 </style>
