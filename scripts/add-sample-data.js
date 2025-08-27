@@ -5,8 +5,13 @@
  * Firestore에 샘플 데이터를 추가하는 스크립트
  */
 
-import { initializeApp } from 'firebase/app'
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { initializeApp } from 'firebase/app';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 
 // Firebase 설정 (환경변수에서 가져오기)
 const firebaseConfig = {
@@ -16,11 +21,11 @@ const firebaseConfig = {
   storageBucket: 'laromacorea-renewal.firebasestorage.app',
   messagingSenderId: '210421182725',
   appId: '1:210421182725:web:968be34d1c9ababb51876c',
-}
+};
 
 // Firebase 초기화
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const colors = {
   green: '\x1b[32m',
@@ -28,14 +33,14 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   reset: '\x1b[0m',
-}
+};
 
 const log = {
   success: (msg) => console.log(`${colors.green}✓${colors.reset} ${msg}`),
   error: (msg) => console.log(`${colors.red}✗${colors.reset} ${msg}`),
   warning: (msg) => console.log(`${colors.yellow}⚠${colors.reset} ${msg}`),
   info: (msg) => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
-}
+};
 
 // 샘플 게시글 데이터
 const samplePosts = [
@@ -59,7 +64,8 @@ const samplePosts = [
   },
   {
     title: '새로운 선수 영입 소식',
-    content: '<p>AS 로마가 새로운 미드필더 영입을 추진하고 있다는 소식입니다.</p>',
+    content:
+      '<p>AS 로마가 새로운 미드필더 영입을 추진하고 있다는 소식입니다.</p>',
     boardType: 'squad',
     authorId: 'sample-user-2',
     authorName: '로마뉴스',
@@ -76,7 +82,8 @@ const samplePosts = [
   },
   {
     title: '로마 팬들을 위한 응원가 모음',
-    content: '<p>경기장에서 부르는 로마 응원가들을 모아봤습니다. 함께 불러요!</p>',
+    content:
+      '<p>경기장에서 부르는 로마 응원가들을 모아봤습니다. 함께 불러요!</p>',
     boardType: 'free',
     authorId: 'sample-user-3',
     authorName: '응원단장',
@@ -125,24 +132,22 @@ const samplePosts = [
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   },
-]
+];
 
 async function addSampleData() {
-  console.log(`${colors.blue}📝 샘플 데이터 추가 시작${colors.reset}\n`)
-
   try {
     for (const post of samplePosts) {
-      const docRef = await addDoc(collection(db, 'posts'), post)
-      log.success(`게시글 추가됨: ${post.title} (ID: ${docRef.id})`)
+      const docRef = await addDoc(collection(db, 'posts'), post);
+      log.success(`게시글 추가됨: ${post.title} (ID: ${docRef.id})`);
     }
 
-    log.success(`\n총 ${samplePosts.length}개의 샘플 게시글이 추가되었습니다!`)
-    log.info('이제 웹사이트에서 게시글을 확인할 수 있습니다.')
-    log.info('사이트 URL: https://laromacorea-renewal.web.app')
+    log.success(`\n총 ${samplePosts.length}개의 샘플 게시글이 추가되었습니다!`);
+    log.info('이제 웹사이트에서 게시글을 확인할 수 있습니다.');
+    log.info('사이트 URL: https://laromacorea-renewal.web.app');
   } catch (error) {
-    log.error(`샘플 데이터 추가 중 오류 발생: ${error.message}`)
-    process.exit(1)
+    log.error(`샘플 데이터 추가 중 오류 발생: ${error.message}`);
+    process.exit(1);
   }
 }
 
-addSampleData()
+addSampleData();

@@ -95,11 +95,6 @@ if (typeof window !== 'undefined') {
       `);
     },
   };
-
-  // 초기 도움말 표시
-  console.log(
-    '🛠️  관리자 도구가 로드되었습니다. adminTools.help()를 실행하여 사용법을 확인하세요.',
-  );
 }
 
 export default {

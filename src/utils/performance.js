@@ -10,17 +10,17 @@
  * @returns {Function} Debounced function
  */
 export function debounce(func, wait, immediate = false) {
-  let timeout
+  let timeout;
   return function executedFunction(...args) {
     const later = () => {
-      timeout = null
-      if (!immediate) func.apply(this, args)
-    }
-    const callNow = immediate && !timeout
-    clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
-    if (callNow) func.apply(this, args)
-  }
+      timeout = null;
+      if (!immediate) func.apply(this, args);
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(this, args);
+  };
 }
 
 /**
@@ -30,14 +30,14 @@ export function debounce(func, wait, immediate = false) {
  * @returns {Function} Throttled function
  */
 export function throttle(func, limit) {
-  let inThrottle
+  let inThrottle;
   return function executedFunction(...args) {
     if (!inThrottle) {
-      func.apply(this, args)
-      inThrottle = true
-      setTimeout(() => (inThrottle = false), limit)
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
     }
-  }
+  };
 }
 
 /**
@@ -48,23 +48,23 @@ export function preloadCriticalResources() {
     '/fonts/roboto-v30-latin-regular.woff2',
     '/images/logo.png',
     '/images/roma-badge.png',
-  ]
+  ];
 
   criticalResources.forEach((resource) => {
-    const link = document.createElement('link')
-    link.rel = 'preload'
+    const link = document.createElement('link');
+    link.rel = 'preload';
 
     if (resource.includes('.woff2')) {
-      link.as = 'font'
-      link.type = 'font/woff2'
-      link.crossOrigin = 'anonymous'
+      link.as = 'font';
+      link.type = 'font/woff2';
+      link.crossOrigin = 'anonymous';
     } else if (resource.includes('.png') || resource.includes('.jpg')) {
-      link.as = 'image'
+      link.as = 'image';
     }
 
-    link.href = resource
-    document.head.appendChild(link)
-  })
+    link.href = resource;
+    document.head.appendChild(link);
+  });
 }
 
 /**
@@ -77,7 +77,7 @@ export function preloadCriticalResources() {
 export function getOptimizedImageUrl(src, width = 800, format = 'webp') {
   // This would typically integrate with an image optimization service
   // For now, return the original src
-  return src
+  return src;
 }
 
 /**
@@ -86,25 +86,25 @@ export function getOptimizedImageUrl(src, width = 800, format = 'webp') {
  */
 export function checkWebPSupport() {
   return new Promise((resolve) => {
-    const webP = new Image()
+    const webP = new Image();
     webP.onload = webP.onerror = () => {
-      resolve(webP.height === 2)
-    }
+      resolve(webP.height === 2);
+    };
     webP.src =
-      'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA'
-  })
+      'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+  });
 }
 
 /**
  * Measure and report performance metrics
  */
 export function measurePerformance() {
-  if (!window.performance) return
+  if (!window.performance) return;
 
   // Measure page load performance
   window.addEventListener('load', () => {
     setTimeout(() => {
-      const perfData = performance.getEntriesByType('navigation')[0]
+      const perfData = performance.getEntriesByType('navigation')[0];
 
       if (perfData) {
         const metrics = {
@@ -112,22 +112,21 @@ export function measurePerformance() {
           tcp: perfData.connectEnd - perfData.connectStart,
           ttfb: perfData.responseStart - perfData.requestStart,
           download: perfData.responseEnd - perfData.responseStart,
-          domReady: perfData.domContentLoadedEventEnd - perfData.navigationStart,
+          domReady:
+            perfData.domContentLoadedEventEnd - perfData.navigationStart,
           windowLoad: perfData.loadEventEnd - perfData.navigationStart,
-        }
-
-        console.log('Performance Metrics:', metrics)
+        };
 
         // Report to analytics if needed
         if (window.gtag) {
           window.gtag('event', 'timing_complete', {
             name: 'page_load',
             value: Math.round(metrics.windowLoad),
-          })
+          });
         }
       }
-    }, 0)
-  })
+    }, 0);
+  });
 }
 
 /**
@@ -137,17 +136,17 @@ export function measurePerformance() {
  * @returns {Function} Optimized scroll handler
  */
 export function optimizeScroll(callback, delay = 16) {
-  let ticking = false
+  let ticking = false;
 
   return throttle(() => {
     if (!ticking) {
       requestAnimationFrame(() => {
-        callback()
-        ticking = false
-      })
-      ticking = true
+        callback();
+        ticking = false;
+      });
+      ticking = true;
     }
-  }, delay)
+  }, delay);
 }
 
 /**
@@ -160,9 +159,12 @@ export function createPerformantObserver(callback, options = {}) {
   const defaultOptions = {
     rootMargin: '50px',
     threshold: 0.1,
-  }
+  };
 
-  return new IntersectionObserver(throttle(callback, 100), { ...defaultOptions, ...options })
+  return new IntersectionObserver(throttle(callback, 100), {
+    ...defaultOptions,
+    ...options,
+  });
 }
 
 /**
@@ -173,30 +175,16 @@ export function preloadRoutes(routes) {
   routes.forEach((route) => {
     if (route.component && typeof route.component === 'function') {
       // Preload the component
-      route.component()
+      route.component();
     }
-  })
+  });
 }
 
 /**
  * Memory usage monitoring
  */
 export function monitorMemoryUsage() {
-  if (!performance.memory) return
-
-  const logMemoryUsage = () => {
-    const memory = performance.memory
-    console.log('Memory Usage:', {
-      used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
-      total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
-      limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB',
-    })
-  }
-
-  // Log memory usage every 30 seconds in development
-  if (import.meta.env.DEV) {
-    setInterval(logMemoryUsage, 30000)
-  }
+  if (!performance.memory) return;
 }
 
 /**
@@ -213,9 +201,9 @@ export function inlineCriticalCSS() {
       align-items: center;
       height: 200px;
     }
-  `
+  `;
 
-  const style = document.createElement('style')
-  style.textContent = criticalCSS
-  document.head.appendChild(style)
+  const style = document.createElement('style');
+  style.textContent = criticalCSS;
+  document.head.appendChild(style);
 }

@@ -17,7 +17,6 @@ export const matchService = {
    */
   async getTodayMatches() {
     try {
-      console.log("Fetching today's AS Roma matches...");
       const matches = await this.getUpcomingMatches();
 
       const today = new Date();
@@ -26,7 +25,6 @@ export const matchService = {
         return matchDate.toDateString() === today.toDateString();
       });
 
-      console.log(`Found ${todayMatches.length} matches today`);
       return todayMatches;
     } catch (error) {
       console.warn("Error fetching today's matches:", error);
@@ -39,11 +37,9 @@ export const matchService = {
    */
   async getUpcomingMatches() {
     try {
-      console.log('Fetching AS Roma upcoming matches from TheSportsDB...');
       const matches = await this.fetchUpcomingMatches();
 
       if (matches && matches.length > 0) {
-        console.log(`Found ${matches.length} upcoming Roma matches`);
         return matches.slice(0, 5); // 최대 5경기
       }
     } catch (error) {
@@ -60,7 +56,6 @@ export const matchService = {
    */
   async fetchUpcomingMatches() {
     const url = `${THESPORTSDB_CONFIG.baseUrl}/eventsnext.php?id=${AS_ROMA_TEAM_ID}`;
-    console.log('Fetching from TheSportsDB:', url);
 
     const response = await fetch(url);
 
@@ -69,7 +64,6 @@ export const matchService = {
     }
 
     const data = await response.json();
-    console.log('TheSportsDB data loaded successfully:', data);
 
     return this.parseUpcomingMatches(data);
   },
@@ -203,11 +197,9 @@ export const matchService = {
    */
   async getRecentResults() {
     try {
-      console.log('Fetching AS Roma recent result from TheSportsDB...');
       const result = await this.fetchRecentResult();
 
       if (result) {
-        console.log('Found recent Roma result');
         return [result]; // 1경기만 배열로 반환
       }
     } catch (error) {
@@ -224,7 +216,6 @@ export const matchService = {
    */
   async fetchRecentResult() {
     const url = `${THESPORTSDB_CONFIG.baseUrl}/eventslast.php?id=${AS_ROMA_TEAM_ID}`;
-    console.log('Fetching recent result from TheSportsDB:', url);
 
     const response = await fetch(url);
 
@@ -235,7 +226,6 @@ export const matchService = {
     }
 
     const data = await response.json();
-    console.log('TheSportsDB recent results data loaded:', data);
 
     return this.parseRecentResult(data);
   },

@@ -224,27 +224,13 @@ export const useUserStore = defineStore('user', () => {
 
   // Initialize auth state listener
   function initializeAuth() {
-    console.log('Initializing auth state listener...');
-
     return AuthService.onAuthStateChanged(async (firebaseUser) => {
-      console.log(
-        'Auth state changed:',
-        firebaseUser ? 'User logged in' : 'User logged out',
-      );
       errorStore.setLoading('auth-init', true);
 
       try {
         if (firebaseUser) {
-          console.log('Firebase user:', {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            emailVerified: firebaseUser.emailVerified,
-          });
-
           // Get user data from Firestore
           const userData = await AuthService.getUserDocument(firebaseUser.uid);
-          console.log('Firestore user data:', userData);
 
           user.value = {
             uid: firebaseUser.uid,
@@ -259,10 +245,7 @@ export const useUserStore = defineStore('user', () => {
           if (userData?.selectedIcon) {
             await loadUserIconData(userData.selectedIcon);
           }
-
-          console.log('User store updated:', user.value);
         } else {
-          console.log('No user, clearing user store');
           user.value = null;
         }
       } catch (err) {
@@ -272,10 +255,6 @@ export const useUserStore = defineStore('user', () => {
       } finally {
         errorStore.setLoading('auth-init', false);
         authInitialized.value = true;
-        console.log(
-          'Auth initialization completed, authInitialized:',
-          authInitialized.value,
-        );
       }
     });
   }
