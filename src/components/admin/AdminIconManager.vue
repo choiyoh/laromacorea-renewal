@@ -405,7 +405,6 @@ const loadIcons = async () => {
   loading.value = true;
   try {
     icons.value = await adminService.getIcons();
-    console.log('아이콘 목록 로드 완료:', icons.value.length, '개');
   } catch (error) {
     console.error('아이콘 목록 로드 실패:', error);
     icons.value = [];
@@ -428,16 +427,9 @@ const uploadIcon = async () => {
   }
 
   // 현재 사용자 권한 확인을 위한 디버깅
-  console.log('현재 사용자 상태 확인 중...');
+
   const { useUserStore } = await import('@/stores/user');
   const userStore = useUserStore();
-  console.log('현재 사용자:', userStore.user);
-  console.log('관리자 권한:', userStore.isAdmin);
-  console.log('인증 상태:', userStore.isAuthenticated);
-
-  // Firebase Auth 상태도 확인
-  const { auth } = await import('@/services/firebase');
-  console.log('Firebase Auth 현재 사용자:', auth.currentUser);
 
   if (!userStore.isAuthenticated) {
     console.error('로그인되어 있지 않습니다');
@@ -462,9 +454,7 @@ const uploadIcon = async () => {
       file: file, // 실제 File 객체 전달
     };
 
-    console.log('아이콘 업로드 시작:', iconData.name);
     await adminService.addIcon(iconData);
-    console.log('아이콘 업로드 완료');
 
     // 폼 초기화
     newIcon.value = {
