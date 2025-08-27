@@ -1,6 +1,6 @@
 <template>
   <div class="comment-item" :class="{ 'reply-comment': comment.level > 0 }">
-    <div class="comment-wrapper py-2">
+    <div class="comment-wrapper pb-2">
       <div class="d-flex align-start">
         <!-- 작성자 아바타 -->
         <UserAvatar
@@ -294,13 +294,11 @@ onMounted(() => {
 
 .comment-wrapper {
   transition: background-color 0.2s ease;
-  padding: 16px 0 !important;
 }
 
 .comment-wrapper:hover {
   background-color: rgba(var(--v-theme-surface), 0.5);
   border-radius: 8px;
-  padding: 16px 8px !important;
   margin: 0 -8px;
 }
 
