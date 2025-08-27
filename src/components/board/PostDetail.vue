@@ -221,22 +221,24 @@
         <div class="custom-divider mb-4"></div>
 
         <!-- 이전 글 -->
-        <div v-if="adjacentPosts.prevPost" class="nav-post prev-post mb-3">
+        <div v-if="adjacentPosts.prevPost" class="nav-post prev-post mb-1">
           <v-card
             variant="outlined"
             class="nav-card cursor-pointer"
             @click="navigateToPost(adjacentPosts.prevPost.id)"
           >
-            <v-card-text class="pa-3">
+            <v-card-text class="pa-1">
               <!-- Desktop Layout -->
               <div class="d-none d-md-block">
                 <div class="d-flex align-center">
                   <div class="nav-label me-3">
                     <v-icon icon="mdi-chevron-left" size="18" class="me-1" />
-                    이전 글
+                    이전글
                   </div>
                   <div class="nav-post-title me-3 flex-grow-1">
                     {{ adjacentPosts.prevPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="12" class="me-1" />
+                    <span>{{ adjacentPosts.nextPost.commentCount || 0 }}</span>
                   </div>
                   <div class="nav-post-meta">
                     <div
@@ -255,12 +257,83 @@
                           adjacentPosts.prevPost.authorName || '익명'
                         }}</span>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mobile Layout -->
+              <div class="d-md-none">
+                <div class="d-flex align-center">
+                  <div class="nav-label me-2 flex-shrink-0">
+                    <v-icon icon="mdi-chevron-left" size="16" class="me-1" />
+                    이전글
+                  </div>
+                  <div class="nav-post-title flex-grow-1 me-2">
+                    {{ adjacentPosts.prevPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="10" class="me-1" />
+                    <span>{{ adjacentPosts.prevPost.commentCount || 0 }}</span>
+                  </div>
+                  <div class="nav-post-meta">
+                    <div
+                      class="d-flex align-center text-caption text-grey-darken-1"
+                    >
+                      <UserAvatar
+                        :user-id="adjacentPosts.prevPost.authorId"
+                        :display-name="adjacentPosts.prevPost.authorName"
+                        :photo-u-r-l="adjacentPosts.prevPost.authorPhotoURL"
+                        :static-icon-url="adjacentPosts.prevPost.authorIcon"
+                        size="14"
+                        avatar-class="me-1"
+                      />
+                      <span style="white-space: nowrap">{{
+                        adjacentPosts.prevPost.authorName || '익명'
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </div>
+        <div class="custom-divider" v-if="adjacentPosts.prevPost"></div>
+        <!-- 다음 글 -->
+        <div v-if="adjacentPosts.nextPost" class="nav-post next-post mt-1">
+          <v-card
+            variant="outlined"
+            class="nav-card cursor-pointer"
+            @click="navigateToPost(adjacentPosts.nextPost.id)"
+          >
+            <v-card-text class="pa-1">
+              <!-- Desktop Layout -->
+              <div class="d-none d-md-block">
+                <div class="d-flex align-center">
+                  <div class="nav-label me-3">
+                    다음글
+                    <v-icon icon="mdi-chevron-right" size="18" class="ms-1" />
+                  </div>
+                  <div class="nav-post-title me-3 flex-grow-1">
+                    {{ adjacentPosts.nextPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="12" class="me-1" />
+                    <span>{{ adjacentPosts.nextPost.commentCount || 0 }}</span>
+                  </div>
+
+                  <div class="nav-post-meta">
+                    <div
+                      class="d-flex align-center justify-space-between text-caption text-grey-darken-1"
+                    >
                       <div class="d-flex align-center">
-                        <span class="me-1">[</span>
+                        <UserAvatar
+                          :user-id="adjacentPosts.nextPost.authorId"
+                          :display-name="adjacentPosts.nextPost.authorName"
+                          :photo-u-r-l="adjacentPosts.nextPost.authorPhotoURL"
+                          :static-icon-url="adjacentPosts.nextPost.authorIcon"
+                          size="16"
+                          avatar-class="me-1"
+                        />
                         <span>{{
-                          adjacentPosts.prevPost.commentCount || 0
+                          adjacentPosts.nextPost.authorName || '익명'
                         }}</span>
-                        <span>]</span>
                       </div>
                     </div>
                   </div>
@@ -269,72 +342,15 @@
 
               <!-- Mobile Layout -->
               <div class="d-md-none">
-                <div class="d-flex align-start">
-                  <div class="nav-label me-2 flex-shrink-0">
-                    <v-icon icon="mdi-chevron-left" size="16" class="me-1" />
-                    이전 글
-                  </div>
-                  <div class="flex-grow-1">
-                    <div class="nav-post-title mb-2">
-                      {{ adjacentPosts.prevPost.title }}
-                    </div>
-                    <div class="nav-post-meta">
-                      <div
-                        class="d-flex align-center text-caption text-grey-darken-1"
-                      >
-                        <UserAvatar
-                          :user-id="adjacentPosts.prevPost.authorId"
-                          :display-name="adjacentPosts.prevPost.authorName"
-                          :photo-u-r-l="adjacentPosts.prevPost.authorPhotoURL"
-                          :static-icon-url="adjacentPosts.prevPost.authorIcon"
-                          size="14"
-                          avatar-class="me-1"
-                        />
-                        <span class="me-2">{{
-                          adjacentPosts.prevPost.authorName || '익명'
-                        }}</span>
-                        <v-icon
-                          icon="mdi-clock-outline"
-                          size="10"
-                          class="me-1"
-                        />
-                        <span class="me-2">{{
-                          formatDate(adjacentPosts.prevPost.createdAt)
-                        }}</span>
-                        <v-icon
-                          icon="mdi-comment-outline"
-                          size="10"
-                          class="me-1"
-                        />
-                        <span>{{
-                          adjacentPosts.prevPost.commentCount || 0
-                        }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </v-card-text>
-          </v-card>
-        </div>
-
-        <!-- 다음 글 -->
-        <div v-if="adjacentPosts.nextPost" class="nav-post next-post">
-          <v-card
-            variant="outlined"
-            class="nav-card cursor-pointer"
-            @click="navigateToPost(adjacentPosts.nextPost.id)"
-          >
-            <v-card-text class="pa-3">
-              <!-- Desktop Layout -->
-              <div class="d-none d-md-block">
                 <div class="d-flex align-center">
-                  <div class="nav-label me-3">
-                    다음 글
-                    <v-icon icon="mdi-chevron-right" size="18" class="ms-1" />
+                  <div class="nav-label me-2 flex-shrink-0">
+                    다음글
+                    <v-icon icon="mdi-chevron-right" size="16" class="ms-1" />
                   </div>
-                  <div class="nav-post-title me-3 flex-grow-1">
+                  <div class="nav-post-title flex-grow-1 me-2">
                     {{ adjacentPosts.nextPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="10" class="me-1" />
+                    <span>{{ adjacentPosts.nextPost.commentCount || 0 }}</span>
                   </div>
                   <div class="nav-post-meta">
                     <div
@@ -345,72 +361,12 @@
                         :display-name="adjacentPosts.nextPost.authorName"
                         :photo-u-r-l="adjacentPosts.nextPost.authorPhotoURL"
                         :static-icon-url="adjacentPosts.nextPost.authorIcon"
-                        size="16"
+                        size="14"
                         avatar-class="me-1"
                       />
-                      <span class="me-3">{{
+                      <span style="white-space: nowrap">{{
                         adjacentPosts.nextPost.authorName || '익명'
                       }}</span>
-                      <v-icon icon="mdi-clock-outline" size="12" class="me-1" />
-                      <span class="me-3">{{
-                        formatDate(adjacentPosts.nextPost.createdAt)
-                      }}</span>
-                      <v-icon
-                        icon="mdi-comment-outline"
-                        size="12"
-                        class="me-1"
-                      />
-                      <span>{{
-                        adjacentPosts.nextPost.commentCount || 0
-                      }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Mobile Layout -->
-              <div class="d-md-none">
-                <div class="d-flex align-start">
-                  <div class="nav-label me-2 flex-shrink-0">
-                    다음 글
-                    <v-icon icon="mdi-chevron-right" size="16" class="ms-1" />
-                  </div>
-                  <div class="flex-grow-1">
-                    <div class="nav-post-title mb-2">
-                      {{ adjacentPosts.nextPost.title }}
-                    </div>
-                    <div class="nav-post-meta">
-                      <div
-                        class="d-flex align-center text-caption text-grey-darken-1"
-                      >
-                        <UserAvatar
-                          :user-id="adjacentPosts.nextPost.authorId"
-                          :display-name="adjacentPosts.nextPost.authorName"
-                          :photo-u-r-l="adjacentPosts.nextPost.authorPhotoURL"
-                          :static-icon-url="adjacentPosts.nextPost.authorIcon"
-                          size="14"
-                          avatar-class="me-1"
-                        />
-                        <span class="me-2">{{
-                          adjacentPosts.nextPost.authorName || '익명'
-                        }}</span>
-                        <v-icon
-                          icon="mdi-clock-outline"
-                          size="10"
-                          class="me-1"
-                        />
-                        <span class="me-2">{{
-                          formatDate(adjacentPosts.nextPost.createdAt)
-                        }}</span>
-                        <v-icon
-                          icon="mdi-comment-outline"
-                          size="10"
-                          class="me-1"
-                        />
-                        <span>{{
-                          adjacentPosts.nextPost.commentCount || 0
-                        }}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -482,9 +438,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { postService, commentService } from '@/services/database';
+import { useRouter } from 'vue-router';
 import CommentSystem from './CommentSystem.vue';
 import MatchCommentSystem from './MatchCommentSystem.vue';
 import MatchInfo from './MatchInfo.vue';
@@ -503,6 +460,8 @@ const emit = defineEmits([
   'post-updated',
   'navigate-to-post',
 ]);
+
+const router = useRouter();
 
 // Stores
 const userStore = useUserStore();
@@ -722,6 +681,16 @@ onMounted(async () => {
   await fetchPost();
   await fetchComments();
 });
+
+watch(
+  () => props.postId,
+  async (newPostId, oldPostId) => {
+    if (newPostId && newPostId !== oldPostId) {
+      await fetchPost();
+      await fetchComments();
+    }
+  },
+);
 </script>
 
 <style scoped>
