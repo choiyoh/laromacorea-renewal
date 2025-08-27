@@ -164,6 +164,7 @@ import { useUserStore } from '@/stores/user';
 import { postService } from '@/services/database';
 import { storageService } from '@/services/storage';
 import { matchService } from '@/services/match';
+import { auth } from '@/services/firebase';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import MediaUploader from '../common/MediaUploader.vue';
@@ -285,6 +286,12 @@ function validateContent() {
 }
 
 async function handleImageInsert() {
+  // Quill 에디터가 초기화되었는지 확인
+  if (!quillEditor.value) {
+    alert('에디터가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
   const input = document.createElement('input');
   input.setAttribute('type', 'file');
   input.setAttribute('accept', 'image/*');
@@ -293,6 +300,12 @@ async function handleImageInsert() {
   input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
+
+    // 사용자 로그인 확인
+    if (!userStore.user) {
+      alert('이미지 업로드를 위해 로그인이 필요합니다.');
+      return;
+    }
 
     const validation = storageService.validateFile(file, {
       maxSize: 5 * 1024 * 1024, // 5MB for editor images
@@ -305,16 +318,58 @@ async function handleImageInsert() {
     }
 
     try {
-      const range = quillEditor.value.getSelection();
-      quillEditor.value.insertText(range.index, '이미지 업로드 중...');
+      // 사용자 인증 상태 디버깅
+      console.log('User store user:', userStore.user);
+      console.log('Firebase auth user:', auth.currentUser);
 
+      // 업로드 진행 상태를 HTML로 직접 추가 (Quill API 사용하지 않음)
+      const currentContent = quillEditor.value.root.innerHTML;
+      const uploadingHtml = '<p><em>이미지 업로드 중...</em></p>';
+      quillEditor.value.root.innerHTML = currentContent + uploadingHtml;
+
+      // 파일 업로드
       const fileName = `posts/${Date.now()}_${file.name}`;
-      const downloadURL = await storageService.uploadImage(file, fileName);
+      const downloadURL = await storageService.uploadFile(file, fileName);
 
-      quillEditor.value.deleteText(range.index, '이미지 업로드 중...'.length);
-      quillEditor.value.insertEmbed(range.index, 'image', downloadURL);
+      // 업로드 완료 후 이미지로 교체
+      const imageHtml = `<p><img src="${downloadURL}" alt="업로드된 이미지"></p><p><br></p>`;
+      const updatedContent = quillEditor.value.root.innerHTML.replace(
+        uploadingHtml,
+        imageHtml,
+      );
+      quillEditor.value.root.innerHTML = updatedContent;
+
+      // 내용 변경 이벤트 트리거
+      formData.value.content = quillEditor.value.root.innerHTML;
     } catch (error) {
-      alert('이미지 업로드에 실패했습니다.');
+      console.error('Image upload error:', error);
+
+      // 업로드 중 텍스트 제거
+      try {
+        const currentContent = quillEditor.value.root.innerHTML;
+        const cleanedContent = currentContent.replace(
+          '<p><em>이미지 업로드 중...</em></p>',
+          '',
+        );
+        quillEditor.value.root.innerHTML = cleanedContent;
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup upload text:', cleanupError);
+      }
+
+      // 에러 메시지 표시
+      let errorMessage = '이미지 업로드에 실패했습니다.';
+      if (error.code === 'storage/unauthorized') {
+        errorMessage =
+          '이미지 업로드 권한이 없습니다. 로그인 상태를 확인해주세요.';
+      } else if (error.code === 'storage/quota-exceeded') {
+        errorMessage = '저장 공간이 부족합니다.';
+      } else if (error.code === 'storage/invalid-format') {
+        errorMessage = '지원하지 않는 이미지 형식입니다.';
+      } else if (error.message) {
+        errorMessage += ` (${error.message})`;
+      }
+
+      alert(errorMessage);
     }
   };
 }
