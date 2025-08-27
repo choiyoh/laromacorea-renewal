@@ -8,7 +8,7 @@
             <v-btn
               variant="text"
               prepend-icon="mdi-arrow-left"
-              @click="$router.go(-1)"
+              @click="goToList"
             >
               목록으로
             </v-btn>
@@ -61,6 +61,10 @@ const boardNames = {
 
 function getBoardName(boardType) {
   return boardNames[boardType] || boardType;
+}
+
+function goToList() {
+  router.push(`/board/${props.boardType}`);
 }
 
 function handleEditPost() {
