@@ -17,6 +17,7 @@ import {
   limit,
   serverTimestamp,
   writeBatch,
+  startAfter,
 } from 'firebase/firestore';
 import {
   ref as storageRef,
@@ -360,16 +361,29 @@ export const adminService = {
   /**
    * 사용자 관리
    */
-  async getAllUsers(limitCount = 50) {
+  async getAllUsers(options = {}) {
+    const { limitCount = 50, startAfterDoc = null } = options;
     try {
+      const constraints = [
+        orderBy('createdAt', 'desc'),
+      ];
+
+      if (startAfterDoc) {
+        constraints.push(startAfter(startAfterDoc));
+      }
+
+      constraints.push(limit(limitCount));
+
       const q = query(
         collection(db, collections.users),
-        orderBy('createdAt', 'desc'),
-        limit(limitCount),
+        ...constraints
       );
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+      return { users, lastVisible };
     } catch (error) {
       throw error;
     }
@@ -498,7 +512,7 @@ export const adminService = {
 
   // 사용자 목록 조회 (AdminUserManager에서 사용)
   async getUsers(options = {}) {
-    return this.getAllUsers(options.limitCount || 50);
+    return this.getAllUsers(options);
   },
 
   // 사용자 검색
@@ -507,8 +521,7 @@ export const adminService = {
       const users = await this.getAllUsers(100);
       return users.filter(
         (user) =>
-          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     } catch (error) {
       throw error;
@@ -942,5 +955,46 @@ export const adminService = {
       reason,
       adminId,
     );
+  },
+
+  async updateUserIcon(adminId, userId, icon) {
+    try {
+      // 1. Check for admin permission
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const userRef = doc(db, collections.users, userId);
+      const batch = writeBatch(db);
+
+      // 2. Update user's document
+      batch.update(userRef, {
+        selectedIcon: icon.id,
+        selectedIconData: {
+          id: icon.id,
+          name: icon.name,
+          url: icon.url,
+        },
+        updatedAt: serverTimestamp(),
+        updatedBy: adminId,
+      });
+
+      // 3. Log the change in userHistory
+      const historyRef = doc(collection(db, 'userHistory'));
+      batch.set(historyRef, {
+        userId,
+        type: 'ICON_CHANGE',
+        description: `관리자가 아이콘을 '${icon.name}' (으)로 변경했습니다.`,
+        adminId,
+        createdAt: serverTimestamp(),
+      });
+
+      await batch.commit();
+      return true;
+    } catch (error) {
+      console.error('사용자 아이콘 변경 실패:', error);
+      throw error;
+    }
   },
 };

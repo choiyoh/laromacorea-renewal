@@ -2,10 +2,10 @@
   <div class="user-manager-container">
     <!-- 검색 및 필터 -->
     <v-row class="mb-4 pt-3">
-      <v-col cols="12" md="6">
+      <v-col cols="12" md="4">
         <v-text-field
           v-model="searchTerm"
-          label="사용자 검색"
+          label="사용자 닉네임 검색"
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
           density="compact"
@@ -13,25 +13,38 @@
           @input="searchUsers"
         />
       </v-col>
-      <v-col cols="12" md="3">
+      <v-col cols="12" md="2">
         <v-select
           v-model="statusFilter"
-          label="상태 필터"
+          label="계정 상태"
           :items="statusOptions"
           variant="outlined"
           density="compact"
           @update:model-value="filterUsers"
         />
       </v-col>
-      <v-col cols="12" md="3">
+      <v-col cols="12" md="2">
         <v-select
           v-model="roleFilter"
-          label="역할 필터"
+          label="역할"
           :items="roleOptions"
           variant="outlined"
           density="compact"
           @update:model-value="filterUsers"
         />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-select
+          v-model="verificationFilter"
+          label="인증 상태"
+          :items="verificationOptions"
+          variant="outlined"
+          density="compact"
+          @update:model-value="filterUsers"
+        />
+      </v-col>
+      <v-col cols="12" md="2">
+        <v-btn @click="loadUsers" :loading="loading" block height="40">초기화</v-btn>
       </v-col>
     </v-row>
 
@@ -148,6 +161,12 @@
                 </template>
                 <v-list-item-title>포인트 조정</v-list-item-title>
               </v-list-item>
+              <v-list-item @click="openIconSelectionDialog(item)">
+                <template v-slot:prepend>
+                  <v-icon icon="mdi-face-recognition" />
+                </template>
+                <v-list-item-title>아이콘 변경</v-list-item-title>
+              </v-list-item>
               <v-list-item
                 @click="toggleVerificationStatus(item)"
                 v-if="item.role !== 'admin'"
@@ -179,6 +198,16 @@
           </v-menu>
         </template>
       </v-data-table>
+
+      <div v-if="!allUsersLoaded" class="text-center pa-4">
+        <v-btn
+          :loading="loading"
+          @click="loadUsers(true)"
+          variant="tonal"
+        >
+          더 보기
+        </v-btn>
+      </div>
     </v-card>
 
     <!-- 사용자 편집 다이얼로그 -->
@@ -549,6 +578,14 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <!-- 아이콘 변경 다이얼로그 -->
+    <IconSelectionDialog
+      :show="iconSelectionDialog"
+      :user="selectedUser"
+      @close="iconSelectionDialog = false"
+      @save="handleIconUpdate"
+    />
   </div>
 </template>
 
@@ -556,6 +593,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { adminService } from '@/services/admin';
 import { useUserStore } from '@/stores/user';
+import IconSelectionDialog from './IconSelectionDialog.vue';
 
 const emit = defineEmits(['user-updated']);
 
@@ -565,12 +603,17 @@ const users = ref([]);
 const searchTerm = ref('');
 const statusFilter = ref('all');
 const roleFilter = ref('all');
+const verificationFilter = ref('all');
+
+const lastVisibleUser = ref(null);
+const allUsersLoaded = ref(false);
 
 // 다이얼로그 상태
 const editDialog = ref(false);
 const pointsDialog = ref(false);
 const userDetailDialog = ref(false);
 const passwordResetDialog = ref(false);
+const iconSelectionDialog = ref(false);
 const selectedUser = ref(null);
 const pointsAdjustment = ref(0);
 const pointsReason = ref('');
@@ -614,6 +657,12 @@ const roleOptions = [
   { title: '모더레이터', value: 'moderator' },
 ];
 
+const verificationOptions = [
+  { title: '전체', value: 'all' },
+  { title: '인증', value: 'verified' },
+  { title: '비인증', value: 'unverified' },
+];
+
 // 상세 관리용 옵션들
 const detailedRoleOptions = [
   { title: '일반 사용자', value: 'user' },
@@ -637,8 +686,7 @@ const filteredUsers = computed(() => {
     const term = searchTerm.value.toLowerCase();
     filtered = filtered.filter(
       (user) =>
-        user.displayName?.toLowerCase().includes(term) ||
-        user.email?.toLowerCase().includes(term),
+        user.displayName?.toLowerCase().includes(term),
     );
   }
 
@@ -653,14 +701,41 @@ const filteredUsers = computed(() => {
     filtered = filtered.filter((user) => user.role === roleFilter.value);
   }
 
+  // 인증 상태 필터
+  if (verificationFilter.value !== 'all') {
+    const isVerified = verificationFilter.value === 'verified';
+    filtered = filtered.filter((user) => {
+      if (user.role === 'admin') return true; // 관리자는 항상 표시
+      return (user.verified || false) === isVerified;
+    });
+  }
+
   return filtered;
 });
 
 // 사용자 목록 로드
-const loadUsers = async () => {
+const loadUsers = async (more = false) => {
+  if (loading.value && !more) return; // 더보기 중에는 초기화 방지
   loading.value = true;
+
+  if (!more) {
+    users.value = [];
+    lastVisibleUser.value = null;
+    allUsersLoaded.value = false;
+  }
+
   try {
-    users.value = await adminService.getUsers({ limitCount: 100 });
+    const { users: newUsers, lastVisible } = await adminService.getUsers({
+      limitCount: 50, // 한 번에 50명씩 로드
+      startAfterDoc: lastVisibleUser.value,
+    });
+
+    users.value.push(...newUsers);
+    lastVisibleUser.value = lastVisible;
+
+    if (newUsers.length < 50) {
+      allUsersLoaded.value = true;
+    }
   } catch (error) {
     // Failed to load users
   } finally {
@@ -669,18 +744,10 @@ const loadUsers = async () => {
 };
 
 // 사용자 검색
-const searchUsers = async () => {
-  if (searchTerm.value.length > 2) {
-    loading.value = true;
-    try {
-      const searchResults = await adminService.searchUsers(searchTerm.value);
-      users.value = searchResults;
-    } catch (error) {
-      // Failed to search users
-    } finally {
-      loading.value = false;
-    }
-  } else if (searchTerm.value === '') {
+const searchUsers = () => {
+  // Client-side search is handled by the 'filteredUsers' computed property.
+  // If the search term is cleared, reload the initial user list.
+  if (searchTerm.value === '') {
     loadUsers();
   }
 };
@@ -832,6 +899,37 @@ const toggleVerificationStatus = async (user) => {
     emit('user-updated');
   } catch (error) {
     alert('인증 상태 변경에 실패했습니다: ' + error.message);
+  }
+};
+
+// 아이콘 변경 다이얼로그 열기
+const openIconSelectionDialog = (user) => {
+  selectedUser.value = user;
+  iconSelectionDialog.value = true;
+};
+
+const handleIconUpdate = async (icon) => {
+  if (!selectedUser.value || !icon) return;
+
+  try {
+    await adminService.updateUserIcon(
+      userStore.user.uid, // admin's UID
+      selectedUser.value.id, // target user's UID
+      icon,
+    );
+
+    // 로컬 상태 업데이트
+    const index = users.value.findIndex(u => u.id === selectedUser.value.id);
+    if (index !== -1) {
+      users.value[index].selectedIcon = icon.id;
+      // You might want to update other icon-related data here if needed
+    }
+
+    iconSelectionDialog.value = false;
+    showSuccessMessage('사용자 아이콘이 변경되었습니다.');
+    emit('user-updated');
+  } catch (error) {
+    showErrorMessage('아이콘 변경에 실패했습니다: ' + error.message);
   }
 };
 
@@ -993,6 +1091,7 @@ const getHistoryTypeText = (type) => {
     VERIFICATION_CHANGE: '인증 상태 변경',
     POINTS_ADJUSTMENT: '포인트 조정',
     PASSWORD_RESET: '비밀번호 초기화',
+    ICON_CHANGE: '아이콘 변경',
   };
   return typeMap[type] || type;
 };
@@ -1006,6 +1105,7 @@ const getHistoryTypeColor = (type) => {
     VERIFICATION_CHANGE: 'green',
     POINTS_ADJUSTMENT: 'teal',
     PASSWORD_RESET: 'red',
+    ICON_CHANGE: 'info',
   };
   return colorMap[type] || 'grey';
 };
