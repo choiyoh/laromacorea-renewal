@@ -250,7 +250,7 @@ function initializeEditor() {
     [{ size: ['small', false, 'large', 'huge'] }],
     [{ color: [] }, { background: [] }],
     [{ align: [] }],
-    ['link', 'image'],
+    ['link'],
   ];
 
   quillEditor.value = new Quill(editor.value, {
