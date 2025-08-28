@@ -2,7 +2,7 @@
   <div class="user-manager-container">
     <!-- 검색 및 필터 -->
     <v-row class="mb-4 pt-3">
-      <v-col cols="12" md="4">
+      <v-col cols="12" md="5">
         <v-text-field
           v-model="searchTerm"
           label="사용자 닉네임 검색"
@@ -10,8 +10,12 @@
           variant="outlined"
           density="compact"
           clearable
-          @input="searchUsers"
+          hide-details
+          @keydown.enter="triggerReload"
         />
+      </v-col>
+      <v-col cols="12" md="1">
+        <v-btn @click="triggerReload" block height="40">검색</v-btn>
       </v-col>
       <v-col cols="12" md="2">
         <v-select
@@ -20,7 +24,8 @@
           :items="statusOptions"
           variant="outlined"
           density="compact"
-          @update:model-value="filterUsers"
+          hide-details
+          @update:model-value="triggerReload"
         />
       </v-col>
       <v-col cols="12" md="2">
@@ -30,7 +35,8 @@
           :items="roleOptions"
           variant="outlined"
           density="compact"
-          @update:model-value="filterUsers"
+          hide-details
+          @update:model-value="triggerReload"
         />
       </v-col>
       <v-col cols="12" md="2">
@@ -40,11 +46,9 @@
           :items="verificationOptions"
           variant="outlined"
           density="compact"
-          @update:model-value="filterUsers"
+          hide-details
+          @update:model-value="triggerReload"
         />
-      </v-col>
-      <v-col cols="12" md="2">
-        <v-btn @click="loadUsers" :loading="loading" block height="40">초기화</v-btn>
       </v-col>
     </v-row>
 
@@ -57,14 +61,16 @@
         <v-btn
           icon="mdi-refresh"
           variant="text"
-          @click="loadUsers"
+          @click="resetFilters"
           :loading="loading"
         />
       </v-card-title>
 
-      <v-data-table
+      <v-data-table-server
+        v-model:options="tableOptions"
         :headers="headers"
-        :items="filteredUsers"
+        :items="users"
+        :items-length="totalUsers"
         :loading="loading"
         class="user-table"
         item-value="id"
@@ -197,17 +203,7 @@
             </v-list>
           </v-menu>
         </template>
-      </v-data-table>
-
-      <div v-if="!allUsersLoaded" class="text-center pa-4">
-        <v-btn
-          :loading="loading"
-          @click="loadUsers(true)"
-          variant="tonal"
-        >
-          더 보기
-        </v-btn>
-      </div>
+      </v-data-table-server>
     </v-card>
 
     <!-- 사용자 편집 다이얼로그 -->
@@ -590,7 +586,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { adminService } from '@/services/admin';
 import { useUserStore } from '@/stores/user';
 import IconSelectionDialog from './IconSelectionDialog.vue';
@@ -601,13 +597,20 @@ const emit = defineEmits(['user-updated']);
 const userStore = useUserStore();
 const loading = ref(false);
 const users = ref([]);
+const totalUsers = ref(0);
 const searchTerm = ref('');
 const statusFilter = ref('all');
 const roleFilter = ref('all');
 const verificationFilter = ref('all');
 
-const lastVisibleUser = ref(null);
-const allUsersLoaded = ref(false);
+const tableOptions = ref({
+  page: 1,
+  itemsPerPage: 30,
+  sortBy: [],
+  sortDesc: [],
+});
+
+// 다이얼로그 상태
 
 // 다이얼로그 상태
 const editDialog = ref(false);
@@ -678,85 +681,50 @@ const statusDetailOptions = [
   { title: '탈퇴', value: 'deleted' },
 ];
 
-// 필터링된 사용자 목록
-const filteredUsers = computed(() => {
-  let filtered = users.value;
-
-  // 검색어 필터
-  if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase();
-    filtered = filtered.filter(
-      (user) =>
-        user.displayName?.toLowerCase().includes(term),
-    );
-  }
-
-  // 상태 필터
-  if (statusFilter.value !== 'all') {
-    const isActive = statusFilter.value === 'active';
-    filtered = filtered.filter((user) => user.isActive === isActive);
-  }
-
-  // 역할 필터
-  if (roleFilter.value !== 'all') {
-    filtered = filtered.filter((user) => user.role === roleFilter.value);
-  }
-
-  // 인증 상태 필터
-  if (verificationFilter.value !== 'all') {
-    const isVerified = verificationFilter.value === 'verified';
-    filtered = filtered.filter((user) => {
-      if (user.role === 'admin') return true; // 관리자는 항상 표시
-      return (user.verified || false) === isVerified;
-    });
-  }
-
-  return filtered;
-});
-
 // 사용자 목록 로드
-const loadUsers = async (more = false) => {
-  if (loading.value && !more) return; // 더보기 중에는 초기화 방지
+const loadUsers = async () => {
   loading.value = true;
-
-  if (!more) {
-    users.value = [];
-    lastVisibleUser.value = null;
-    allUsersLoaded.value = false;
-  }
-
   try {
-    const { users: newUsers, lastVisible } = await adminService.getUsers({
-      limitCount: 50, // 한 번에 50명씩 로드
-      startAfterDoc: lastVisibleUser.value,
-    });
+    const { page, itemsPerPage, sortBy, sortDesc } = tableOptions.value;
+    const filters = {
+      searchTerm: searchTerm.value,
+      status: statusFilter.value,
+      role: roleFilter.value,
+      verification: verificationFilter.value,
+    };
 
-    users.value.push(...newUsers);
-    lastVisibleUser.value = lastVisible;
+    const { users: newUsers, totalUsers: newTotalUsers } =
+      await adminService.getUsers({
+        page,
+        itemsPerPage,
+        sortBy: sortBy.length ? sortBy[0].key : 'createdAt',
+        sortDesc: sortBy.length ? sortBy[0].order === 'desc' : true,
+        filters,
+      });
 
-    if (newUsers.length < 50) {
-      allUsersLoaded.value = true;
-    }
+    users.value = newUsers;
+    totalUsers.value = newTotalUsers;
   } catch (error) {
-    // Failed to load users
+    console.error('Failed to load users:', error);
   } finally {
     loading.value = false;
   }
 };
 
-// 사용자 검색
-const searchUsers = () => {
-  // Client-side search is handled by the 'filteredUsers' computed property.
-  // If the search term is cleared, reload the initial user list.
-  if (searchTerm.value === '') {
-    loadUsers();
-  }
+const triggerReload = () => {
+  tableOptions.value.page = 1;
+  loadUsers();
 };
 
-// 필터 적용
-const filterUsers = () => {
-  // 필터링은 computed에서 처리됨
+const resetFilters = () => {
+  searchTerm.value = '';
+  statusFilter.value = 'all';
+  roleFilter.value = 'all';
+  verificationFilter.value = 'all';
+  triggerReload();
 };
+
+watch(tableOptions, loadUsers, { deep: true });
 
 // 역할 색상
 const getRoleColor = (role) => {
@@ -920,7 +888,7 @@ const handleIconUpdate = async (icon) => {
     );
 
     // 로컬 상태 업데이트
-    const index = users.value.findIndex(u => u.id === selectedUser.value.id);
+    const index = users.value.findIndex((u) => u.id === selectedUser.value.id);
     if (index !== -1) {
       users.value[index].selectedIcon = icon.id;
       // You might want to update other icon-related data here if needed
@@ -1120,10 +1088,6 @@ const showSuccessMessage = (message) => {
 const showErrorMessage = (message) => {
   alert(`❌ ${message}`);
 };
-
-onMounted(() => {
-  loadUsers();
-});
 </script>
 
 <style scoped>

@@ -18,6 +18,7 @@ import {
   serverTimestamp,
   writeBatch,
   startAfter,
+  getCountFromServer,
 } from 'firebase/firestore';
 import {
   ref as storageRef,
@@ -361,32 +362,65 @@ export const adminService = {
   /**
    * 사용자 관리
    */
-  async getAllUsers(options = {}) {
-    const { limitCount = 50, startAfterDoc = null } = options;
-    try {
-      const constraints = [
-        orderBy('createdAt', 'desc'),
-      ];
+  async getUsers(options = {}) {
+    const {
+      page = 1,
+      itemsPerPage = 30,
+      sortBy = 'createdAt',
+      sortDesc = true,
+      filters = {},
+    } = options;
 
-      if (startAfterDoc) {
-        constraints.push(startAfter(startAfterDoc));
-      }
-
-      constraints.push(limit(limitCount));
-
-      const q = query(
-        collection(db, collections.users),
-        ...constraints
-      );
-
-      const snapshot = await getDocs(q);
-      const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const lastVisible = snapshot.docs[snapshot.docs.length - 1];
-
-      return { users, lastVisible };
-    } catch (error) {
-      throw error;
+    const usersRef = collection(db, collections.users);
+    
+    // 1. Build the base query with filters
+    const queryConstraints = [];
+    if (filters.status && filters.status !== 'all') {
+      queryConstraints.push(where('isActive', '==', filters.status === 'active'));
     }
+    if (filters.role && filters.role !== 'all') {
+      queryConstraints.push(where('role', '==', filters.role));
+    }
+    if (filters.verification && filters.verification !== 'all') {
+      queryConstraints.push(where('verified', '==', (filters.verification === 'verified')));
+    }
+    if (filters.searchTerm) {
+      queryConstraints.push(orderBy('displayName'));
+      queryConstraints.push(where('displayName', '>=', filters.searchTerm));
+      queryConstraints.push(where('displayName', '<=', filters.searchTerm + '\uf8ff'));
+    }
+
+    // 2. Get total count for pagination
+    const countQuery = query(usersRef, ...queryConstraints);
+    const totalUsersSnapshot = await getCountFromServer(countQuery);
+    const totalUsers = totalUsersSnapshot.data().count;
+
+    // 3. Get documents for the current page
+    const dataQueryConstraints = [...queryConstraints];
+    if (!filters.searchTerm) {
+        dataQueryConstraints.push(orderBy(sortBy, sortDesc ? 'desc' : 'asc'));
+    }
+    
+    let pageQuery = query(usersRef, ...dataQueryConstraints);
+    
+    if (page > 1) {
+      const offset = (page - 1) * itemsPerPage;
+      const cursorQuery = query(pageQuery, limit(offset));
+      const cursorSnapshot = await getDocs(cursorQuery);
+      if (cursorSnapshot.docs.length > 0) {
+        const lastVisible = cursorSnapshot.docs[cursorSnapshot.docs.length - 1];
+        pageQuery = query(pageQuery, startAfter(lastVisible), limit(itemsPerPage));
+      } else {
+        return { users: [], totalUsers };
+      }
+    } else {
+      pageQuery = query(pageQuery, limit(itemsPerPage));
+    }
+
+    const pageSnapshot = await getDocs(pageQuery);
+    const users = pageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return { users, totalUsers };
   },
 
   async updateUserRole(adminUserId, targetUserId, newRole) {
@@ -505,28 +539,7 @@ export const adminService = {
     }
   },
 
-  // 시스템 통계 조회 (AdminView에서 사용)
-  async getSystemStats() {
-    return this.getDashboardStats();
-  },
-
-  // 사용자 목록 조회 (AdminUserManager에서 사용)
-  async getUsers(options = {}) {
-    return this.getAllUsers(options);
-  },
-
-  // 사용자 검색
-  async searchUsers(searchTerm) {
-    try {
-      const users = await this.getAllUsers(100);
-      return users.filter(
-        (user) =>
-          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    } catch (error) {
-      throw error;
-    }
-  },
+  
 
   // 사용자 상태 업데이트 (래퍼 함수)
   async updateUserStatus(userId, status) {
