@@ -419,41 +419,12 @@ export const postService = {
   // 이전/다음 게시글 조회
   async getAdjacentPosts(postId, boardType) {
     try {
-      console.log('🔍 getAdjacentPosts called with:', { postId, boardType });
-
       // 현재 게시글 정보 조회
       const currentPostDoc = await getDoc(doc(db, collections.posts, postId));
       if (!currentPostDoc.exists()) {
         console.log('❌ Current post not found');
         return { prevPost: null, nextPost: null };
       }
-
-      const currentPost = currentPostDoc.data();
-      const currentCreatedAt = currentPost.createdAt;
-      console.log('📝 Current post info:', {
-        id: postId,
-        title: currentPost.title,
-        boardType: currentPost.boardType,
-        createdAt: currentCreatedAt,
-        isDeleted: currentPost.isDeleted,
-      });
-
-      // 같은 게시판의 전체 게시글 수 확인
-      const totalQuery = query(
-        collection(db, collections.posts),
-        where('boardType', '==', boardType),
-        where('isDeleted', '==', false),
-      );
-      const totalSnapshot = await getDocs(totalQuery);
-      console.log(`📊 Total posts in ${boardType} board:`, totalSnapshot.size);
-
-      // 전체 게시글 목록 출력 (디버깅용)
-      totalSnapshot.docs.forEach((doc, index) => {
-        const data = doc.data();
-        console.log(
-          `  ${index + 1}. ${doc.id}: ${data.title} (${data.createdAt?.toDate?.() || data.createdAt})`,
-        );
-      });
 
       // 모든 게시글을 가져와서 클라이언트 사이드에서 필터링
       const allPostsQuery = query(
@@ -469,11 +440,8 @@ export const postService = {
         ...doc.data(),
       }));
 
-      console.log('📋 All posts in board:', allPosts.length);
-
       // 현재 게시글의 인덱스 찾기
       const currentIndex = allPosts.findIndex((post) => post.id === postId);
-      console.log('📍 Current post index:', currentIndex);
 
       let prevPost = null;
       let nextPost = null;
@@ -486,28 +454,6 @@ export const postService = {
         nextPost = allPosts[currentIndex + 1];
       }
 
-      if (prevPost) {
-        console.log('⬅️ Previous post found:', {
-          id: prevPost.id,
-          title: prevPost.title,
-        });
-      } else {
-        console.log('⬅️ No previous post found');
-      }
-
-      if (nextPost) {
-        console.log('➡️ Next post found:', {
-          id: nextPost.id,
-          title: nextPost.title,
-        });
-      } else {
-        console.log('➡️ No next post found');
-      }
-
-      console.log('✅ Adjacent posts result:', {
-        prevPost: !!prevPost,
-        nextPost: !!nextPost,
-      });
       return { prevPost, nextPost };
     } catch (error) {
       console.error('Error fetching adjacent posts:', error);

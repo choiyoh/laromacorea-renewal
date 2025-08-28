@@ -659,16 +659,11 @@ async function fetchAdjacentPosts() {
   if (!post.value) return;
 
   try {
-    console.log(
-      'Fetching adjacent posts for:',
-      props.postId,
-      post.value.boardType,
-    );
     const result = await postService.getAdjacentPosts(
       props.postId,
       post.value.boardType,
     );
-    console.log('Adjacent posts result:', result);
+
     adjacentPosts.value = result;
   } catch (error) {
     console.error('Error fetching adjacent posts:', error);
