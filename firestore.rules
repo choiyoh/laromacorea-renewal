@@ -33,11 +33,15 @@ service cloud.firestore {
                        request.resource.data.boardType in ['squad', 'match', 'calcio', 'free', 'special', 'media']) ||
                        (isAdmin() && request.resource.data.boardType == 'notice');
       allow update: if 
-                       // Allow anyone to increment viewCount, but nothing else
+                       // Allow anyone to increment viewCount, and nothing else
                        (request.resource.data.viewCount == resource.data.viewCount + 1 &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']))
                        ||
-                       // Allow author/admin to update other fields
+                       // Allow any authenticated user to sync commentCount, and nothing else
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']) &&
+                        isAuthenticated())
+                       ||
+                       // Allow author/admin to perform other updates
                        ((isAuthenticated() && request.auth.uid == resource.data.authorId) || isAdmin());
       allow delete: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || isAdmin();
 

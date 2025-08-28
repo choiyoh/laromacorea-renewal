@@ -549,7 +549,7 @@ async function fetchComments(loadMore = false) {
   try {
     const { comments: fetchedComments, lastDoc, hasMore } = await commentService.getComments(
       props.postId,
-      { lastDoc: lastCommentDoc.value, limitCount: 50 }
+      { lastDoc: lastCommentDoc.value, limitCount: 30 }
     );
 
     comments.value.push(...fetchedComments);
