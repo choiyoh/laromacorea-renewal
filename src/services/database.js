@@ -439,7 +439,7 @@ export const postService = {
         ...commonConstraints,
         where('createdAt', '>', currentPostCreatedAt),
         orderBy('createdAt', 'asc'),
-        limit(1)
+        limit(1),
       );
 
       // 다음 게시글 조회 (현재보다 오래된 글 중 가장 최신 것)
@@ -448,7 +448,7 @@ export const postService = {
         ...commonConstraints,
         where('createdAt', '<', currentPostCreatedAt),
         orderBy('createdAt', 'desc'),
-        limit(1)
+        limit(1),
       );
 
       const [prevSnapshot, nextSnapshot] = await Promise.all([
@@ -456,8 +456,12 @@ export const postService = {
         getDocs(nextPostQuery),
       ]);
 
-      const prevPost = prevSnapshot.empty ? null : { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
-      const nextPost = nextSnapshot.empty ? null : { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
+      const prevPost = prevSnapshot.empty
+        ? null
+        : { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
+      const nextPost = nextSnapshot.empty
+        ? null
+        : { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
 
       return { prevPost, nextPost };
     } catch (error) {
