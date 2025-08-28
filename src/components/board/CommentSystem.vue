@@ -3,7 +3,7 @@
     <!-- 댓글 헤더 -->
     <div class="comments-header mb-4">
       <div class="text-body-1 font-weight-medium mb-3">
-        댓글 <span class="text-grey-darken-1">{{ comments.length }}</span>
+        댓글 <span class="text-grey-darken-1">{{ totalComments }}</span>
       </div>
       <div class="custom-divider"></div>
     </div>
@@ -143,6 +143,17 @@
           @like="handleLikeComment"
         />
       </div>
+
+      <!-- 더 보기 버튼 -->
+      <div v-if="hasMore" class="text-center mt-6">
+        <v-btn
+          variant="tonal"
+          :loading="loadingMore"
+          @click="$emit('load-more')"
+        >
+          댓글 더 보기
+        </v-btn>
+      </div>
     </div>
 
     <!-- 답글 작성 다이얼로그 -->
@@ -277,9 +288,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  loadingMore: {
+    type: Boolean,
+    default: false,
+  },
+  hasMore: {
+    type: Boolean,
+    default: false,
+  },
   boardType: {
     type: String,
     default: '',
+  },
+  totalComments: {
+    type: Number,
+    default: 0,
   },
 });
 
@@ -289,6 +312,7 @@ const emit = defineEmits([
   'comment-deleted',
   'login-required',
   'refresh-comments',
+  'load-more',
 ]);
 
 // Stores

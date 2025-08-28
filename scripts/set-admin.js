@@ -1,60 +1,55 @@
-// 사용자에게 관리자 권한 부여 스크립트
-import { initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  doc,
-  updateDoc,
-  getDoc,
-  setDoc,
-} from 'firebase/firestore';
+// 사용자에게 관리자 권한 및 커스텀 클레임 부여 스크립트
+// 사용법: node scripts/set-admin.js <USER_ID>
+import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// Firebase 설정 (실제 프로젝트 설정으로 교체)
-const firebaseConfig = {
-  apiKey: 'AIzaSyDhKGKJOhJJJJJJJJJJJJJJJJJJJJJJJJJ',
-  authDomain: 'laromacorea-renewal.firebaseapp.com',
-  projectId: 'laromacorea-renewal',
-  storageBucket: 'laromacorea-renewal.firebasestorage.app',
-  messagingSenderId: '123456789',
-  appId: '1:123456789:web:abcdefghijklmnop',
-};
+// 중요: Firebase 콘솔에서 다운로드한 서비스 계정 키 파일의 경로를 입력하세요.
+// 프로젝트 루트에 파일을 두고 경로를 './serviceAccountKey.json' 와 같이 지정하는 것을 권장합니다.
+import serviceAccount from '../serviceAccountKey.json' assert { type: "json" };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Firebase Admin SDK 초기화
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = getFirestore();
 
 async function setAdminRole(userId) {
+  if (!userId) {
+    console.error('❌ 사용자 ID를 입력해주세요. 사용법: node scripts/set-admin.js <USER_ID>');
+    return;
+  }
+
   try {
-    const userRef = doc(db, 'users', userId);
+    // 1. 커스텀 클레임 설정
+    await admin.auth().setCustomUserClaims(userId, { admin: true });
+    console.log(`✅ 사용자 ${userId}에게 'admin: true' 커스텀 클레임을 설정했습니다.`);
+    console.log('적용을 위해 사용자는 다시 로그인해야 할 수 있습니다.');
 
-    // 먼저 사용자 문서가 존재하는지 확인
-    const userDoc = await getDoc(userRef);
+    // 2. Firestore 사용자 문서에 role 필드 업데이트 (기존 로직과 호환성 유지)
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
 
-    if (userDoc.exists()) {
-      // 기존 문서 업데이트
-      await updateDoc(userRef, {
+    if (userDoc.exists) {
+      await userRef.update({
         role: 'admin',
         updatedAt: new Date(),
       });
-      console.log(`✅ 사용자 ${userId}에게 관리자 권한이 부여되었습니다.`);
+      console.log(`✅ Firestore 사용자 문서의 role을 'admin'으로 업데이트했습니다.`);
     } else {
-      // 문서가 없으면 새로 생성
-      await setDoc(userRef, {
-        role: 'admin',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      console.log(
-        `✅ 사용자 ${userId}의 문서를 생성하고 관리자 권한을 부여했습니다.`,
-      );
+      console.warn(`⚠️ 사용자 문서 ${userId}가 Firestore에 존재하지 않습니다. role 필드를 업데이트하지 못했습니다.`);
     }
 
-    // 결과 확인
-    const updatedDoc = await getDoc(userRef);
-    console.log('업데이트된 사용자 정보:', updatedDoc.data());
+    console.log(`✨ 작업 완료: 사용자 ${userId}가 이제 관리자입니다.`);
+
   } catch (error) {
     console.error('❌ 관리자 권한 부여 실패:', error);
+    if (error.code === 'auth/user-not-found') {
+      console.error(`Firebase Authentication에 ${userId} 사용자가 존재하지 않습니다.`);
+    }
   }
 }
 
-// 특정 사용자에게 관리자 권한 부여
-const targetUserId = 'xXPhnpTSToVN8ZK0Aahdy38hp2o1';
+// 명령줄 인자로부터 사용자 ID를 받습니다.
+const targetUserId = process.argv[2];
 setAdminRole(targetUserId);

@@ -399,12 +399,16 @@
         v-else
         :post-id="post.id"
         :comments="comments"
+        :total-comments="post.commentCount"
         :loading="commentsLoading"
+        :loading-more="commentsLoadingMore"
+        :has-more="hasMoreComments"
         :board-type="post.boardType"
         @comment-added="handleCommentAdded"
         @comment-updated="handleCommentUpdated"
         @comment-deleted="handleCommentDeleted"
-        @refresh-comments="fetchComments"
+        @refresh-comments="() => fetchComments(false)"
+        @load-more="() => fetchComments(true)"
       />
     </div>
 
@@ -472,8 +476,11 @@ const userStore = useUserStore();
 // State
 const post = ref(null);
 const comments = ref([]);
+const lastCommentDoc = ref(null); // 댓글 페이지네이션을 위한 마지막 문서 참조
 const loading = ref(false);
 const commentsLoading = ref(false);
+const commentsLoadingMore = ref(false);
+const hasMoreComments = ref(false);
 const error = ref(null);
 const isLiked = ref(false);
 const mediaViewerDialog = ref(false);
@@ -528,33 +535,37 @@ async function fetchPost() {
   }
 }
 
-async function fetchComments() {
-  if (!props.postId) {
-    return;
+async function fetchComments(loadMore = false) {
+  if (!props.postId) return;
+
+  if (loadMore) {
+    commentsLoadingMore.value = true;
+  } else {
+    commentsLoading.value = true;
+    comments.value = [];
+    lastCommentDoc.value = null;
   }
 
-  commentsLoading.value = true;
   try {
-    const fetchedComments = await commentService.getComments(props.postId);
-    comments.value = fetchedComments;
+    const { comments: fetchedComments, lastDoc, hasMore } = await commentService.getComments(
+      props.postId,
+      { lastDoc: lastCommentDoc.value, limitCount: 50 }
+    );
 
-    // 댓글 수 동기화 (실제 댓글 수와 게시글의 commentCount 필드 동기화)
-    if (post.value && post.value.commentCount !== fetchedComments.length) {
-      try {
-        await commentService.syncPostCommentCount(props.postId);
-        // 게시글 정보 다시 로드하여 업데이트된 댓글 수 반영
-        const updatedPost = await postService.getPost(props.postId);
-        if (updatedPost) {
-          post.value = updatedPost;
-        }
-      } catch (syncError) {
-        // Failed to sync comment count
-      }
+    comments.value.push(...fetchedComments);
+    lastCommentDoc.value = lastDoc;
+    hasMoreComments.value = hasMore;
+
+    // 댓글 수 동기화는 첫 로드 시에만 실행하여 정확한 총 댓글 수를 표시
+    if (!loadMore && post.value) {
+      const actualCommentCount = await commentService.syncPostCommentCount(props.postId);
+      post.value.commentCount = actualCommentCount;
     }
   } catch (err) {
-    // Error fetching comments
+    console.error('댓글을 불러오는 중 오류가 발생했습니다:', err);
   } finally {
     commentsLoading.value = false;
+    commentsLoadingMore.value = false;
   }
 }
 

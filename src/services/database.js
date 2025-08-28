@@ -416,98 +416,49 @@ export const postService = {
     return likeDoc.exists();
   },
 
-  // 이전/다음 게시글 조회
-  async getAdjacentPosts(postId, boardType) {
-    try {
-      console.log('🔍 getAdjacentPosts called with:', { postId, boardType });
-
-      // 현재 게시글 정보 조회
+  // 이전/다음 게시글 조회 (최적화된 버전)
+  async getAdjacentPosts(postId, boardType, currentPostCreatedAt) {
+    if (!currentPostCreatedAt) {
       const currentPostDoc = await getDoc(doc(db, collections.posts, postId));
-      if (!currentPostDoc.exists()) {
-        console.log('❌ Current post not found');
+      if (currentPostDoc.exists()) {
+        currentPostCreatedAt = currentPostDoc.data().createdAt;
+      } else {
         return { prevPost: null, nextPost: null };
       }
+    }
 
-      const currentPost = currentPostDoc.data();
-      const currentCreatedAt = currentPost.createdAt;
-      console.log('📝 Current post info:', {
-        id: postId,
-        title: currentPost.title,
-        boardType: currentPost.boardType,
-        createdAt: currentCreatedAt,
-        isDeleted: currentPost.isDeleted,
-      });
+    const commonConstraints = [
+      where('boardType', '==', boardType),
+      where('isDeleted', '==', false),
+    ];
 
-      // 같은 게시판의 전체 게시글 수 확인
-      const totalQuery = query(
+    try {
+      // 이전 게시글 조회 (현재보다 최신 글 중 가장 오래된 것)
+      const prevPostQuery = query(
         collection(db, collections.posts),
-        where('boardType', '==', boardType),
-        where('isDeleted', '==', false),
+        ...commonConstraints,
+        where('createdAt', '>', currentPostCreatedAt),
+        orderBy('createdAt', 'asc'),
+        limit(1)
       );
-      const totalSnapshot = await getDocs(totalQuery);
-      console.log(`📊 Total posts in ${boardType} board:`, totalSnapshot.size);
 
-      // 전체 게시글 목록 출력 (디버깅용)
-      totalSnapshot.docs.forEach((doc, index) => {
-        const data = doc.data();
-        console.log(
-          `  ${index + 1}. ${doc.id}: ${data.title} (${data.createdAt?.toDate?.() || data.createdAt})`,
-        );
-      });
-
-      // 모든 게시글을 가져와서 클라이언트 사이드에서 필터링
-      const allPostsQuery = query(
+      // 다음 게시글 조회 (현재보다 오래된 글 중 가장 최신 것)
+      const nextPostQuery = query(
         collection(db, collections.posts),
-        where('boardType', '==', boardType),
-        where('isDeleted', '==', false),
+        ...commonConstraints,
+        where('createdAt', '<', currentPostCreatedAt),
         orderBy('createdAt', 'desc'),
+        limit(1)
       );
 
-      const allPostsSnapshot = await getDocs(allPostsQuery);
-      const allPosts = allPostsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const [prevSnapshot, nextSnapshot] = await Promise.all([
+        getDocs(prevPostQuery),
+        getDocs(nextPostQuery),
+      ]);
 
-      console.log('📋 All posts in board:', allPosts.length);
+      const prevPost = prevSnapshot.empty ? null : { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
+      const nextPost = nextSnapshot.empty ? null : { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
 
-      // 현재 게시글의 인덱스 찾기
-      const currentIndex = allPosts.findIndex((post) => post.id === postId);
-      console.log('📍 Current post index:', currentIndex);
-
-      let prevPost = null;
-      let nextPost = null;
-
-      if (currentIndex > 0) {
-        prevPost = allPosts[currentIndex - 1];
-      }
-
-      if (currentIndex >= 0 && currentIndex < allPosts.length - 1) {
-        nextPost = allPosts[currentIndex + 1];
-      }
-
-      if (prevPost) {
-        console.log('⬅️ Previous post found:', {
-          id: prevPost.id,
-          title: prevPost.title,
-        });
-      } else {
-        console.log('⬅️ No previous post found');
-      }
-
-      if (nextPost) {
-        console.log('➡️ Next post found:', {
-          id: nextPost.id,
-          title: nextPost.title,
-        });
-      } else {
-        console.log('➡️ No next post found');
-      }
-
-      console.log('✅ Adjacent posts result:', {
-        prevPost: !!prevPost,
-        nextPost: !!nextPost,
-      });
       return { prevPost, nextPost };
     } catch (error) {
       console.error('Error fetching adjacent posts:', error);
@@ -520,15 +471,23 @@ export const postService = {
  * 댓글 관련 데이터베이스 작업
  */
 export const commentService = {
-  // 게시글의 댓글 목록 조회
-  async getComments(postId) {
+  // 게시글의 댓글 목록 조회 (페이지네이션 지원)
+  async getComments(postId, options = {}) {
+    const { lastDoc = null, limitCount = 50 } = options;
+
     try {
-      const q = query(
-        collection(db, collections.comments),
+      const constraints = [
         where('postId', '==', postId),
         where('isDeleted', '==', false),
         orderBy('createdAt', 'asc'),
-      );
+        limit(limitCount),
+      ];
+
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+      }
+
+      const q = query(collection(db, collections.comments), ...constraints);
 
       const snapshot = await getDocs(q);
       const comments = snapshot.docs.map((doc) => {
@@ -546,7 +505,11 @@ export const commentService = {
         };
       });
 
-      return comments;
+      // 마지막 문서와 추가 페이지 여부 반환
+      const newLastDoc = snapshot.docs[snapshot.docs.length - 1];
+      const hasMore = snapshot.docs.length === limitCount;
+
+      return { comments, lastDoc: newLastDoc, hasMore };
     } catch (error) {
       console.error('Error fetching comments:', error);
       throw error;
