@@ -70,14 +70,14 @@
         item-value="id"
       >
         <template v-slot:item.avatar="{ item }">
-          <v-avatar size="32" class="my-2">
-            <v-img
-              v-if="item.photoURL"
-              :src="item.photoURL"
-              :alt="item.displayName"
-            />
-            <v-icon v-else icon="mdi-account" />
-          </v-avatar>
+          <UserAvatar
+            :user-id="item.id"
+            :display-name="item.displayName"
+            :photo-u-r-l="item.photoURL"
+            :static-icon-url="item.selectedIconData?.url"
+            size="32"
+            class="my-2"
+          />
         </template>
 
         <template v-slot:item.displayName="{ item }">
@@ -594,6 +594,7 @@ import { ref, computed, onMounted } from 'vue';
 import { adminService } from '@/services/admin';
 import { useUserStore } from '@/stores/user';
 import IconSelectionDialog from './IconSelectionDialog.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const emit = defineEmits(['user-updated']);
 

@@ -15,9 +15,9 @@
               @click="selectedIcon = icon.id"
               class="icon-card"
             >
-              <v-avatar size="48" class="mb-2">
-                <v-img :src="icon.url" :alt="icon.name"></v-img>
-              </v-avatar>
+              <div class="icon-container mb-2">
+                <v-img :src="icon.url" :alt="icon.name" height="48" width="48" style="object-fit: contain;"></v-img>
+              </div>
               <div class="text-body-2 font-weight-medium">{{ icon.name }}</div>
             </v-card>
           </v-col>
@@ -103,5 +103,15 @@ watch(() => props.user, (newUser) => {
 .selected-icon {
   border-color: #2196f3;
   background-color: rgba(33, 150, 243, 0.1);
+}
+
+.icon-container {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>
