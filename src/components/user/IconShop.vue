@@ -91,9 +91,9 @@
               @click="selectIcon(icon)"
             >
               <v-card-text class="text-center pa-3">
-                <v-avatar size="48" class="mb-2">
-                  <v-img :src="icon.url" :alt="icon.name" />
-                </v-avatar>
+                <div class="icon-container mb-2">
+                  <v-img :src="icon.url" :alt="icon.name" height="48" width="48" style="object-fit: contain;" />
+                </div>
                 <div class="text-body-2 font-weight-medium">
                   {{ icon.name }}
                 </div>
@@ -166,9 +166,9 @@
               @click="showPurchaseDialog(icon)"
             >
               <v-card-text class="text-center pa-3">
-                <v-avatar size="48" class="mb-2">
-                  <v-img :src="icon.url" :alt="icon.name" />
-                </v-avatar>
+                <div class="icon-container mb-2">
+                  <v-img :src="icon.url" :alt="icon.name" height="48" width="48" style="object-fit: contain;" />
+                </div>
                 <div class="text-body-2 font-weight-medium mb-1">
                   {{ icon.name }}
                 </div>
@@ -199,12 +199,15 @@
         <v-card-title class="text-h6">아이콘 구매</v-card-title>
         <v-card-text>
           <div class="text-center mb-4">
-            <v-avatar size="80" class="mb-2">
+            <div class="icon-container-large mx-auto mb-2">
               <v-img
                 :src="purchaseDialog.icon.url"
                 :alt="purchaseDialog.icon.name"
+                height="80"
+                width="80"
+                style="object-fit: contain;"
               />
-            </v-avatar>
+            </div>
             <h3 class="text-h6">{{ purchaseDialog.icon.name }}</h3>
             <p
               v-if="purchaseDialog.icon.description"
@@ -530,5 +533,23 @@ onMounted(async () => {
 .selected-icon:hover {
   border-color: #4caf50;
   background-color: rgba(76, 175, 80, 0.1);
+}
+
+.icon-container {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.icon-container-large {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

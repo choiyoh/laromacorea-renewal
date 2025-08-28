@@ -17,6 +17,8 @@ import {
   limit,
   serverTimestamp,
   writeBatch,
+  startAfter,
+  getCountFromServer,
 } from 'firebase/firestore';
 import {
   ref as storageRef,
@@ -360,19 +362,65 @@ export const adminService = {
   /**
    * 사용자 관리
    */
-  async getAllUsers(limitCount = 50) {
-    try {
-      const q = query(
-        collection(db, collections.users),
-        orderBy('createdAt', 'desc'),
-        limit(limitCount),
-      );
+  async getUsers(options = {}) {
+    const {
+      page = 1,
+      itemsPerPage = 30,
+      sortBy = 'createdAt',
+      sortDesc = true,
+      filters = {},
+    } = options;
 
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-      throw error;
+    const usersRef = collection(db, collections.users);
+    
+    // 1. Build the base query with filters
+    const queryConstraints = [];
+    if (filters.status && filters.status !== 'all') {
+      queryConstraints.push(where('isActive', '==', filters.status === 'active'));
     }
+    if (filters.role && filters.role !== 'all') {
+      queryConstraints.push(where('role', '==', filters.role));
+    }
+    if (filters.verification && filters.verification !== 'all') {
+      queryConstraints.push(where('verified', '==', (filters.verification === 'verified')));
+    }
+    if (filters.searchTerm) {
+      queryConstraints.push(orderBy('displayName'));
+      queryConstraints.push(where('displayName', '>=', filters.searchTerm));
+      queryConstraints.push(where('displayName', '<=', filters.searchTerm + '\uf8ff'));
+    }
+
+    // 2. Get total count for pagination
+    const countQuery = query(usersRef, ...queryConstraints);
+    const totalUsersSnapshot = await getCountFromServer(countQuery);
+    const totalUsers = totalUsersSnapshot.data().count;
+
+    // 3. Get documents for the current page
+    const dataQueryConstraints = [...queryConstraints];
+    if (!filters.searchTerm) {
+        dataQueryConstraints.push(orderBy(sortBy, sortDesc ? 'desc' : 'asc'));
+    }
+    
+    let pageQuery = query(usersRef, ...dataQueryConstraints);
+    
+    if (page > 1) {
+      const offset = (page - 1) * itemsPerPage;
+      const cursorQuery = query(pageQuery, limit(offset));
+      const cursorSnapshot = await getDocs(cursorQuery);
+      if (cursorSnapshot.docs.length > 0) {
+        const lastVisible = cursorSnapshot.docs[cursorSnapshot.docs.length - 1];
+        pageQuery = query(pageQuery, startAfter(lastVisible), limit(itemsPerPage));
+      } else {
+        return { users: [], totalUsers };
+      }
+    } else {
+      pageQuery = query(pageQuery, limit(itemsPerPage));
+    }
+
+    const pageSnapshot = await getDocs(pageQuery);
+    const users = pageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return { users, totalUsers };
   },
 
   async updateUserRole(adminUserId, targetUserId, newRole) {
@@ -491,29 +539,7 @@ export const adminService = {
     }
   },
 
-  // 시스템 통계 조회 (AdminView에서 사용)
-  async getSystemStats() {
-    return this.getDashboardStats();
-  },
-
-  // 사용자 목록 조회 (AdminUserManager에서 사용)
-  async getUsers(options = {}) {
-    return this.getAllUsers(options.limitCount || 50);
-  },
-
-  // 사용자 검색
-  async searchUsers(searchTerm) {
-    try {
-      const users = await this.getAllUsers(100);
-      return users.filter(
-        (user) =>
-          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    } catch (error) {
-      throw error;
-    }
-  },
+  
 
   // 사용자 상태 업데이트 (래퍼 함수)
   async updateUserStatus(userId, status) {
@@ -942,5 +968,46 @@ export const adminService = {
       reason,
       adminId,
     );
+  },
+
+  async updateUserIcon(adminId, userId, icon) {
+    try {
+      // 1. Check for admin permission
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const userRef = doc(db, collections.users, userId);
+      const batch = writeBatch(db);
+
+      // 2. Update user's document
+      batch.update(userRef, {
+        selectedIcon: icon.id,
+        selectedIconData: {
+          id: icon.id,
+          name: icon.name,
+          url: icon.url,
+        },
+        updatedAt: serverTimestamp(),
+        updatedBy: adminId,
+      });
+
+      // 3. Log the change in userHistory
+      const historyRef = doc(collection(db, 'userHistory'));
+      batch.set(historyRef, {
+        userId,
+        type: 'ICON_CHANGE',
+        description: `관리자가 아이콘을 '${icon.name}' (으)로 변경했습니다.`,
+        adminId,
+        createdAt: serverTimestamp(),
+      });
+
+      await batch.commit();
+      return true;
+    } catch (error) {
+      console.error('사용자 아이콘 변경 실패:', error);
+      throw error;
+    }
   },
 };

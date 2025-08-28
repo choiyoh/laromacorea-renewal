@@ -1,29 +1,15 @@
 <template>
-  <div class="post-view">
+  <div class="post-view mt-6">
     <v-container>
       <v-row>
         <v-col cols="12">
-          <!-- 뒤로가기 버튼 -->
-          <div class="d-flex align-center mb-4">
-            <v-btn
-              variant="text"
-              prepend-icon="mdi-arrow-left"
-              @click="goToList"
-            >
-              목록으로
-            </v-btn>
-            <v-spacer />
-            <v-chip variant="outlined" color="primary">
-              {{ getBoardName(boardType) }}
-            </v-chip>
-          </div>
-
           <!-- 게시글 상세 컴포넌트 -->
           <PostDetail
             :post-id="postId"
             @edit-post="handleEditPost"
             @delete-post="handleDeletePost"
             @navigate-to-post="handleNavigateToPost"
+            @go-to-list="goToList"
           />
         </v-col>
       </v-row>

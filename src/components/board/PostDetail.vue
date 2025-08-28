@@ -148,7 +148,7 @@
       </div>
 
       <!-- 게시글 내용 -->
-      <div class="post-content mb-8">
+      <div class="post-content mb-4">
         <div class="post-body mb-6" v-html="post.content"></div>
 
         <!-- 미디어 첨부파일 -->
@@ -209,6 +209,8 @@
             >
               추천 {{ post.likeCount || 0 }}
             </v-btn>
+            <v-spacer></v-spacer>
+            <v-btn @click="goToList" color="primary"> 목록 </v-btn>
           </div>
         </div>
       </div>
@@ -459,6 +461,7 @@ const emit = defineEmits([
   'delete-post',
   'post-updated',
   'navigate-to-post',
+  'go-to-list',
 ]);
 
 const router = useRouter();
@@ -672,6 +675,10 @@ async function fetchAdjacentPosts() {
   }
 }
 
+function goToList() {
+  emit('go-to-list');
+}
+
 function navigateToPost(postId) {
   emit('navigate-to-post', postId);
 }
@@ -715,7 +722,7 @@ watch(
 }
 
 .post-body {
-  line-height: 1.1;
+  line-height: 1.5;
   word-break: break-word;
   font-size: 1rem;
   min-height: 200px;
@@ -785,7 +792,7 @@ watch(
 }
 
 .post-navigation {
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .nav-post {
