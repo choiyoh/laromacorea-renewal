@@ -25,8 +25,11 @@ import {
   uploadBytes,
   getDownloadURL,
 } from 'firebase/storage';
-import { db, storage, auth } from './firebase';
+import { db, storage, auth, functions } from './firebase';
 import { collections } from './database';
+import { httpsCallable } from 'firebase/functions';
+
+const callResetUserPasswordAdmin = httpsCallable(functions, 'resetUserPasswordAdmin');
 
 export const adminService = {
   /**
@@ -859,34 +862,14 @@ export const adminService = {
   // 비밀번호 초기화
   async resetUserPassword(userId, newPassword, reason) {
     try {
-      const userRef = doc(db, collections.users, userId);
-      const batch = writeBatch(db);
+      const result = await callResetUserPasswordAdmin({ userId, newPassword, reason });
 
-      // 사용자 정보 업데이트 (실제로는 Firebase Auth 사용)
-      batch.update(userRef, {
-        passwordResetRequired: true, // 다음 로그인 시 비밀번호 변경 강제
-        passwordResetAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      // 변경 이력 저장
-      const historyRef = doc(collection(db, 'userHistory'));
-      batch.set(historyRef, {
-        userId,
-        action: 'password_reset',
-        reason,
-        adminId: 'admin',
-        createdAt: serverTimestamp(),
-      });
-
-      await batch.commit();
-
-      // 실제 구현에서는 Firebase Auth의 비밀번호 재설정 이메일 발송
-      console.log(
-        `사용자 ${userId}의 비밀번호가 ${newPassword}로 초기화되었습니다.`,
-      );
-
-      return true;
+      if (result.data.success) {
+        console.log(`사용자 ${userId}의 비밀번호가 성공적으로 초기화되었습니다.`);
+        return true;
+      } else {
+        throw new Error(result.data.message || '비밀번호 초기화에 실패했습니다.');
+      }
     } catch (error) {
       console.error('비밀번호 초기화 실패:', error);
       throw error;
