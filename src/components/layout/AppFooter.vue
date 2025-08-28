@@ -2,7 +2,7 @@
   <v-footer
     color="primary"
     dark
-    app
+    :app="!mdAndUp"
     class="footer-container footer-transition"
     :class="{ 'footer-hidden': mobile && isScrollingDown }"
   >
@@ -86,7 +86,7 @@ import { useDisplay } from 'vuetify';
 import { useScrollDirection } from '@/composables/useScrollDirection';
 
 // Composables
-const { mobile } = useDisplay();
+const { mobile, mdAndUp } = useDisplay();
 const { isScrollingDown } = useScrollDirection();
 
 // Computed
