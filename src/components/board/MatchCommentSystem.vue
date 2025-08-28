@@ -233,6 +233,7 @@ const userStore = useUserStore();
 
 // State
 const comments = ref([]);
+const lastCommentDoc = ref(null); // 댓글 페이지네이션을 위한 마지막 문서 참조
 const loading = ref(false);
 const loadingMore = ref(false);
 const hasMoreComments = ref(false);
@@ -301,15 +302,30 @@ const groupedComments = computed(() => {
 });
 
 // Methods
-async function fetchComments() {
-  loading.value = true;
+async function fetchComments(loadMore = false) {
+  if (!loadMore) {
+    loading.value = true;
+    comments.value = [];
+    lastCommentDoc.value = null;
+  } else {
+    loadingMore.value = true;
+  }
+
   try {
-    const fetchedComments = await commentService.getComments(props.postId);
-    comments.value = fetchedComments;
+    const { comments: fetchedComments, lastDoc, hasMore } = await commentService.getComments(
+      props.postId,
+      { lastDoc: lastCommentDoc.value, limitCount: 20 } // 경기 댓글은 더 자주 로드
+    );
+
+    comments.value.push(...fetchedComments);
+    lastCommentDoc.value = lastDoc;
+    hasMoreComments.value = hasMore;
+
   } catch (error) {
-    // Error fetching comments
+    console.error('응원 댓글을 불러오는 중 오류가 발생했습니다:', error);
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 }
 
@@ -419,16 +435,8 @@ async function handleCommentDelete(commentId) {
 }
 
 async function loadMoreComments() {
-  loadingMore.value = true;
-  try {
-    // Implement pagination logic here
-    // For now, just set hasMoreComments to false
-    hasMoreComments.value = false;
-  } catch (error) {
-    // Error loading more comments
-  } finally {
-    loadingMore.value = false;
-  }
+  if (!hasMoreComments.value || loadingMore.value) return;
+  await fetchComments(true);
 }
 
 function getGroupIcon(type) {

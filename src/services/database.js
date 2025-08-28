@@ -417,51 +417,51 @@ export const postService = {
   },
 
   // 이전/다음 게시글 조회 (최적화된 버전)
-  async getAdjacentPosts(postId, boardType) {
-    try {
-      const currentPostRef = doc(db, collections.posts, postId);
-      const currentPostDoc = await getDoc(currentPostRef);
-
-      if (!currentPostDoc.exists()) {
-        console.log('❌ Current post not found');
+  async getAdjacentPosts(postId, boardType, currentPostCreatedAt) {
+    if (!currentPostCreatedAt) {
+      const currentPostDoc = await getDoc(doc(db, collections.posts, postId));
+      if (currentPostDoc.exists()) {
+        currentPostCreatedAt = currentPostDoc.data().createdAt;
+      } else {
         return { prevPost: null, nextPost: null };
       }
+    }
 
-      const currentPostData = currentPostDoc.data();
-      const currentPostCreatedAt = currentPostData.createdAt;
+    const commonConstraints = [
+      where('boardType', '==', boardType),
+      where('isDeleted', '==', false),
+    ];
 
-      let prevPost = null;
-      let nextPost = null;
-
-      // 이전 게시글 조회 (createdAt이 현재 게시글보다 나중인 게시글 중 가장 오래된 것)
-      // orderBy('createdAt', 'desc') 이므로, 이전 게시글은 createdAt이 더 큰 것
+    try {
+      // 이전 게시글 조회 (현재보다 최신 글 중 가장 오래된 것)
       const prevPostQuery = query(
         collection(db, collections.posts),
-        where('boardType', '==', boardType),
-        where('isDeleted', '==', false),
-        orderBy('createdAt', 'desc'),
-        where('createdAt', '>', currentPostCreatedAt), // 이전 게시글은 createdAt이 더 큼
+        ...commonConstraints,
+        where('createdAt', '>', currentPostCreatedAt),
+        orderBy('createdAt', 'asc'),
         limit(1),
       );
-      const prevSnapshot = await getDocs(prevPostQuery);
-      if (!prevSnapshot.empty) {
-        prevPost = { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
-      }
 
-      // 다음 게시글 조회 (createdAt이 현재 게시글보다 이전인 게시글 중 가장 최신 것)
-      // orderBy('createdAt', 'desc') 이므로, 다음 게시글은 createdAt이 더 작음
+      // 다음 게시글 조회 (현재보다 오래된 글 중 가장 최신 것)
       const nextPostQuery = query(
         collection(db, collections.posts),
-        where('boardType', '==', boardType),
-        where('isDeleted', '==', false),
+        ...commonConstraints,
+        where('createdAt', '<', currentPostCreatedAt),
         orderBy('createdAt', 'desc'),
-        where('createdAt', '<', currentPostCreatedAt), // 다음 게시글은 createdAt이 더 작음
         limit(1),
       );
-      const nextSnapshot = await getDocs(nextPostQuery);
-      if (!nextSnapshot.empty) {
-        nextPost = { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
-      }
+
+      const [prevSnapshot, nextSnapshot] = await Promise.all([
+        getDocs(prevPostQuery),
+        getDocs(nextPostQuery),
+      ]);
+
+      const prevPost = prevSnapshot.empty
+        ? null
+        : { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
+      const nextPost = nextSnapshot.empty
+        ? null
+        : { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
 
       return { prevPost, nextPost };
     } catch (error) {
@@ -475,15 +475,23 @@ export const postService = {
  * 댓글 관련 데이터베이스 작업
  */
 export const commentService = {
-  // 게시글의 댓글 목록 조회
-  async getComments(postId) {
+  // 게시글의 댓글 목록 조회 (페이지네이션 지원)
+  async getComments(postId, options = {}) {
+    const { lastDoc = null, limitCount = 50 } = options;
+
     try {
-      const q = query(
-        collection(db, collections.comments),
+      const constraints = [
         where('postId', '==', postId),
         where('isDeleted', '==', false),
         orderBy('createdAt', 'asc'),
-      );
+        limit(limitCount),
+      ];
+
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+      }
+
+      const q = query(collection(db, collections.comments), ...constraints);
 
       const snapshot = await getDocs(q);
       const comments = snapshot.docs.map((doc) => {
@@ -501,7 +509,11 @@ export const commentService = {
         };
       });
 
-      return comments;
+      // 마지막 문서와 추가 페이지 여부 반환
+      const newLastDoc = snapshot.docs[snapshot.docs.length - 1];
+      const hasMore = snapshot.docs.length === limitCount;
+
+      return { comments, lastDoc: newLastDoc, hasMore };
     } catch (error) {
       console.error('Error fetching comments:', error);
       throw error;
