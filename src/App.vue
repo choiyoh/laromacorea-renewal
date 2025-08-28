@@ -135,6 +135,11 @@ const handleDrawerOverlayClick = () => {
   color: #fbba00 !important;
 }
 
+/* v-btn hover color for primary buttons */
+.v-btn.bg-primary:hover {
+  background-color: rgba(var(--v-theme-primary), 0.8) !important; /* Slightly darker primary on hover */
+}
+
 /* Responsive app styles */
 .responsive-app {
   min-height: 100vh;

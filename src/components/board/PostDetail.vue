@@ -722,7 +722,7 @@ watch(
 }
 
 .post-body {
-  line-height: 1.1;
+  line-height: 1.5;
   word-break: break-word;
   font-size: 1rem;
   min-height: 200px;

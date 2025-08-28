@@ -1,10 +1,8 @@
 <template>
-  <div class="post-view">
+  <div class="post-view mt-6">
     <v-container>
       <v-row>
         <v-col cols="12">
-          
-
           <!-- 게시글 상세 컴포넌트 -->
           <PostDetail
             :post-id="postId"
