@@ -416,42 +416,51 @@ export const postService = {
     return likeDoc.exists();
   },
 
-  // 이전/다음 게시글 조회
+  // 이전/다음 게시글 조회 (최적화된 버전)
   async getAdjacentPosts(postId, boardType) {
     try {
-      // 현재 게시글 정보 조회
-      const currentPostDoc = await getDoc(doc(db, collections.posts, postId));
+      const currentPostRef = doc(db, collections.posts, postId);
+      const currentPostDoc = await getDoc(currentPostRef);
+
       if (!currentPostDoc.exists()) {
         console.log('❌ Current post not found');
         return { prevPost: null, nextPost: null };
       }
 
-      // 모든 게시글을 가져와서 클라이언트 사이드에서 필터링
-      const allPostsQuery = query(
-        collection(db, collections.posts),
-        where('boardType', '==', boardType),
-        where('isDeleted', '==', false),
-        orderBy('createdAt', 'desc'),
-      );
-
-      const allPostsSnapshot = await getDocs(allPostsQuery);
-      const allPosts = allPostsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // 현재 게시글의 인덱스 찾기
-      const currentIndex = allPosts.findIndex((post) => post.id === postId);
+      const currentPostData = currentPostDoc.data();
+      const currentPostCreatedAt = currentPostData.createdAt;
 
       let prevPost = null;
       let nextPost = null;
 
-      if (currentIndex > 0) {
-        prevPost = allPosts[currentIndex - 1];
+      // 이전 게시글 조회 (createdAt이 현재 게시글보다 나중인 게시글 중 가장 오래된 것)
+      // orderBy('createdAt', 'desc') 이므로, 이전 게시글은 createdAt이 더 큰 것
+      const prevPostQuery = query(
+        collection(db, collections.posts),
+        where('boardType', '==', boardType),
+        where('isDeleted', '==', false),
+        orderBy('createdAt', 'desc'),
+        where('createdAt', '>', currentPostCreatedAt), // 이전 게시글은 createdAt이 더 큼
+        limit(1),
+      );
+      const prevSnapshot = await getDocs(prevPostQuery);
+      if (!prevSnapshot.empty) {
+        prevPost = { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
       }
 
-      if (currentIndex >= 0 && currentIndex < allPosts.length - 1) {
-        nextPost = allPosts[currentIndex + 1];
+      // 다음 게시글 조회 (createdAt이 현재 게시글보다 이전인 게시글 중 가장 최신 것)
+      // orderBy('createdAt', 'desc') 이므로, 다음 게시글은 createdAt이 더 작음
+      const nextPostQuery = query(
+        collection(db, collections.posts),
+        where('boardType', '==', boardType),
+        where('isDeleted', '==', false),
+        orderBy('createdAt', 'desc'),
+        where('createdAt', '<', currentPostCreatedAt), // 다음 게시글은 createdAt이 더 작음
+        limit(1),
+      );
+      const nextSnapshot = await getDocs(nextPostQuery);
+      if (!nextSnapshot.empty) {
+        nextPost = { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
       }
 
       return { prevPost, nextPost };
