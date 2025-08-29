@@ -555,16 +555,32 @@ export const adminService = {
   },
 
   // 사용자 인증 상태 업데이트
-  async updateUserVerification(userId, verified) {
+  async updateUserVerification(adminId, userId, verified) {
     try {
       const userRef = doc(db, collections.users, userId);
-      await updateDoc(userRef, {
+      const batch = writeBatch(db);
+
+      // 사용자 'verified' 상태 업데이트
+      batch.update(userRef, {
         verified: verified,
         updatedAt: serverTimestamp(),
+        updatedBy: adminId,
       });
 
+      // 변경 이력 저장
+      const historyRef = doc(collection(db, 'userHistory'));
+      batch.set(historyRef, {
+        userId,
+        type: 'VERIFICATION_CHANGE',
+        description: `관리자가 사용자를 ${verified ? '인증 승인' : '인증 해제'} 처리했습니다.`,
+        adminId,
+        createdAt: serverTimestamp(),
+      });
+
+      await batch.commit();
       return true;
     } catch (error) {
+      console.error('인증 상태 변경 실패:', error);
       throw error;
     }
   },

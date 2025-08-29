@@ -21,8 +21,8 @@ service cloud.firestore {
       allow create: if isOwner(userId) && 
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.role == 'user';
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow update: if isOwner(userId) || (isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow delete: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Posts collection
@@ -79,6 +79,13 @@ service cloud.firestore {
     match /points_history/{historyId} {
       allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
       allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // User history collection
+    match /userHistory/{historyId} {
+      allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       allow update, delete: if isAdmin();
     }
 
