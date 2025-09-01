@@ -29,7 +29,10 @@ import { db, storage, auth, functions } from './firebase';
 import { collections } from './database';
 import { httpsCallable } from 'firebase/functions';
 
-const callResetUserPasswordAdmin = httpsCallable(functions, 'resetUserPasswordAdmin');
+const callResetUserPasswordAdmin = httpsCallable(
+  functions,
+  'resetUserPasswordAdmin',
+);
 
 export const adminService = {
   /**
@@ -375,22 +378,28 @@ export const adminService = {
     } = options;
 
     const usersRef = collection(db, collections.users);
-    
+
     // 1. Build the base query with filters
     const queryConstraints = [];
     if (filters.status && filters.status !== 'all') {
-      queryConstraints.push(where('isActive', '==', filters.status === 'active'));
+      queryConstraints.push(
+        where('isActive', '==', filters.status === 'active'),
+      );
     }
     if (filters.role && filters.role !== 'all') {
       queryConstraints.push(where('role', '==', filters.role));
     }
     if (filters.verification && filters.verification !== 'all') {
-      queryConstraints.push(where('verified', '==', (filters.verification === 'verified')));
+      queryConstraints.push(
+        where('verified', '==', filters.verification === 'verified'),
+      );
     }
     if (filters.searchTerm) {
       queryConstraints.push(orderBy('displayName'));
       queryConstraints.push(where('displayName', '>=', filters.searchTerm));
-      queryConstraints.push(where('displayName', '<=', filters.searchTerm + '\uf8ff'));
+      queryConstraints.push(
+        where('displayName', '<=', filters.searchTerm + '\uf8ff'),
+      );
     }
 
     // 2. Get total count for pagination
@@ -401,18 +410,22 @@ export const adminService = {
     // 3. Get documents for the current page
     const dataQueryConstraints = [...queryConstraints];
     if (!filters.searchTerm) {
-        dataQueryConstraints.push(orderBy(sortBy, sortDesc ? 'desc' : 'asc'));
+      dataQueryConstraints.push(orderBy(sortBy, sortDesc ? 'desc' : 'asc'));
     }
-    
+
     let pageQuery = query(usersRef, ...dataQueryConstraints);
-    
+
     if (page > 1) {
       const offset = (page - 1) * itemsPerPage;
       const cursorQuery = query(pageQuery, limit(offset));
       const cursorSnapshot = await getDocs(cursorQuery);
       if (cursorSnapshot.docs.length > 0) {
         const lastVisible = cursorSnapshot.docs[cursorSnapshot.docs.length - 1];
-        pageQuery = query(pageQuery, startAfter(lastVisible), limit(itemsPerPage));
+        pageQuery = query(
+          pageQuery,
+          startAfter(lastVisible),
+          limit(itemsPerPage),
+        );
       } else {
         return { users: [], totalUsers };
       }
@@ -421,7 +434,10 @@ export const adminService = {
     }
 
     const pageSnapshot = await getDocs(pageQuery);
-    const users = pageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = pageSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
     return { users, totalUsers };
   },
@@ -541,8 +557,6 @@ export const adminService = {
       throw error;
     }
   },
-
-  
 
   // 사용자 상태 업데이트 (래퍼 함수)
   async updateUserStatus(userId, status) {
@@ -878,13 +892,21 @@ export const adminService = {
   // 비밀번호 초기화
   async resetUserPassword(userId, newPassword, reason) {
     try {
-      const result = await callResetUserPasswordAdmin({ userId, newPassword, reason });
+      const result = await callResetUserPasswordAdmin({
+        userId,
+        newPassword,
+        reason,
+      });
 
       if (result.data.success) {
-        console.log(`사용자 ${userId}의 비밀번호가 성공적으로 초기화되었습니다.`);
+        console.log(
+          `사용자 ${userId}의 비밀번호가 성공적으로 초기화되었습니다.`,
+        );
         return true;
       } else {
-        throw new Error(result.data.message || '비밀번호 초기화에 실패했습니다.');
+        throw new Error(
+          result.data.message || '비밀번호 초기화에 실패했습니다.',
+        );
       }
     } catch (error) {
       console.error('비밀번호 초기화 실패:', error);
@@ -1006,6 +1028,97 @@ export const adminService = {
       return true;
     } catch (error) {
       console.error('사용자 아이콘 변경 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 일괄 포인트 지급
+   * @param {string} adminId - 관리자 ID
+   * @param {string} target - 대상 ('all_users', 'active_users', 'new_users', 'vip_users')
+   * @param {number} points - 지급할 포인트
+   * @param {string} reason - 지급 사유
+   */
+  async bulkAwardPoints(adminId, target, points, reason) {
+    try {
+      // 관리자 권한 확인
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      console.log('일괄 포인트 지급 시도:', {
+        adminId,
+        target,
+        points,
+        reason,
+      });
+
+      // pointsService의 bulkAwardPoints 호출
+      const { pointsService } = await import('./points');
+      const result = await pointsService.bulkAwardPoints(
+        target,
+        points,
+        reason,
+        adminId,
+      );
+
+      // 관리자 액션 로그 저장
+      await addDoc(collection(db, 'adminLogs'), {
+        adminId,
+        action: 'BULK_POINTS_AWARD',
+        target,
+        points,
+        reason,
+        targetCount: result.targetCount,
+        totalPoints: result.totalPoints,
+        createdAt: serverTimestamp(),
+      });
+
+      return result;
+    } catch (error) {
+      console.error('일괄 포인트 지급 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 포인트 히스토리 조회 (관리자용)
+   * @param {string} adminId - 관리자 ID
+   * @param {Object} options - 조회 옵션
+   */
+  async getPointsHistory(adminId, options = {}) {
+    try {
+      // 관리자 권한 확인
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const { pointsService } = await import('./points');
+      return await pointsService.getAllPointsHistory(options.limit || 100);
+    } catch (error) {
+      console.error('포인트 히스토리 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 포인트 통계 조회 (관리자용)
+   * @param {string} adminId - 관리자 ID
+   */
+  async getPointsStatistics(adminId) {
+    try {
+      // 관리자 권한 확인
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const { pointsService } = await import('./points');
+      return await pointsService.getPointsStatistics();
+    } catch (error) {
+      console.error('포인트 통계 조회 실패:', error);
       throw error;
     }
   },

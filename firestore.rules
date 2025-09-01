@@ -12,7 +12,9 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Users collection
@@ -77,8 +79,8 @@ service cloud.firestore {
 
     // Points history collection
     match /points_history/{historyId} {
-      allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
-      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
     }
 
@@ -108,6 +110,13 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
+    }
+
+    // Admin logs collection
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
     }
   }
 }
