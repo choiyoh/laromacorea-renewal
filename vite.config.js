@@ -178,15 +178,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     // 모바일 성능 최적화
     reportCompressedSize: false,
-    // 더 작은 청크 크기로 분할
-    rollupOptions: {
-      ...this.rollupOptions,
-      output: {
-        ...this.rollupOptions?.output,
-        // 더 작은 청크 크기 설정
-        maxParallelFileOps: 2,
-      },
-    },
   },
   // Performance optimizations for development
   server: {
