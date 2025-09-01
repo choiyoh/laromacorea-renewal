@@ -75,9 +75,20 @@ function handleNavigateToPost(postId) {
 }
 </style>
 
-<style>
-.ql-video {
-  min-width: 600px !important;
-  min-height: 320px !important;
+<style lang="scss">
+iframe {
+  &.ql-video {
+    min-width: 600px;
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  iframe {
+    &.ql-video {
+      min-width: 100%;
+      min-height: auto;
+    }
+  }
 }
 </style>

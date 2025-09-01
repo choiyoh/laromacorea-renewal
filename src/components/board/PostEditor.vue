@@ -628,6 +628,13 @@ onUnmounted(() => {
   width: 600px !important;
   min-height: 320px !important;
 }
+
+@media (max-width: 768px) {
+  .ql-editor .ql-video {
+    width: 100% !important;
+    min-height: auto !important;
+  }
+}
 </style>
 
 <style scoped>

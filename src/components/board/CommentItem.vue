@@ -172,6 +172,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
+import { commentService } from '@/services/database';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({

@@ -141,9 +141,6 @@ export default defineConfig({
           ],
           'editor-vendor': ['quill', 'vue-quill-editor'],
           'utils-vendor': ['lodash-es'],
-          // 모바일 성능을 위한 추가 청크 분할
-          'post-detail': ['src/components/board/PostDetail.vue'],
-          'comment-system': ['src/components/board/CommentSystem.vue'],
         },
         // Optimize chunk file names
         chunkFileNames: (chunkInfo) => {
