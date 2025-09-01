@@ -250,7 +250,7 @@ function initializeEditor() {
     [{ size: ['small', false, 'large', 'huge'] }],
     [{ color: [] }, { background: [] }],
     [{ align: [] }],
-    ['link'],
+    ['link', 'video'],
   ];
 
   quillEditor.value = new Quill(editor.value, {
@@ -617,6 +617,18 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style>
+.ql-editing {
+  left: 0 !important;
+  top: 0 !important;
+}
+
+.ql-editor .ql-video {
+  width: 600px !important;
+  min-height: 320px !important;
+}
+</style>
 
 <style scoped>
 .post-editor {
