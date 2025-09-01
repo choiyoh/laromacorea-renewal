@@ -974,7 +974,7 @@ export const adminService = {
       });
 
       // 포인트 변경 이력 저장
-      const pointHistoryRef = doc(collection(db, 'pointHistory'));
+      const pointHistoryRef = doc(collection(db, 'points_history'));
       batch.set(pointHistoryRef, {
         userId,
         change: pointsChange,
