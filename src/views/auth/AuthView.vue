@@ -537,11 +537,7 @@ const handleSubmit = async () => {
     }
 
     errorMessage.value = errorMsg;
-    errorStore.addError(
-      error,
-      'AUTH_ERROR',
-      isSignUp.value ? 'Sign Up' : 'Sign In',
-    );
+    // 로그인/회원가입 에러는 화면에서만 표시하고 전역 에러로는 추가하지 않음
   } finally {
     loading.value = false;
   }
