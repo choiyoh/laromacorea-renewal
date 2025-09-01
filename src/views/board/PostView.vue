@@ -74,3 +74,10 @@ function handleNavigateToPost(postId) {
   max-width: 100%;
 }
 </style>
+
+<style>
+.ql-video {
+  min-width: 600px !important;
+  min-height: 320px !important;
+}
+</style>
