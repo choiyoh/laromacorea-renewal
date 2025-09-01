@@ -322,6 +322,14 @@ export const postService = {
 
       console.log('게시글 생성 완료:', docRef.id);
 
+      // 통계 캐시 무효화 (새 게시글로 인한 통계 변경)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+
       // 작성자에게 포인트 지급
       try {
         await pointsService.autoAwardPoints(
@@ -545,6 +553,14 @@ export const commentService = {
       await batch.commit();
 
       console.log(`Comment created with ID: ${commentRef.id}`);
+
+      // 통계 캐시 무효화 (새 댓글로 인한 통계 변경)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
 
       // 작성자에게 포인트 지급
       try {

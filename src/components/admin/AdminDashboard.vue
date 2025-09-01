@@ -94,10 +94,28 @@
           </v-card-title>
           <v-card-text>
             <p class="text-body-2 mb-3">마지막 업데이트: {{ lastUpdated }}</p>
-            <v-btn color="primary" :loading="loading" @click="loadStats" block>
+            <v-btn
+              color="primary"
+              :loading="loading"
+              @click="loadStats"
+              block
+              class="mb-2"
+            >
               <v-icon start>mdi-refresh</v-icon>
-              통계 새로고침
+              캐시된 통계 새로고침
             </v-btn>
+            <v-btn
+              color="warning"
+              :loading="loading"
+              @click="updateRealTimeStats"
+              block
+            >
+              <v-icon start>mdi-database-refresh</v-icon>
+              실시간 통계 업데이트
+            </v-btn>
+            <p class="text-caption mt-2 text-medium-emphasis">
+              * 실시간 업데이트는 Firestore 읽기 사용량이 증가합니다
+            </p>
           </v-card-text>
         </v-card>
       </v-col>
@@ -173,6 +191,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { adminService } from '@/services/admin';
+import { statsService } from '@/services/stats';
 
 // 이벤트 정의
 const emit = defineEmits(['change-tab']);
@@ -198,7 +217,7 @@ const snackbar = reactive({
   color: 'success',
 });
 
-// 통계 로드
+// 통계 로드 (캐싱된 데이터 사용)
 const loadStats = async () => {
   loading.value = true;
   try {
@@ -217,6 +236,34 @@ const loadStats = async () => {
     showSnackbar('통계가 업데이트되었습니다.', 'success');
   } catch (error) {
     showSnackbar('통계를 불러올 수 없습니다.', 'error');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 실시간 통계 업데이트 (Firestore에서 직접 조회)
+const updateRealTimeStats = async () => {
+  loading.value = true;
+  try {
+    const realTimeStats = await statsService.updateRealTimeStats();
+
+    // 관리자 대시보드 통계도 업데이트
+    stats.totalUsers = realTimeStats.users;
+    stats.totalPosts = realTimeStats.posts;
+    stats.totalComments = realTimeStats.comments;
+
+    lastUpdated.value = new Date().toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    showSnackbar('실시간 통계가 업데이트되었습니다.', 'success');
+  } catch (error) {
+    console.error('실시간 통계 업데이트 실패:', error);
+    showSnackbar('실시간 통계 업데이트에 실패했습니다.', 'error');
   } finally {
     loading.value = false;
   }
