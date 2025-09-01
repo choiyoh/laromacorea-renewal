@@ -282,9 +282,11 @@ export const postService = {
     const postDoc = await getDoc(doc(db, collections.posts, postId));
     if (!postDoc.exists()) return null;
 
-    // 조회수 증가
-    await updateDoc(doc(db, collections.posts, postId), {
+    // 조회수 증가를 비동기로 처리 (응답 속도 향상)
+    updateDoc(doc(db, collections.posts, postId), {
       viewCount: increment(1),
+    }).catch((error) => {
+      console.warn('Failed to update view count:', error);
     });
 
     return { id: postDoc.id, ...postDoc.data() };

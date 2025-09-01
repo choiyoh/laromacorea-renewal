@@ -169,12 +169,15 @@
                 :src="mediaUrl"
                 class="rounded cursor-pointer"
                 cover
+                loading="lazy"
+                :eager="index < 2"
                 @click="openMediaViewer(mediaUrl)"
               />
               <video
                 v-else-if="isVideo(mediaUrl)"
                 :src="mediaUrl"
                 controls
+                preload="metadata"
                 class="rounded"
                 style="width: 100%; max-height: 300px"
               />
@@ -448,6 +451,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { postService, commentService } from '@/services/database';
 import { useRouter } from 'vue-router';
+import { useMobileOptimization } from '@/composables/useMobileOptimization';
 import CommentSystem from './CommentSystem.vue';
 import MatchCommentSystem from './MatchCommentSystem.vue';
 import MatchInfo from './MatchInfo.vue';
@@ -472,6 +476,10 @@ const router = useRouter();
 
 // Stores
 const userStore = useUserStore();
+
+// Mobile optimization
+const { isMobile, getOptimizedImageUrl, getCommentLoadingStrategy } =
+  useMobileOptimization();
 
 // State
 const post = ref(null);
@@ -518,16 +526,32 @@ async function fetchPost() {
     }
     post.value = fetchedPost;
 
-    // Check if user has liked this post
+    // 병렬로 처리하여 로딩 시간 단축
+    const promises = [];
+
+    // Check if user has liked this post (비동기)
     if (userStore.isAuthenticated) {
-      isLiked.value = await postService.checkPostLike(
-        props.postId,
-        userStore.user.uid,
+      promises.push(
+        postService
+          .checkPostLike(props.postId, userStore.user.uid)
+          .then((liked) => {
+            isLiked.value = liked;
+          })
+          .catch(() => {
+            isLiked.value = false;
+          }),
       );
     }
 
-    // Fetch adjacent posts
-    await fetchAdjacentPosts();
+    // Fetch adjacent posts (비동기)
+    promises.push(
+      fetchAdjacentPosts().catch((error) => {
+        console.warn('Failed to fetch adjacent posts:', error);
+      }),
+    );
+
+    // 모든 비동기 작업을 병렬로 처리
+    await Promise.allSettled(promises);
   } catch (err) {
     error.value = '게시글을 불러오는 중 오류가 발생했습니다.';
   } finally {
@@ -547,10 +571,18 @@ async function fetchComments(loadMore = false) {
   }
 
   try {
-    const { comments: fetchedComments, lastDoc, hasMore } = await commentService.getComments(
-      props.postId,
-      { lastDoc: lastCommentDoc.value, limitCount: 30 }
-    );
+    // 모바일 최적화된 댓글 로딩 전략 사용
+    const strategy = getCommentLoadingStrategy();
+    const limitCount = loadMore ? strategy.loadMore : strategy.initialLoad;
+
+    const {
+      comments: fetchedComments,
+      lastDoc,
+      hasMore,
+    } = await commentService.getComments(props.postId, {
+      lastDoc: lastCommentDoc.value,
+      limitCount,
+    });
 
     comments.value.push(...fetchedComments);
     lastCommentDoc.value = lastDoc;
@@ -558,7 +590,9 @@ async function fetchComments(loadMore = false) {
 
     // 댓글 수 동기화는 첫 로드 시에만 실행하여 정확한 총 댓글 수를 표시
     if (!loadMore && post.value) {
-      const actualCommentCount = await commentService.syncPostCommentCount(props.postId);
+      const actualCommentCount = await commentService.syncPostCommentCount(
+        props.postId,
+      );
       post.value.commentCount = actualCommentCount;
     }
   } catch (err) {
@@ -691,8 +725,8 @@ function navigateToPost(postId) {
 
 // Lifecycle
 onMounted(async () => {
-  await fetchPost();
-  await fetchComments();
+  // 게시글과 댓글을 병렬로 로드하여 성능 향상
+  await Promise.all([fetchPost(), fetchComments()]);
 });
 
 watch(
@@ -739,6 +773,10 @@ watch(
   height: auto;
   border-radius: 8px;
   margin: 16px 0;
+  /* 이미지 로딩 최적화 */
+  loading: lazy;
+  /* 모바일에서 이미지 압축 */
+  image-rendering: optimizeQuality;
 }
 
 .post-body :deep(h1),

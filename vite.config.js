@@ -141,6 +141,9 @@ export default defineConfig({
           ],
           'editor-vendor': ['quill', 'vue-quill-editor'],
           'utils-vendor': ['lodash-es'],
+          // 모바일 성능을 위한 추가 청크 분할
+          'post-detail': ['src/components/board/PostDetail.vue'],
+          'comment-system': ['src/components/board/CommentSystem.vue'],
         },
         // Optimize chunk file names
         chunkFileNames: (chunkInfo) => {
@@ -171,8 +174,19 @@ export default defineConfig({
     sourcemap: false,
     // Optimize CSS
     cssCodeSplit: true,
-    // Set chunk size warning limit
-    chunkSizeWarningLimit: 1000,
+    // Set chunk size warning limit (모바일 최적화)
+    chunkSizeWarningLimit: 800,
+    // 모바일 성능 최적화
+    reportCompressedSize: false,
+    // 더 작은 청크 크기로 분할
+    rollupOptions: {
+      ...this.rollupOptions,
+      output: {
+        ...this.rollupOptions?.output,
+        // 더 작은 청크 크기 설정
+        maxParallelFileOps: 2,
+      },
+    },
   },
   // Performance optimizations for development
   server: {
