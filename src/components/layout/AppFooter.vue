@@ -97,17 +97,17 @@ const socialLinks = [
   {
     name: 'Facebook',
     icon: 'mdi-facebook',
-    url: 'https://facebook.com/asroma',
+    url: 'https://www.facebook.com/officialasroma',
   },
   {
     name: 'Twitter',
     icon: 'mdi-twitter',
-    url: 'https://twitter.com/asroma',
+    url: 'https://x.com/officialasroma',
   },
   {
     name: 'Instagram',
     icon: 'mdi-instagram',
-    url: 'https://instagram.com/asroma',
+    url: 'https://www.instagram.com/officialasroma/',
   },
   {
     name: 'YouTube',
