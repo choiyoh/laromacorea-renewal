@@ -121,6 +121,14 @@ export const adminService = {
         updatedAt: serverTimestamp(),
       });
 
+      // 통계 캐시 무효화 (새 공지사항으로 인한 홈화면 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+
       return docRef.id;
     } catch (error) {
       console.error('공지사항 생성 실패:', error);
@@ -171,6 +179,14 @@ export const adminService = {
 
       await updateDoc(postRef, updateFields);
 
+      // 통계 캐시 무효화 (공지사항 수정으로 인한 홈화면 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+
       return true;
     } catch (error) {
       console.error('공지사항 수정 실패:', error);
@@ -215,6 +231,14 @@ export const adminService = {
         deletedBy: adminUserId,
         updatedAt: serverTimestamp(),
       });
+
+      // 통계 캐시 무효화 (홈화면 공지사항 목록 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
 
       return true;
     } catch (error) {

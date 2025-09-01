@@ -358,6 +358,10 @@ export const postService = {
       ...postData,
       updatedAt: serverTimestamp(),
     });
+
+    // 통계 캐시 무효화 (게시물 정보 변경으로 인한 업데이트)
+    const { statsService } = await import('./stats');
+    statsService.invalidateCache();
   },
 
   // 게시글 삭제 (소프트 삭제)
@@ -367,6 +371,10 @@ export const postService = {
       isDeleted: true,
       updatedAt: serverTimestamp(),
     });
+
+    // 통계 캐시 무효화 (홈화면 게시물 목록 업데이트)
+    const { statsService } = await import('./stats');
+    statsService.invalidateCache();
   },
 
   // 게시글 좋아요 토글

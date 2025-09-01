@@ -248,12 +248,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { useBoardsStore } from '@/stores/boards';
 import { useUserStore } from '@/stores/user';
-import { postService } from '@/services/database';
+
 import { statsService } from '@/services/stats';
 import MatchSchedule from '@/components/match/MatchSchedule.vue';
 import MatchResults from '@/components/match/MatchResults.vue';
@@ -364,10 +364,15 @@ async function loadStats() {
 }
 
 // 각 게시판별 최근 게시물 로드 (캐싱됨, 통계 쿼리 제거)
-async function loadBoardPosts() {
+async function loadBoardPosts(forceRefresh = false) {
   loading.value = true;
 
   try {
+    // 강제 새로고침 시 캐시 무효화
+    if (forceRefresh) {
+      statsService.invalidateCache();
+    }
+
     const cachedPosts = await statsService.getBoardPosts(boardTypes.value);
     boardPosts.value = cachedPosts;
   } catch (error) {
@@ -420,9 +425,24 @@ useHead({
   ],
 });
 
+// 페이지 포커스 시 데이터 새로고침
+function handleVisibilityChange() {
+  if (!document.hidden) {
+    // 페이지가 다시 보일 때 데이터 새로고침
+    loadBoardPosts(true);
+  }
+}
+
 onMounted(() => {
   loadStats();
   loadBoardPosts();
+
+  // 페이지 가시성 변경 이벤트 리스너 추가
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 
