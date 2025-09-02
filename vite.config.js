@@ -72,6 +72,8 @@ export default defineConfig({
         'apple-touch-icon.png',
         'pwa-*.png',
         'images/lupi.svg',
+        'sitemap.xml',
+        'robots.txt',
       ],
       manifest: {
         name: 'AS 로마 한국 팬 커뮤니티',
