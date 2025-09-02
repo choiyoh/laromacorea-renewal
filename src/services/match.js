@@ -5,7 +5,7 @@
 
 // AS 로마 팀 ID (TheSportsDB 기준)
 const AS_ROMA_TEAM_ID = '133682';
-
+const PISA_TEAM_ID = '133859';
 // TheSportsDB API 설정
 const THESPORTSDB_CONFIG = {
   baseUrl: 'https://www.thesportsdb.com/api/v1/json/123',
@@ -214,7 +214,7 @@ export const matchService = {
    * TheSportsDB에서 지난 경기 결과 가져오기
    */
   async fetchRecentResult() {
-    const url = `${THESPORTSDB_CONFIG.baseUrl}/eventslast.php?id=${AS_ROMA_TEAM_ID}`;
+    const url = `${THESPORTSDB_CONFIG.baseUrl}/eventslast.php?id=${PISA_TEAM_ID}`;
 
     const response = await fetch(url);
 
