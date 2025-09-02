@@ -6,6 +6,7 @@
 import { ref, computed, watch } from 'vue';
 import { postService } from '@/services/database';
 import { debounce } from 'lodash-es';
+import { handleUserActionError } from '@/utils/errorHandler';
 
 export function useSearch(boardType) {
   // State
@@ -75,7 +76,7 @@ export function useSearch(boardType) {
       currentPage.value = page;
     } catch (err) {
       error.value = '게시글을 불러오는 중 오류가 발생했습니다.';
-      console.error('Error fetching posts:', err);
+      await handleUserActionError(err, '게시글 조회');
     } finally {
       loading.value = false;
     }
@@ -108,7 +109,7 @@ export function useSearch(boardType) {
       currentPage.value = page;
     } catch (err) {
       error.value = '검색 중 오류가 발생했습니다.';
-      console.error('Error searching posts:', err);
+      await handleUserActionError(err, '게시글 검색');
     } finally {
       loading.value = false;
     }

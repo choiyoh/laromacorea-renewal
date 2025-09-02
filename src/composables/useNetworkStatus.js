@@ -81,21 +81,11 @@ export function useNetworkStatus() {
     }
   };
 
-  // Monitor network with periodic checks
+  // Monitor network with periodic checks (disabled - only show errors on user actions)
   const startNetworkMonitoring = () => {
-    const checkInterval = setInterval(async () => {
-      if (isOnline.value) {
-        const isConnected = await testConnectivity();
-        if (!isConnected && isOnline.value) {
-          // Browser thinks we're online but we can't reach the server
-          errorStore.setNetworkError(
-            '서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.',
-          );
-        }
-      }
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(checkInterval);
+    // Removed automatic periodic checks to avoid unnecessary error messages
+    // Network errors will only be shown when user actions fail
+    return () => {}; // Return empty cleanup function
   };
 
   onMounted(() => {
