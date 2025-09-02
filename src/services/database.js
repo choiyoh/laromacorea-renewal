@@ -434,6 +434,157 @@ export const postService = {
     return likeDoc.exists();
   },
 
+  // 페이지네이션을 지원하는 게시글 목록 조회
+  async getPostsWithPagination(boardType, options = {}) {
+    const {
+      page = 1,
+      limitCount = 10,
+      sortBy = 'latest',
+      searchQuery = '',
+      tags = [],
+    } = options;
+
+    let constraints = [
+      where('boardType', '==', boardType),
+      where('isDeleted', '==', false),
+    ];
+
+    // 태그 필터링
+    if (tags.length > 0) {
+      constraints.push(where('tags', 'array-contains-any', tags));
+    }
+
+    // 정렬 옵션 적용
+    switch (sortBy) {
+      case 'views':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('viewCount', 'desc'),
+        );
+        break;
+      case 'comments':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('commentCount', 'desc'),
+        );
+        break;
+      case 'likes':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('likeCount', 'desc'),
+        );
+        break;
+      case 'latest':
+      default:
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('createdAt', 'desc'),
+        );
+        break;
+    }
+
+    // 전체 개수 조회를 위한 쿼리 (페이지네이션 정보 없이)
+    const countQuery = query(collection(db, collections.posts), ...constraints);
+    const countSnapshot = await getDocs(countQuery);
+
+    let allPosts = countSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // 클라이언트 사이드 텍스트 검색 (Firestore의 제한으로 인해)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      allPosts = allPosts.filter(
+        (post) =>
+          post.title.toLowerCase().includes(query) ||
+          post.content.toLowerCase().includes(query) ||
+          post.authorName.toLowerCase().includes(query) ||
+          (post.tags &&
+            post.tags.some((tag) => tag.toLowerCase().includes(query))),
+      );
+    }
+
+    const totalCount = allPosts.length;
+    const startIndex = (page - 1) * limitCount;
+    const endIndex = startIndex + limitCount;
+    const posts = allPosts.slice(startIndex, endIndex);
+
+    return {
+      posts,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limitCount),
+      hasMore: endIndex < totalCount,
+    };
+  },
+
+  // 페이지네이션을 지원하는 게시글 검색
+  async searchPostsWithPagination(searchQuery, options = {}) {
+    const {
+      boardType = null,
+      sortBy = 'latest',
+      tags = [],
+      page = 1,
+      limitCount = 10,
+    } = options;
+
+    let constraints = [where('isDeleted', '==', false)];
+
+    if (boardType) {
+      constraints.push(where('boardType', '==', boardType));
+    }
+
+    if (tags.length > 0) {
+      constraints.push(where('tags', 'array-contains-any', tags));
+    }
+
+    // 정렬 적용
+    switch (sortBy) {
+      case 'views':
+        constraints.push(orderBy('viewCount', 'desc'));
+        break;
+      case 'comments':
+        constraints.push(orderBy('commentCount', 'desc'));
+        break;
+      case 'likes':
+        constraints.push(orderBy('likeCount', 'desc'));
+        break;
+      case 'latest':
+      default:
+        constraints.push(orderBy('createdAt', 'desc'));
+        break;
+    }
+
+    const q = query(collection(db, collections.posts), ...constraints);
+    const snapshot = await getDocs(q);
+
+    const query = searchQuery.toLowerCase();
+    const allPosts = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter(
+        (post) =>
+          post.title.toLowerCase().includes(query) ||
+          post.content.toLowerCase().includes(query) ||
+          post.authorName.toLowerCase().includes(query) ||
+          (post.tags &&
+            post.tags.some((tag) => tag.toLowerCase().includes(query))),
+      );
+
+    const totalCount = allPosts.length;
+    const startIndex = (page - 1) * limitCount;
+    const endIndex = startIndex + limitCount;
+    const posts = allPosts.slice(startIndex, endIndex);
+
+    return {
+      posts,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limitCount),
+      hasMore: endIndex < totalCount,
+    };
+  },
+
   // 이전/다음 게시글 조회 (최적화된 버전)
   async getAdjacentPosts(postId, boardType, currentPostCreatedAt) {
     if (!currentPostCreatedAt) {

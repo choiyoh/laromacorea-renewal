@@ -97,21 +97,14 @@
         />
       </div>
 
-      <!-- 더 보기 버튼 (검색이 아닐 때만) -->
-      <div
-        v-if="hasMore && !isSearchActive"
-        class="load-more-section text-center mt-6"
-      >
-        <v-btn
-          :loading="loading"
-          color="primary"
-          variant="outlined"
-          size="large"
-          @click="handleLoadMore"
-        >
-          더 보기
-        </v-btn>
-      </div>
+      <!-- 페이지네이션 -->
+      <Pagination
+        v-if="totalPages > 1"
+        :current-page="currentPage"
+        :total-items="totalItems"
+        :items-per-page="itemsPerPage"
+        @page-change="handlePageChange"
+      />
     </div>
 
     <!-- 빈 상태 -->
@@ -154,7 +147,7 @@ import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useSearch } from '@/composables/useSearch';
 import PostListItem from './PostListItem.vue';
-// SearchFilters is no longer used
+import Pagination from '@/components/common/Pagination.vue';
 
 const props = defineProps({
   boardType: {
@@ -180,12 +173,15 @@ const {
   loading,
   error,
   posts,
-  hasMore,
   isSearchActive,
+  currentPage,
+  totalItems,
+  totalPages,
+  itemsPerPage,
   fetchPosts,
   searchPosts,
   clearSearch,
-  loadMore,
+  goToPage,
 } = useSearch(boardTypeRef);
 
 // State
@@ -221,8 +217,8 @@ function handleClear() {
   clearSearch();
 }
 
-function handleLoadMore() {
-  loadMore();
+function handlePageChange(page) {
+  goToPage(page);
 }
 
 function handleWritePost() {
@@ -239,16 +235,16 @@ watch(
 );
 
 watch(
-  posts,
-  (newPosts) => {
-    totalPosts.value = newPosts.length;
+  totalItems,
+  (newTotal) => {
+    totalPosts.value = newTotal;
   },
   { immediate: true },
 );
 
 // Lifecycle
 onMounted(() => {
-  fetchPosts(true);
+  fetchPosts(1);
 });
 </script>
 
