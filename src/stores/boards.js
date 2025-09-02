@@ -40,19 +40,35 @@ export const useBoardsStore = defineStore('boards', () => {
   });
 
   // Actions
-  async function fetchPosts(boardType = null, limitCount = 20) {
+  async function fetchPosts(boardType = null, limitCount = 20, page = 1) {
     const loadingKey = `fetch-posts-${boardType || 'all'}`;
     errorStore.setLoading(loadingKey, true);
     error.value = null;
 
     try {
-      const options = {
-        limitCount,
-        sortBy: 'latest',
-      };
+      if (boardType) {
+        // 특정 게시판의 경우 새로운 페이지네이션 방식 사용
+        const options = {
+          page,
+          limitCount,
+          sortBy: 'latest',
+        };
 
-      const fetchedPosts = await postService.getPosts(boardType, options);
-      posts.value = fetchedPosts;
+        const result = await postService.getPostsWithPagination(
+          boardType,
+          options,
+        );
+        posts.value = result.posts;
+      } else {
+        // 전체 게시판의 경우 기존 방식 유지 (홈페이지용)
+        const options = {
+          limitCount,
+          sortBy: 'latest',
+        };
+
+        const fetchedPosts = await postService.getPosts(boardType, options);
+        posts.value = fetchedPosts;
+      }
     } catch (err) {
       error.value = err.message;
       errorStore.handleFirebaseError(

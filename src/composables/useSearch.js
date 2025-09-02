@@ -65,7 +65,7 @@ export function useSearch(boardType) {
         tags: selectedTags.value,
       };
 
-      // 페이지네이션을 지원하는 새로운 서비스 메서드 사용
+      // 서버 사이드 페이지네이션을 지원하는 새로운 서비스 메서드 사용
       const result = await postService.getPostsWithPagination(
         boardType.value,
         options,
