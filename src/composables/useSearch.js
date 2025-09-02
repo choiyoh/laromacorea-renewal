@@ -19,7 +19,7 @@ export function useSearch(boardType) {
   const popularTags = ref([]);
   const currentPage = ref(1);
   const totalItems = ref(0);
-  const itemsPerPage = ref(10);
+  const itemsPerPage = ref(15);
 
   // Search options
   const sortOptions = [

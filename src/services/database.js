@@ -507,7 +507,7 @@ export const postService = {
   async getPostsWithPagination(boardType, options = {}) {
     const {
       page = 1,
-      limitCount = 10,
+      limitCount = 15,
       sortBy = 'latest',
       searchQuery = '',
       tags = [],
@@ -619,7 +619,7 @@ export const postService = {
       sortBy = 'latest',
       tags = [],
       page = 1,
-      limitCount = 10,
+      limitCount = 15,
     } = options;
 
     try {

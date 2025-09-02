@@ -40,7 +40,7 @@ export const useBoardsStore = defineStore('boards', () => {
   });
 
   // Actions
-  async function fetchPosts(boardType = null, limitCount = 20, page = 1) {
+  async function fetchPosts(boardType = null, limitCount = 15, page = 1) {
     const loadingKey = `fetch-posts-${boardType || 'all'}`;
     errorStore.setLoading(loadingKey, true);
     error.value = null;
