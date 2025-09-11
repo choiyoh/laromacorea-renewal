@@ -879,7 +879,6 @@ export const commentService = {
       batch.set(commentRef, {
         ...commentData,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
         likeCount: 0,
         isDeleted: false,
         level: commentData.parentId ? 1 : 0,

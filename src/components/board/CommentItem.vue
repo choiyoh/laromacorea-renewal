@@ -26,9 +26,7 @@
                 formatDate(comment.createdAt)
               }}</span>
               <v-chip
-                v-if="
-                  comment.updatedAt && comment.updatedAt !== comment.createdAt
-                "
+                v-if="isCommentEdited"
                 size="x-small"
                 variant="outlined"
                 class="ms-2"
@@ -72,9 +70,7 @@
                   currentAuthorName
                 }}</span>
                 <v-chip
-                  v-if="
-                    comment.updatedAt && comment.updatedAt !== comment.createdAt
-                  "
+                  v-if="isCommentEdited"
                   size="x-small"
                   variant="outlined"
                   class="ms-1"
@@ -219,6 +215,27 @@ const canDelete = computed(() => {
   );
 });
 
+const isCommentEdited = computed(() => {
+  // updatedAt이 없으면 수정되지 않은 것
+  if (!props.comment.updatedAt) return false;
+
+  // createdAt이 없으면 비교할 수 없으므로 false
+  if (!props.comment.createdAt) return false;
+
+  // 두 타임스탬프를 Date 객체로 변환
+  const createdDate = props.comment.createdAt.toDate ?
+    props.comment.createdAt.toDate() :
+    new Date(props.comment.createdAt);
+
+  const updatedDate = props.comment.updatedAt.toDate ?
+    props.comment.updatedAt.toDate() :
+    new Date(props.comment.updatedAt);
+
+  // 1초 이상 차이가 나면 수정된 것으로 간주
+  const timeDiff = Math.abs(updatedDate.getTime() - createdDate.getTime());
+  return timeDiff > 1000;
+});
+
 // Methods
 function formatDate(timestamp) {
   if (!timestamp) return '';
@@ -279,7 +296,7 @@ const loadLikeStatus = async () => {
       props.comment.id,
       userStore.user.uid,
     );
-  } catch (error) {
+  } catch {
     // Error loading like status
   }
 };
@@ -349,9 +366,7 @@ onMounted(() => {
   margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
 }
 
-.replies {
-  /* 답글 목록 스타일 */
-}
+
 
 @media (max-width: 768px) {
   .comment-item {
@@ -365,9 +380,6 @@ onMounted(() => {
 
   .replies {
     margin-left: 0;
-  }
-
-  .comment-wrapper {
   }
 
   .comment-wrapper:hover {
