@@ -5,7 +5,7 @@
         <!-- 작성자 아바타 -->
         <UserAvatar
           :user-id="comment.authorId"
-          :display-name="comment.authorName"
+          :display-name="currentAuthorName"
           :static-icon-url="comment.authorIcon"
           :size="comment.level > 0 ? 20 : 24"
           default-icon="mdi-account-circle"
@@ -20,7 +20,7 @@
           >
             <div class="d-flex align-center">
               <span class="font-weight-medium me-2">{{
-                comment.authorName
+                currentAuthorName
               }}</span>
               <span class="text-caption text-grey-darken-1">{{
                 formatDate(comment.createdAt)
@@ -69,7 +69,7 @@
             <div class="d-flex align-center justify-space-between">
               <div class="d-flex align-center">
                 <span class="text-body-2 font-weight-medium me-2">{{
-                  comment.authorName
+                  currentAuthorName
                 }}</span>
                 <v-chip
                   v-if="
@@ -173,6 +173,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { commentService } from '@/services/database';
+import { useUserInfo } from '@/composables/useUserInfo';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
@@ -192,12 +193,14 @@ const props = defineProps({
 
 const emit = defineEmits(['reply', 'edit', 'delete', 'like']);
 
-// Stores
+// Stores & Composables
 const userStore = useUserStore();
+const { getUserDisplayName } = useUserInfo();
 
 // State
 const isLiked = ref(false);
 const likeCount = ref(props.comment.likeCount || 0);
+const currentAuthorName = ref(props.comment.authorName || '익명');
 
 // Computed
 const canEdit = computed(() => {
@@ -281,8 +284,25 @@ const loadLikeStatus = async () => {
   }
 };
 
+// 최신 작성자 정보 로드
+const loadAuthorInfo = async () => {
+  if (!props.comment.authorId) return;
+
+  try {
+    const displayName = await getUserDisplayName(
+      props.comment.authorId,
+      props.comment.authorName || '익명'
+    );
+    currentAuthorName.value = displayName;
+  } catch (error) {
+    // 사용자 정보 로드 실패 시 기존 이름 유지
+    console.warn('Failed to load author info:', error);
+  }
+};
+
 onMounted(() => {
   loadLikeStatus();
+  loadAuthorInfo();
 });
 </script>
 

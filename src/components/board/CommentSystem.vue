@@ -173,7 +173,7 @@
                 avatar-class="me-2"
               />
               <span class="font-weight-medium">{{
-                replyTarget?.authorName
+                replyTarget?.currentAuthorName || replyTarget?.authorName
               }}</span>
             </div>
             <p class="text-body-2">{{ replyTarget?.content }}</p>
@@ -272,6 +272,7 @@
 import { ref, computed, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { commentService } from '@/services/database';
+import { useUserInfo } from '@/composables/useUserInfo';
 import CommentItem from './CommentItem.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 
@@ -315,8 +316,9 @@ const emit = defineEmits([
   'load-more',
 ]);
 
-// Stores
+// Stores & Composables
 const userStore = useUserStore();
+const { getUserDisplayName } = useUserInfo();
 
 // State
 const newCommentContent = ref('');
@@ -391,8 +393,22 @@ async function handleSubmitComment() {
   }
 }
 
-function handleReply(comment) {
-  replyTarget.value = comment;
+async function handleReply(comment) {
+  replyTarget.value = { ...comment };
+
+  // 답글 대상의 최신 작성자 정보 로드
+  if (comment.authorId) {
+    try {
+      const displayName = await getUserDisplayName(
+        comment.authorId,
+        comment.authorName || '익명'
+      );
+      replyTarget.value.currentAuthorName = displayName;
+    } catch (error) {
+      console.warn('Failed to load reply target author info:', error);
+    }
+  }
+
   replyContent.value = '';
   replyDialog.value = true;
 }
