@@ -91,7 +91,7 @@ app.use(head);
 app.directive('lazy-image', vLazyImage);
 
 // Initialize browser compatibility
-initializeBrowserCompatibility();
+// initializeBrowserCompatibility();
 
 // Initialize performance optimizations
 inlineCriticalCSS();

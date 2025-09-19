@@ -257,8 +257,21 @@ function initializeEditor() {
     theme: 'snow',
     modules: {
       toolbar: toolbarOptions,
+      keyboard: {
+        bindings: {
+          'prevent backspace navigation': {
+            key: 'Backspace',
+            handler: function (range) {
+              if (range.index === 0 && this.quill.getLength() === 1) {
+                return false; // 브라우저 뒤로가기 방지
+              }
+              return true; // Quill의 기본 동작 실행
+            },
+          },
+        },
+      },
     },
-    placeholder: '내용을 입력해주세요...',
+    placeholder: '내용을 입력해주세요...', 
   });
 
   // 내용 변경 감지
@@ -266,59 +279,6 @@ function initializeEditor() {
     formData.value.content = quillEditor.value.root.innerHTML;
     validateContent();
   });
-
-  // 키보드 이벤트 처리 - 브라우저 기본 동작 방지
-  const editorElement = quillEditor.value.root;
-
-  const handleKeyDown = (e) => {
-    // 에디터에 포커스가 있을 때만 처리
-    if (
-      document.activeElement === editorElement ||
-      editorElement.contains(document.activeElement)
-    ) {
-      // 스페이스바의 페이지 스크롤 방지
-      if (
-        e.code === 'Space' &&
-        !e.shiftKey &&
-        !e.ctrlKey &&
-        !e.metaKey &&
-        !e.altKey
-      ) {
-        e.stopPropagation();
-      }
-      // Shift + 스페이스바의 페이지 스크롤 방지
-      if (
-        e.code === 'Space' &&
-        e.shiftKey &&
-        !e.ctrlKey &&
-        !e.metaKey &&
-        !e.altKey
-      ) {
-        e.stopPropagation();
-      }
-      // 백스페이스의 뒤로가기 방지 (에디터가 비어있지 않을 때는 허용)
-      if (
-        e.code === 'Backspace' &&
-        !e.shiftKey &&
-        !e.ctrlKey &&
-        !e.metaKey &&
-        !e.altKey
-      ) {
-        const text = quillEditor.value.getText().trim();
-        if (text.length === 0) {
-          // 에디터가 비어있을 때만 뒤로가기 방지
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }
-    }
-  };
-
-  // 키보드 이벤트 리스너 추가
-  document.addEventListener('keydown', handleKeyDown, true);
-
-  // 에디터 정리 시 이벤트 리스너 제거를 위해 참조 저장
-  quillEditor.value._keydownHandler = handleKeyDown;
 
   // 이미지 업로드 핸들러
   quillEditor.value.getModule('toolbar').addHandler('image', handleImageInsert);
@@ -637,20 +597,6 @@ onMounted(async () => {
   }
 });
 
-onUnmounted(() => {
-  if (quillEditor.value) {
-    // 키보드 이벤트 리스너 제거
-    if (quillEditor.value._keydownHandler) {
-      document.removeEventListener(
-        'keydown',
-        quillEditor.value._keydownHandler,
-        true,
-      );
-    }
-    quillEditor.value = null;
-  }
-});
-
 // Auto-save draft every 30 seconds
 let autoSaveInterval;
 watch(
@@ -676,15 +622,7 @@ onUnmounted(() => {
   if (autoSaveInterval) {
     clearInterval(autoSaveInterval);
   }
-
-  // 키보드 이벤트 리스너 정리 (중복 방지)
-  if (quillEditor.value && quillEditor.value._keydownHandler) {
-    document.removeEventListener(
-      'keydown',
-      quillEditor.value._keydownHandler,
-      true,
-    );
-  }
+  quillEditor.value = null;
 });
 </script>
 
