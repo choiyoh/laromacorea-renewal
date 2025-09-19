@@ -114,6 +114,62 @@ export const userService = {
  * 게시글 관련 데이터베이스 작업
  */
 export const postService = {
+  // 페이지 점프를 위한 커서 조회 (비효율적일 수 있음)
+  async getCursorForPage(boardType, page, limitCount, sortBy = 'latest') {
+    if (page <= 1) {
+      return null;
+    }
+
+    const offset = (page - 1) * limitCount;
+
+    let constraints = [
+      where('boardType', '==', boardType),
+      where('isDeleted', '==', false),
+    ];
+
+    // 정렬 로직은 getPostsWithPagination와 반드시 일치해야 합니다.
+    switch (sortBy) {
+      case 'views':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('viewCount', 'desc'),
+        );
+        break;
+      case 'comments':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('commentCount', 'desc'),
+        );
+        break;
+      case 'likes':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('likeCount', 'desc'),
+        );
+        break;
+      case 'latest':
+      default:
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('createdAt', 'desc'),
+        );
+        break;
+    }
+
+    constraints.push(limit(offset));
+
+    const q = query(collection(db, collections.posts), ...constraints);
+    const snapshot = await getDocs(q);
+
+    // 요청된 페이지가 실제 게시물 수를 초과하는 경우
+    if (snapshot.docs.length < offset) {
+      console.warn(`Requested page ${page} is out of bounds.`);
+      return 'invalid-page';
+    }
+
+    return snapshot.docs[snapshot.docs.length - 1];
+  },
+
   // 게시판별 게시글 목록 조회 (검색 및 필터링 지원)
   async getPosts(boardType, options = {}) {
     const {
@@ -506,7 +562,7 @@ export const postService = {
   // 페이지네이션을 지원하는 게시글 목록 조회 (서버 사이드)
   async getPostsWithPagination(boardType, options = {}) {
     const {
-      page = 1,
+      lastDoc = null,
       limitCount = 15,
       sortBy = 'latest',
       searchQuery = '',
@@ -514,13 +570,13 @@ export const postService = {
     } = options;
 
     try {
-      // 검색이 있는 경우 별도 처리
+      // 검색이 있는 경우 별도 처리 (주의: 이 검색 로직은 여전히 모든 문서를 읽어 비효율적입니다)
       if (searchQuery || tags.length > 0) {
         return await this.searchPostsWithPagination(searchQuery, {
           boardType,
           sortBy,
           tags,
-          page,
+          page: 1, // 페이지 기반 검색 로직은 아직 수정되지 않았습니다.
           limitCount,
         });
       }
@@ -562,35 +618,16 @@ export const postService = {
       // 총 개수 조회 (캐시 사용)
       const totalCount = await this.getBoardPostCount(boardType);
 
-      // 페이지네이션 적용하여 실제 데이터 조회
-      const offset = (page - 1) * limitCount;
-
-      // Firestore는 offset을 직접 지원하지 않으므로 limit과 startAfter 조합 사용
+      // 페이지네이션 쿼리 생성
       let postsQuery = query(
         collection(db, collections.posts),
         ...constraints,
         limit(limitCount),
       );
 
-      // 첫 페이지가 아닌 경우 startAfter 사용을 위해 이전 페이지의 마지막 문서 찾기
-      if (page > 1) {
-        // 이전 페이지들의 문서를 건너뛰기 위한 쿼리
-        const skipQuery = query(
-          collection(db, collections.posts),
-          ...constraints,
-          limit(offset),
-        );
-        const skipSnapshot = await getDocs(skipQuery);
-
-        if (skipSnapshot.docs.length > 0) {
-          const lastDoc = skipSnapshot.docs[skipSnapshot.docs.length - 1];
-          postsQuery = query(
-            collection(db, collections.posts),
-            ...constraints,
-            startAfter(lastDoc),
-            limit(limitCount),
-          );
-        }
+      // 커서가 있으면 startAfter 적용
+      if (lastDoc) {
+        postsQuery = query(postsQuery, startAfter(lastDoc));
       }
 
       const postsSnapshot = await getDocs(postsQuery);
@@ -599,12 +636,15 @@ export const postService = {
         ...doc.data(),
       }));
 
+      // 다음 페이지를 위한 마지막 문서(커서)와 추가 페이지 존재 여부 반환
+      const newLastDoc = postsSnapshot.docs[postsSnapshot.docs.length - 1];
+      const hasMore = posts.length === limitCount;
+
       return {
         posts,
+        lastDoc: newLastDoc,
         totalCount,
-        currentPage: page,
-        totalPages: Math.ceil(totalCount / limitCount),
-        hasMore: offset + posts.length < totalCount,
+        hasMore,
       };
     } catch (error) {
       console.error('Error in getPostsWithPagination:', error);

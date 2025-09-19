@@ -20,6 +20,7 @@ export function useSearch(boardType) {
   const currentPage = ref(1);
   const totalItems = ref(0);
   const itemsPerPage = ref(15);
+  const cursors = ref({ 1: null }); // 페이지별 커서 캐싱
 
   // Search options
   const sortOptions = [
@@ -57,15 +58,37 @@ export function useSearch(boardType) {
     error.value = null;
 
     try {
+      const isNextPage = page === currentPage.value + 1;
+      let startAfterCursor = null;
+
+      // 효율적인 경로: 다음 페이지로 순차 이동하는 경우
+      if (isNextPage) {
+        startAfterCursor = cursors.value[page - 1];
+      } else {
+        // 비효율적인 경로: 페이지를 점프하거나 뒤로 가는 경우
+        // 커서를 초기화하고 데이터베이스 서비스에 요청하여 해당 페이지의 시작 커서를 가져옵니다.
+        cursors.value = { 1: null };
+        startAfterCursor = await postService.getCursorForPage(
+          boardType.value,
+          page,
+          itemsPerPage.value,
+          sortBy.value,
+        );
+
+        if (startAfterCursor === 'invalid-page') {
+          posts.value = [];
+          totalItems.value = 0;
+          currentPage.value = page;
+          return;
+        }
+      }
+
       const options = {
-        page: page,
+        lastDoc: startAfterCursor,
         limitCount: itemsPerPage.value,
         sortBy: sortBy.value,
-        searchQuery: searchQuery.value.trim(),
-        tags: selectedTags.value,
       };
 
-      // 서버 사이드 페이지네이션을 지원하는 새로운 서비스 메서드 사용
       const result = await postService.getPostsWithPagination(
         boardType.value,
         options,
@@ -74,6 +97,11 @@ export function useSearch(boardType) {
       posts.value = result.posts;
       totalItems.value = result.totalCount;
       currentPage.value = page;
+
+      // 다음 페이지를 위해 현재 페이지의 마지막 문서를 커서로 캐싱합니다.
+      if (result.lastDoc) {
+        cursors.value[page] = result.lastDoc;
+      }
     } catch (err) {
       error.value = '게시글을 불러오는 중 오류가 발생했습니다.';
       await handleUserActionError(err, '게시글 조회');
@@ -100,6 +128,7 @@ export function useSearch(boardType) {
         limitCount: itemsPerPage.value,
       };
 
+      // 참고: 검색 기능은 여전히 모든 문서를 읽는 비효율적인 방식입니다.
       const result = await postService.searchPostsWithPagination(
         searchQuery.value.trim(),
         options,
@@ -141,11 +170,12 @@ export function useSearch(boardType) {
     searchQuery.value = '';
     selectedTags.value = [];
     currentPage.value = 1;
+    cursors.value = { 1: null }; // 커서 캐시 초기화
     fetchPosts(1);
   }
 
   function goToPage(page) {
-    if (page < 1 || page > totalPages.value) return;
+    if (page < 1 || page > totalPages.value || page === currentPage.value) return;
 
     if (isSearchActive.value) {
       searchPosts(page);
@@ -171,6 +201,7 @@ export function useSearch(boardType) {
 
   watch(sortBy, () => {
     currentPage.value = 1; // 정렬 변경 시 첫 페이지로 이동
+    cursors.value = { 1: null }; // 커서 캐시 초기화
     if (isSearchActive.value) {
       searchPosts(1);
     } else {

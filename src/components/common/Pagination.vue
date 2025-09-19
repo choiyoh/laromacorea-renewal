@@ -3,7 +3,7 @@
     <v-pagination
       :model-value="currentPage"
       :length="totalPages"
-      :total-visible="totalVisible"
+      :total-visible="dynamicTotalVisible"
       variant="elevated"
       color="primary"
       class="my-4"
@@ -21,6 +21,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useResponsive } from '@/composables/useResponsive';
 
 const props = defineProps({
   currentPage: {
@@ -43,9 +44,15 @@ const props = defineProps({
 
 const emit = defineEmits(['update:currentPage', 'page-change']);
 
+const { isMobile } = useResponsive();
+
 // Computed
 const totalPages = computed(() => {
   return Math.ceil(props.totalItems / props.itemsPerPage);
+});
+
+const dynamicTotalVisible = computed(() => {
+  return isMobile.value ? 5 : props.totalVisible;
 });
 
 const startItem = computed(() => {
