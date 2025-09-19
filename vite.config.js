@@ -140,23 +140,22 @@ export default defineConfig({
     // 더 강력한 해시 생성
     rollupOptions: {
       output: {
-        // 모든 파일에 타임스탬프 기반 해시 추가
-        entryFileNames: `js/[name]-[hash]-${Date.now()}.js`,
-        chunkFileNames: `js/[name]-[hash]-${Date.now()}.js`,
+        // 파일 내용 기반의 해시를 사용하여 캐시 관리
+        entryFileNames: `js/[name]-[hash].js`,
+        chunkFileNames: `js/[name]-[hash].js`,
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
-          const timestamp = Date.now();
           if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
-            return `images/[name]-[hash]-${timestamp}.${ext}`;
+            return `images/[name]-[hash].${ext}`;
           }
           if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-            return `fonts/[name]-[hash]-${timestamp}.${ext}`;
+            return `fonts/[name]-[hash].${ext}`;
           }
           if (/\.css$/i.test(assetInfo.name)) {
-            return `css/[name]-[hash]-${timestamp}.${ext}`;
+            return `css/[name]-[hash].${ext}`;
           }
-          return `assets/[name]-[hash]-${timestamp}.${ext}`;
+          return `assets/[name]-[hash].${ext}`;
         },
         // Manual chunk splitting for better caching
         manualChunks: {
