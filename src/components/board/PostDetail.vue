@@ -151,6 +151,9 @@
       <div class="post-content mb-4">
         <div class="post-body mb-6" v-html="post.content"></div>
 
+        <!-- 트위터 임베드 -->
+        <TweetEmbed v-if="post.tweetUrl" :tweet-url="post.tweetUrl" />
+
         <!-- 미디어 첨부파일 -->
         <div
           v-if="post.mediaUrls && post.mediaUrls.length > 0"
@@ -456,6 +459,7 @@ import CommentSystem from './CommentSystem.vue';
 import MatchCommentSystem from './MatchCommentSystem.vue';
 import MatchInfo from './MatchInfo.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+import TweetEmbed from '@/components/common/TweetEmbed.vue';
 
 const props = defineProps({
   postId: {

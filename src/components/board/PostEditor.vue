@@ -80,6 +80,27 @@
             </div>
           </div>
 
+          <!-- 트위터 임베드 -->
+          <div class="tweet-embed mb-4">
+            <v-card variant="outlined">
+              <v-card-title class="text-subtitle-1">
+                <v-icon icon="mdi-twitter" class="me-2" />
+                트위터 게시물 임베드
+              </v-card-title>
+              <v-card-text>
+                <v-text-field
+                  v-model="formData.tweetUrl"
+                  label="트위터 게시물 주소(URL) 붙여넣기"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  placeholder="https://twitter.com/user/status/12345..."
+                  clearable
+                />
+              </v-card-text>
+            </v-card>
+          </div>
+
           <!-- 미디어 업로드 (Media 게시판용) -->
           <div v-if="showMediaUpload" class="media-upload mb-4">
             <v-card variant="outlined">
@@ -212,6 +233,7 @@ const formData = ref({
   boardType: props.boardType || '',
   tags: [],
   mediaUrls: [],
+  tweetUrl: '', // Add tweetUrl
 });
 
 // Board options
@@ -429,6 +451,7 @@ async function handleSubmit() {
       boardType: formData.value.boardType,
       tags: formData.value.tags || [],
       mediaUrls: formData.value.mediaUrls || [],
+      tweetUrl: formData.value.tweetUrl || '', // Add tweetUrl
       authorId: userStore.user.uid,
       authorName: userStore.userDisplayName,
       authorEmail: userStore.user.email,
@@ -575,6 +598,7 @@ onMounted(async () => {
       boardType: props.post.boardType,
       tags: props.post.tags || [],
       mediaUrls: props.post.mediaUrls || [],
+      tweetUrl: props.post.tweetUrl || '', // Add tweetUrl
     };
 
     if (quillEditor.value) {
