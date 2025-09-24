@@ -5,8 +5,6 @@
 
 import {
   collection,
-  doc,
-  getDoc,
   getDocs,
   query,
   where,
@@ -18,7 +16,7 @@ import { statsCache, CACHE_KEYS } from './stats-cache';
 
 export const statsService = {
   /**
-   * 사이트 전체 통계 조회 (캐싱됨)
+   * 사이트 전체 통계 조회 (캐싱됨) - 육십분로 강화된 캐시
    */
   async getSiteStats() {
     const cacheKey = CACHE_KEYS.SITE_STATS;
@@ -38,7 +36,7 @@ export const statsService = {
         lastUpdated: new Date().toISOString(),
       };
 
-      // 캐시에 저장 (5분간 유효)
+      // 캐시에 저장 (자동으로 60분 캐시 적용)
       statsCache.set(cacheKey, stats);
 
       return stats;
