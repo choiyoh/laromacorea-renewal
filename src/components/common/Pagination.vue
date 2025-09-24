@@ -7,6 +7,7 @@
       variant="elevated"
       color="primary"
       class="my-4"
+      density="compact"
       @update:model-value="handlePageChange"
     />
 
@@ -81,15 +82,5 @@ function handlePageChange(page) {
 
 .pagination-info {
   margin-top: 0.5rem;
-}
-
-@media (max-width: 600px) {
-  :deep(.v-pagination) {
-    --v-pagination-item-size: 32px;
-  }
-
-  :deep(.v-pagination__item) {
-    font-size: 0.875rem;
-  }
 }
 </style>
