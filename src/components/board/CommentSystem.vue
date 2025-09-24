@@ -36,6 +36,8 @@
             auto-grow
             hide-details
             :disabled="submittingComment"
+            @keydown.space.prevent
+            @keydown.enter.prevent
           />
           <div class="d-flex justify-end mt-3">
             <v-btn
@@ -75,6 +77,8 @@
           auto-grow
           hide-details
           :disabled="submittingComment"
+          @keydown.space.prevent
+          @keydown.enter.prevent
         />
         <div class="d-flex justify-end mt-3">
           <v-btn
@@ -401,7 +405,7 @@ async function handleReply(comment) {
     try {
       const displayName = await getUserDisplayName(
         comment.authorId,
-        comment.authorName || '익명'
+        comment.authorName || '익명',
       );
       replyTarget.value.currentAuthorName = displayName;
     } catch (error) {
