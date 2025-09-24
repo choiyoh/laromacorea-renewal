@@ -129,7 +129,7 @@ export function initializeCacheManagement() {
   });
 
   // 정기적인 서버 버전 확인 시작
-  startPeriodicVersionCheck();
+  // startPeriodicVersionCheck();
 }
 /**
  * 서버의 캐시 메타 정보 확인
