@@ -17,14 +17,22 @@ import {
   limit,
   serverTimestamp,
   writeBatch,
+  startAfter,
+  getCountFromServer,
 } from 'firebase/firestore';
 import {
   ref as storageRef,
   uploadBytes,
   getDownloadURL,
 } from 'firebase/storage';
-import { db, storage, auth } from './firebase';
+import { db, storage, auth, functions } from './firebase';
 import { collections } from './database';
+import { httpsCallable } from 'firebase/functions';
+
+const callResetUserPasswordAdmin = httpsCallable(
+  functions,
+  'resetUserPasswordAdmin',
+);
 
 export const adminService = {
   /**
@@ -63,66 +71,178 @@ export const adminService = {
         throw new Error('유효하지 않은 공지사항 데이터입니다.');
       }
 
+      // 필수 필드 확인
+      if (!noticeData.title || !noticeData.content) {
+        throw new Error('제목과 내용은 필수입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {
         throw new Error('관리자 권한이 필요합니다.');
       }
 
+      // 관리자 정보 가져오기
+      const adminDoc = await getDoc(doc(db, collections.users, adminUserId));
+      const adminData = adminDoc.data();
+
       const docRef = await addDoc(collection(db, collections.posts), {
-        ...noticeData,
+        title: noticeData.title,
+        content: noticeData.content,
         boardType: 'notice',
-        isPinned: true, // 공지사항은 기본적으로 상단 고정
+
+        // 공지사항 특성
+        type: noticeData.type || 'general',
+        priority: noticeData.priority || 'normal',
+        isPinned:
+          noticeData.isPinned !== undefined ? noticeData.isPinned : true,
+        isPopup: noticeData.isPopup || false,
+        isActive:
+          noticeData.isActive !== undefined ? noticeData.isActive : true,
+
+        // 날짜 설정
+        startDate: noticeData.startDate || null,
+        endDate: noticeData.endDate || null,
+
+        // 기본 게시글 필드
         isDeleted: false,
         viewCount: 0,
         likeCount: 0,
         commentCount: 0,
+
+        // 작성자 정보
+        authorId: adminUserId,
+        authorName: adminData?.displayName || '관리자',
+        authorEmail: adminData?.email || '',
+        authorPhotoURL: adminData?.photoURL || null,
+
+        // 타임스탬프
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
+      // 통계 캐시 무효화 (새 공지사항으로 인한 홈화면 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+
       return docRef.id;
     } catch (error) {
+      console.error('공지사항 생성 실패:', error);
       throw error;
     }
   },
 
   async updateNotice(adminUserId, postId, updateData) {
     try {
+      // 매개변수 유효성 검사
+      if (!adminUserId || typeof adminUserId !== 'string') {
+        throw new Error('유효하지 않은 관리자 ID입니다.');
+      }
+
+      if (!postId || typeof postId !== 'string') {
+        throw new Error('유효하지 않은 게시글 ID입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {
         throw new Error('관리자 권한이 필요합니다.');
       }
 
+      // 게시글 존재 확인
       const postRef = doc(db, collections.posts, postId);
-      await updateDoc(postRef, {
+      const postDoc = await getDoc(postRef);
+
+      if (!postDoc.exists()) {
+        throw new Error('공지사항을 찾을 수 없습니다.');
+      }
+
+      const postData = postDoc.data();
+      if (postData.boardType !== 'notice') {
+        throw new Error('공지사항이 아닙니다.');
+      }
+
+      // 업데이트할 데이터 준비
+      const updateFields = {
         ...updateData,
         updatedAt: serverTimestamp(),
-      });
+        updatedBy: adminUserId,
+      };
+
+      // 날짜 필드 처리
+      if (updateData.startDate === '') updateFields.startDate = null;
+      if (updateData.endDate === '') updateFields.endDate = null;
+
+      await updateDoc(postRef, updateFields);
+
+      // 통계 캐시 무효화 (공지사항 수정으로 인한 홈화면 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
 
       return true;
     } catch (error) {
+      console.error('공지사항 수정 실패:', error);
       throw error;
     }
   },
 
   async deleteNotice(adminUserId, postId) {
     try {
+      // 매개변수 유효성 검사
+      if (!adminUserId || typeof adminUserId !== 'string') {
+        throw new Error('유효하지 않은 관리자 ID입니다.');
+      }
+
+      if (!postId || typeof postId !== 'string') {
+        throw new Error('유효하지 않은 게시글 ID입니다.');
+      }
+
       // 관리자 권한 확인
       const isAdmin = await this.checkAdminPermission(adminUserId);
       if (!isAdmin) {
         throw new Error('관리자 권한이 필요합니다.');
       }
 
+      // 게시글 존재 확인
       const postRef = doc(db, collections.posts, postId);
+      const postDoc = await getDoc(postRef);
+
+      if (!postDoc.exists()) {
+        throw new Error('공지사항을 찾을 수 없습니다.');
+      }
+
+      const postData = postDoc.data();
+      if (postData.boardType !== 'notice') {
+        throw new Error('공지사항이 아닙니다.');
+      }
+
+      // 소프트 삭제 (실제로는 삭제하지 않고 isDeleted 플래그만 설정)
       await updateDoc(postRef, {
         isDeleted: true,
+        deletedAt: serverTimestamp(),
+        deletedBy: adminUserId,
         updatedAt: serverTimestamp(),
       });
 
+      // 통계 캐시 무효화 (홈화면 공지사항 목록 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+
       return true;
     } catch (error) {
+      console.error('공지사항 삭제 실패:', error);
       throw error;
     }
   },
@@ -272,19 +392,78 @@ export const adminService = {
   /**
    * 사용자 관리
    */
-  async getAllUsers(limitCount = 50) {
-    try {
-      const q = query(
-        collection(db, collections.users),
-        orderBy('createdAt', 'desc'),
-        limit(limitCount),
-      );
+  async getUsers(options = {}) {
+    const {
+      page = 1,
+      itemsPerPage = 30,
+      sortBy = 'createdAt',
+      sortDesc = true,
+      filters = {},
+    } = options;
 
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-      throw error;
+    const usersRef = collection(db, collections.users);
+
+    // 1. Build the base query with filters
+    const queryConstraints = [];
+    if (filters.status && filters.status !== 'all') {
+      queryConstraints.push(
+        where('isActive', '==', filters.status === 'active'),
+      );
     }
+    if (filters.role && filters.role !== 'all') {
+      queryConstraints.push(where('role', '==', filters.role));
+    }
+    if (filters.verification && filters.verification !== 'all') {
+      queryConstraints.push(
+        where('verified', '==', filters.verification === 'verified'),
+      );
+    }
+    if (filters.searchTerm) {
+      queryConstraints.push(orderBy('displayName'));
+      queryConstraints.push(where('displayName', '>=', filters.searchTerm));
+      queryConstraints.push(
+        where('displayName', '<=', filters.searchTerm + '\uf8ff'),
+      );
+    }
+
+    // 2. Get total count for pagination
+    const countQuery = query(usersRef, ...queryConstraints);
+    const totalUsersSnapshot = await getCountFromServer(countQuery);
+    const totalUsers = totalUsersSnapshot.data().count;
+
+    // 3. Get documents for the current page
+    const dataQueryConstraints = [...queryConstraints];
+    if (!filters.searchTerm) {
+      dataQueryConstraints.push(orderBy(sortBy, sortDesc ? 'desc' : 'asc'));
+    }
+
+    let pageQuery = query(usersRef, ...dataQueryConstraints);
+
+    if (page > 1) {
+      const offset = (page - 1) * itemsPerPage;
+      const cursorQuery = query(pageQuery, limit(offset));
+      const cursorSnapshot = await getDocs(cursorQuery);
+      if (cursorSnapshot.docs.length > 0) {
+        const lastVisible = cursorSnapshot.docs[cursorSnapshot.docs.length - 1];
+        pageQuery = query(
+          pageQuery,
+          startAfter(lastVisible),
+          limit(itemsPerPage),
+        );
+      } else {
+        return { users: [], totalUsers };
+      }
+    } else {
+      pageQuery = query(pageQuery, limit(itemsPerPage));
+    }
+
+    const pageSnapshot = await getDocs(pageQuery);
+    const users = pageSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return { users, totalUsers };
   },
 
   async updateUserRole(adminUserId, targetUserId, newRole) {
@@ -403,30 +582,6 @@ export const adminService = {
     }
   },
 
-  // 시스템 통계 조회 (AdminView에서 사용)
-  async getSystemStats() {
-    return this.getDashboardStats();
-  },
-
-  // 사용자 목록 조회 (AdminUserManager에서 사용)
-  async getUsers(options = {}) {
-    return this.getAllUsers(options.limitCount || 50);
-  },
-
-  // 사용자 검색
-  async searchUsers(searchTerm) {
-    try {
-      const users = await this.getAllUsers(100);
-      return users.filter(
-        (user) =>
-          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    } catch (error) {
-      throw error;
-    }
-  },
-
   // 사용자 상태 업데이트 (래퍼 함수)
   async updateUserStatus(userId, status) {
     return this.toggleUserStatus('admin', userId, status);
@@ -438,16 +593,32 @@ export const adminService = {
   },
 
   // 사용자 인증 상태 업데이트
-  async updateUserVerification(userId, verified) {
+  async updateUserVerification(adminId, userId, verified) {
     try {
       const userRef = doc(db, collections.users, userId);
-      await updateDoc(userRef, {
+      const batch = writeBatch(db);
+
+      // 사용자 'verified' 상태 업데이트
+      batch.update(userRef, {
         verified: verified,
         updatedAt: serverTimestamp(),
+        updatedBy: adminId,
       });
 
+      // 변경 이력 저장
+      const historyRef = doc(collection(db, 'userHistory'));
+      batch.set(historyRef, {
+        userId,
+        type: 'VERIFICATION_CHANGE',
+        description: `관리자가 사용자를 ${verified ? '인증 승인' : '인증 해제'} 처리했습니다.`,
+        adminId,
+        createdAt: serverTimestamp(),
+      });
+
+      await batch.commit();
       return true;
     } catch (error) {
+      console.error('인증 상태 변경 실패:', error);
       throw error;
     }
   },
@@ -592,15 +763,44 @@ export const adminService = {
   // 공지사항 관리
   async getNotices(options = {}) {
     try {
-      const q = query(
-        collection(db, collections.posts),
-        where('boardType', '==', 'notice'),
-        orderBy('createdAt', 'desc'),
-        limit(options.limitCount || 20),
-      );
+      let q;
+
+      if (options.includeInactive) {
+        // 관리자용: 삭제되지 않은 모든 공지사항 (활성/비활성 포함)
+        q = query(
+          collection(db, collections.posts),
+          where('boardType', '==', 'notice'),
+          where('isDeleted', '==', false),
+          orderBy('createdAt', 'desc'),
+          limit(options.limitCount || 50),
+        );
+      } else {
+        // 일반 사용자용: 활성화된 공지사항만
+        q = query(
+          collection(db, collections.posts),
+          where('boardType', '==', 'notice'),
+          where('isDeleted', '==', false),
+          where('isActive', '==', true),
+          orderBy('createdAt', 'desc'),
+          limit(options.limitCount || 20),
+        );
+      }
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // 타임스탬프 정규화
+          createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate()
+            : data.createdAt,
+          updatedAt: data.updatedAt?.toDate
+            ? data.updatedAt.toDate()
+            : data.updatedAt,
+        };
+      });
     } catch (error) {
       console.error('공지사항 목록 조회 실패:', error);
       throw error;
@@ -716,34 +916,22 @@ export const adminService = {
   // 비밀번호 초기화
   async resetUserPassword(userId, newPassword, reason) {
     try {
-      const userRef = doc(db, collections.users, userId);
-      const batch = writeBatch(db);
-
-      // 사용자 정보 업데이트 (실제로는 Firebase Auth 사용)
-      batch.update(userRef, {
-        passwordResetRequired: true, // 다음 로그인 시 비밀번호 변경 강제
-        passwordResetAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      // 변경 이력 저장
-      const historyRef = doc(collection(db, 'userHistory'));
-      batch.set(historyRef, {
+      const result = await callResetUserPasswordAdmin({
         userId,
-        action: 'password_reset',
+        newPassword,
         reason,
-        adminId: 'admin',
-        createdAt: serverTimestamp(),
       });
 
-      await batch.commit();
-
-      // 실제 구현에서는 Firebase Auth의 비밀번호 재설정 이메일 발송
-      console.log(
-        `사용자 ${userId}의 비밀번호가 ${newPassword}로 초기화되었습니다.`,
-      );
-
-      return true;
+      if (result.data.success) {
+        console.log(
+          `사용자 ${userId}의 비밀번호가 성공적으로 초기화되었습니다.`,
+        );
+        return true;
+      } else {
+        throw new Error(
+          result.data.message || '비밀번호 초기화에 실패했습니다.',
+        );
+      }
     } catch (error) {
       console.error('비밀번호 초기화 실패:', error);
       throw error;
@@ -786,7 +974,7 @@ export const adminService = {
       });
 
       // 포인트 변경 이력 저장
-      const pointHistoryRef = doc(collection(db, 'pointHistory'));
+      const pointHistoryRef = doc(collection(db, 'points_history'));
       batch.set(pointHistoryRef, {
         userId,
         change: pointsChange,
@@ -825,5 +1013,137 @@ export const adminService = {
       reason,
       adminId,
     );
+  },
+
+  async updateUserIcon(adminId, userId, icon) {
+    try {
+      // 1. Check for admin permission
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const userRef = doc(db, collections.users, userId);
+      const batch = writeBatch(db);
+
+      // 2. Update user's document
+      batch.update(userRef, {
+        selectedIcon: icon.id,
+        selectedIconData: {
+          id: icon.id,
+          name: icon.name,
+          url: icon.url,
+        },
+        updatedAt: serverTimestamp(),
+        updatedBy: adminId,
+      });
+
+      // 3. Log the change in userHistory
+      const historyRef = doc(collection(db, 'userHistory'));
+      batch.set(historyRef, {
+        userId,
+        type: 'ICON_CHANGE',
+        description: `관리자가 아이콘을 '${icon.name}' (으)로 변경했습니다.`,
+        adminId,
+        createdAt: serverTimestamp(),
+      });
+
+      await batch.commit();
+      return true;
+    } catch (error) {
+      console.error('사용자 아이콘 변경 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 일괄 포인트 지급
+   * @param {string} adminId - 관리자 ID
+   * @param {string} target - 대상 ('all_users', 'active_users', 'new_users', 'vip_users')
+   * @param {number} points - 지급할 포인트
+   * @param {string} reason - 지급 사유
+   */
+  async bulkAwardPoints(adminId, target, points, reason) {
+    try {
+      // 관리자 권한 확인
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      console.log('일괄 포인트 지급 시도:', {
+        adminId,
+        target,
+        points,
+        reason,
+      });
+
+      // pointsService의 bulkAwardPoints 호출
+      const { pointsService } = await import('./points');
+      const result = await pointsService.bulkAwardPoints(
+        target,
+        points,
+        reason,
+        adminId,
+      );
+
+      // 관리자 액션 로그 저장
+      await addDoc(collection(db, 'adminLogs'), {
+        adminId,
+        action: 'BULK_POINTS_AWARD',
+        target,
+        points,
+        reason,
+        targetCount: result.targetCount,
+        totalPoints: result.totalPoints,
+        createdAt: serverTimestamp(),
+      });
+
+      return result;
+    } catch (error) {
+      console.error('일괄 포인트 지급 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 포인트 히스토리 조회 (관리자용)
+   * @param {string} adminId - 관리자 ID
+   * @param {Object} options - 조회 옵션
+   */
+  async getPointsHistory(adminId, options = {}) {
+    try {
+      // 관리자 권한 확인
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const { pointsService } = await import('./points');
+      return await pointsService.getAllPointsHistory(options.limit || 100);
+    } catch (error) {
+      console.error('포인트 히스토리 조회 실패:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 포인트 통계 조회 (관리자용)
+   * @param {string} adminId - 관리자 ID
+   */
+  async getPointsStatistics(adminId) {
+    try {
+      // 관리자 권한 확인
+      const isAdmin = await this.checkAdminPermission(adminId);
+      if (!isAdmin) {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+
+      const { pointsService } = await import('./points');
+      return await pointsService.getPointsStatistics();
+    } catch (error) {
+      console.error('포인트 통계 조회 실패:', error);
+      throw error;
+    }
   },
 };

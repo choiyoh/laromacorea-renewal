@@ -5,7 +5,7 @@
 
 // AS 로마 팀 ID (TheSportsDB 기준)
 const AS_ROMA_TEAM_ID = '133682';
-
+const PISA_TEAM_ID = '133859';
 // TheSportsDB API 설정
 const THESPORTSDB_CONFIG = {
   baseUrl: 'https://www.thesportsdb.com/api/v1/json/123',
@@ -48,7 +48,6 @@ export const matchService = {
 
     // API 실패 시 임시 데이터 반환
     console.info('Using fallback mock data');
-    return this.getMockMatches();
   },
 
   /**
@@ -291,107 +290,5 @@ export const matchService = {
       },
       venue: event.strVenue,
     };
-  },
-
-  /**
-   * 임시 경기 데이터 (API 실패 시 사용)
-   */
-  getMockMatches() {
-    const now = new Date();
-
-    const mockMatches = [
-      {
-        id: 'mock_roma_vs_napoli',
-        utcDate: new Date(
-          now.getTime() + 3 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        status: 'SCHEDULED',
-        homeTeam: {
-          id: '133602',
-          name: 'AS Roma',
-          shortName: 'Roma',
-          crest:
-            'https://www.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
-          logo: 'https://www.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
-        },
-        awayTeam: {
-          id: '133636',
-          name: 'SSC Napoli',
-          shortName: 'Napoli',
-          crest:
-            'https://www.thesportsdb.com/images/media/team/badge/qwtrtp1448813512.png',
-          logo: 'https://www.thesportsdb.com/images/media/team/badge/qwtrtp1448813512.png',
-        },
-        competition: {
-          name: 'Italian Serie A',
-        },
-        venue: 'Stadio Olimpico',
-        date: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        round: 'Regular Season',
-        displayName: 'Roma vs Napoli (8월 30일 20:00)',
-      },
-      {
-        id: 'mock_milan_vs_roma',
-        utcDate: new Date(
-          now.getTime() + 10 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        status: 'SCHEDULED',
-        homeTeam: {
-          id: '133604',
-          name: 'AC Milan',
-          shortName: 'Milan',
-          crest:
-            'https://www.thesportsdb.com/images/media/team/badge/wxuqdr1448813215.png',
-          logo: 'https://www.thesportsdb.com/images/media/team/badge/wxuqdr1448813215.png',
-        },
-        awayTeam: {
-          id: '133602',
-          name: 'AS Roma',
-          shortName: 'Roma',
-          crest:
-            'https://www.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
-          logo: 'https://www.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
-        },
-        competition: {
-          name: 'Italian Serie A',
-        },
-        venue: 'San Siro',
-        date: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-        round: 'Regular Season',
-        displayName: 'Milan vs Roma (9월 6일 20:00)',
-      },
-      {
-        id: 'mock_roma_vs_juventus',
-        utcDate: new Date(
-          now.getTime() + 17 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        status: 'SCHEDULED',
-        homeTeam: {
-          id: '133602',
-          name: 'AS Roma',
-          shortName: 'Roma',
-          crest:
-            'https://www.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
-          logo: 'https://www.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
-        },
-        awayTeam: {
-          id: '133601',
-          name: 'Juventus',
-          shortName: 'Juventus',
-          crest:
-            'https://www.thesportsdb.com/images/media/team/badge/uyqpuv1448813455.png',
-          logo: 'https://www.thesportsdb.com/images/media/team/badge/uyqpuv1448813455.png',
-        },
-        competition: {
-          name: 'Italian Serie A',
-        },
-        venue: 'Stadio Olimpico',
-        date: new Date(now.getTime() + 17 * 24 * 60 * 60 * 1000).toISOString(),
-        round: 'Regular Season',
-        displayName: 'Roma vs Juventus (9월 13일 20:00)',
-      },
-    ];
-
-    return mockMatches;
   },
 };

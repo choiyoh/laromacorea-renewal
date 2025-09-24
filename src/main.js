@@ -33,6 +33,8 @@ import App from './App.vue';
 import router from './router';
 import { useUserStore } from './stores/user';
 import { useErrorStore } from './stores/error';
+import { firebaseConfig } from './services/firebase';
+import VueGtag from 'vue-gtag-next';
 
 // Create Vuetify instance with AS Roma theme colors
 const vuetify = createVuetify({
@@ -73,6 +75,15 @@ const head = createHead();
 
 app.use(pinia);
 app.use(router);
+
+// Add Google Analytics
+app.use(VueGtag, {
+  property: {
+    id: firebaseConfig.measurementId
+  },
+  router
+});
+
 app.use(vuetify);
 app.use(head);
 
@@ -80,7 +91,7 @@ app.use(head);
 app.directive('lazy-image', vLazyImage);
 
 // Initialize browser compatibility
-initializeBrowserCompatibility();
+// initializeBrowserCompatibility();
 
 // Initialize performance optimizations
 inlineCriticalCSS();
@@ -123,6 +134,38 @@ userStore.initializeAuth();
 // Load admin tools in development mode
 if (import.meta.env.DEV) {
   import('./utils/adminTools.js');
+}
+
+// PWA 설정
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) => {
+        // 업데이트 확인
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (
+              newWorker.state === 'installed' &&
+              navigator.serviceWorker.controller
+            ) {
+              // 새 버전 사용 가능
+              navigator.serviceWorker.controller.postMessage({
+                type: 'SW_UPDATE_AVAILABLE',
+                updateSW: () => {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                },
+              });
+            }
+          });
+        });
+      })
+      .catch((registrationError) => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
 }
 
 app.mount('#app');

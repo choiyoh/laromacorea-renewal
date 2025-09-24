@@ -93,6 +93,32 @@
           </v-card-text>
         </v-card>
 
+        <!-- 댓글 작성자명 정리 -->
+        <v-card variant="outlined" class="mb-4">
+          <v-card-title class="text-h6">
+            <v-icon icon="mdi-account-edit" class="mr-2" />
+            댓글 작성자명 정리
+          </v-card-title>
+          <v-card-text>
+            <p class="text-body-2 mb-3">
+              이메일 주소로 표시된 댓글 작성자명을 닉네임으로 변경합니다.
+            </p>
+            <v-btn
+              color="info"
+              :loading="fixingComments"
+              @click="fixCommentAuthorNames"
+            >
+              <v-icon icon="mdi-account-convert" class="mr-2" />
+              댓글 작성자명 정리
+            </v-btn>
+            <div v-if="commentFixResult !== null" class="mt-3">
+              <v-alert type="success" variant="tonal">
+                {{ commentFixResult }}개 댓글의 작성자명이 수정되었습니다.
+              </v-alert>
+            </div>
+          </v-card-text>
+        </v-card>
+
         <!-- 전체 정리 실행 -->
         <v-card variant="outlined">
           <v-card-title class="text-h6">
@@ -117,6 +143,9 @@
                 <ul class="mt-2">
                   <li>테스트 게시글 {{ fullCleanupResult.cleanup }}개 삭제</li>
                   <li>게시글 정보 {{ fullCleanupResult.fix }}개 수정</li>
+                  <li>
+                    댓글 작성자명 {{ fullCleanupResult.commentFix }}개 수정
+                  </li>
                   <li>댓글 수 {{ fullCleanupResult.sync.synced }}개 동기화</li>
                 </ul>
               </v-alert>
@@ -136,11 +165,13 @@ import { adminService } from '@/services/database';
 const syncingComments = ref(false);
 const cleaningPosts = ref(false);
 const fixingPosts = ref(false);
+const fixingComments = ref(false);
 const runningFullCleanup = ref(false);
 
 const syncResult = ref(null);
 const cleanupResult = ref(null);
 const fixResult = ref(null);
+const commentFixResult = ref(null);
 const fullCleanupResult = ref(null);
 
 // Methods
@@ -194,6 +225,20 @@ async function fixPostAuthorInfo() {
   }
 }
 
+async function fixCommentAuthorNames() {
+  fixingComments.value = true;
+  commentFixResult.value = null;
+
+  try {
+    const result = await adminService.fixCommentAuthorNames();
+    commentFixResult.value = result;
+  } catch (error) {
+    alert('댓글 작성자명 정리 중 오류가 발생했습니다.');
+  } finally {
+    fixingComments.value = false;
+  }
+}
+
 async function runFullCleanup() {
   if (
     !confirm(
@@ -213,12 +258,16 @@ async function runFullCleanup() {
     // 2. 게시글 정보 수정
     const fix = await adminService.fixPostAuthorInfo();
 
-    // 3. 댓글 수 동기화
+    // 3. 댓글 작성자명 정리
+    const commentFix = await adminService.fixCommentAuthorNames();
+
+    // 4. 댓글 수 동기화
     const sync = await adminService.syncAllPostCommentCounts();
 
     fullCleanupResult.value = {
       cleanup,
       fix,
+      commentFix,
       sync,
     };
   } catch (error) {

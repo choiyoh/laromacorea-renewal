@@ -13,7 +13,7 @@
         <div class="comment-avatar me-3">
           <UserAvatar
             :user-id="comment.authorId"
-            :display-name="comment.authorName"
+            :display-name="currentAuthorName"
             :static-icon-url="comment.authorIcon"
             size="24"
             default-icon="mdi-account-circle"
@@ -40,7 +40,7 @@
           >
             <div class="d-flex align-center">
               <span class="font-weight-medium text-body-2">{{
-                comment.authorName
+                currentAuthorName
               }}</span>
 
               <!-- 빠른 응원 표시 -->
@@ -170,8 +170,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
+import { useUserInfo } from '@/composables/useUserInfo';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
@@ -187,10 +188,12 @@ const props = defineProps({
 
 const emit = defineEmits(['like', 'reply', 'edit', 'delete']);
 
-// Stores
+// Stores & Composables
 const userStore = useUserStore();
+const { getUserDisplayName } = useUserInfo();
 
 // State
+const currentAuthorName = ref(props.comment.authorName || '익명');
 const deleteDialog = ref(false);
 
 // Computed
@@ -318,6 +321,25 @@ function confirmDelete() {
   emit('delete', props.comment.id);
   deleteDialog.value = false;
 }
+
+// 최신 작성자 정보 로드
+const loadAuthorInfo = async () => {
+  if (!props.comment.authorId) return;
+
+  try {
+    const displayName = await getUserDisplayName(
+      props.comment.authorId,
+      props.comment.authorName || '익명'
+    );
+    currentAuthorName.value = displayName;
+  } catch (error) {
+    console.warn('Failed to load author info:', error);
+  }
+};
+
+onMounted(() => {
+  loadAuthorInfo();
+});
 </script>
 
 <style scoped>

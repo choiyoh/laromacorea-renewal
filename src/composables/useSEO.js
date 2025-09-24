@@ -17,7 +17,7 @@ export function useSEO(options = {}) {
       'AS 로마, AS Roma, 축구, 세리에A, 한국 팬클럽, 로마 팬, 축구 커뮤니티',
     author: 'La Roma Corea',
     image: '/og-image.jpg',
-    url: 'https://laromacorea.com',
+    url: 'https://laromacorea.co.kr',
     type: 'website',
     locale: 'ko_KR',
     siteName: 'La Roma Corea',

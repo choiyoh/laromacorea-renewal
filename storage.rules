@@ -40,6 +40,14 @@ service firebase.storage {
       allow delete: if isAuthenticated();
     }
 
+    // Images folder (for backward compatibility)
+    match /images/posts/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      (isValidImageFile() || isValidVideoFile());
+      allow delete: if isAuthenticated();
+    }
+
     // Test uploads (development only)
     match /test/{path=**} {
       allow read, write, delete: if isAuthenticated() && 
@@ -49,7 +57,14 @@ service firebase.storage {
     // Icon images (for admins only)
     match /icons/{fileName} {
       allow read: if true;
-      allow write: if isAdmin() && isValidImageFile();
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Notice images (for admins only)
+    match /notices/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin();
       allow delete: if isAdmin();
     }
 

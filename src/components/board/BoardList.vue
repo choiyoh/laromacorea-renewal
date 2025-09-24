@@ -7,13 +7,18 @@
         <div class="d-flex align-center">
           <v-icon :icon="boardConfig?.icon" size="large" class="me-2" />
           <h2 class="text-h5">{{ boardConfig?.name }}</h2>
-          <v-chip v-if="totalPosts > 0" size="small" variant="outlined" class="ms-2">
+          <v-chip
+            v-if="totalPosts > 0"
+            size="small"
+            variant="outlined"
+            class="ms-2"
+          >
             {{ totalPosts.toLocaleString() }}개
           </v-chip>
         </div>
 
         <!-- Search and Write Button (Right) -->
-        <div class="d-flex align-center" style="width: 400px;">
+        <div class="d-flex align-center" style="width: 400px">
           <v-text-field
             v-model="searchQuery"
             label="게시글 검색"
@@ -26,7 +31,12 @@
             @click:clear="handleClear"
             @click:prepend-inner="handleSearch"
           />
-          <v-btn v-if="canWrite" color="primary" class="ms-2 flex-shrink-0" @click="handleWritePost">
+          <v-btn
+            v-if="canWrite"
+            color="primary"
+            class="ms-2 flex-shrink-0"
+            @click="handleWritePost"
+          >
             글쓰기
           </v-btn>
         </div>
@@ -46,15 +56,21 @@
 
     <!-- 게시글 목록 -->
     <div v-else-if="posts.length > 0">
-       <!-- 게시글 목록 헤더 -->
+      <!-- 게시글 목록 헤더 -->
       <div class="post-list-header d-none d-md-flex align-center px-3 mb-2">
         <div class="flex-grow-1">
           <h4 class="text-subtitle-2 font-weight-medium">제목</h4>
         </div>
         <div class="post-meta-header d-flex align-center flex-shrink-0">
-          <div class="me-4" style="width: 140px;"><h4 class="text-subtitle-2 font-weight-medium">글쓴이</h4></div>
-          <div class="me-4" style="width: 100px;"><h4 class="text-subtitle-2 font-weight-medium">등록일</h4></div>
-          <div style="width: 80px;"><h4 class="text-subtitle-2 font-weight-medium">조회수</h4></div>
+          <div class="me-4" style="width: 140px">
+            <h4 class="text-subtitle-2 font-weight-medium">글쓴이</h4>
+          </div>
+          <div class="me-4" style="width: 100px">
+            <h4 class="text-subtitle-2 font-weight-medium">등록일</h4>
+          </div>
+          <div style="width: 80px">
+            <h4 class="text-subtitle-2 font-weight-medium">조회수</h4>
+          </div>
         </div>
       </div>
 
@@ -81,18 +97,14 @@
         />
       </div>
 
-      <!-- 더 보기 버튼 (검색이 아닐 때만) -->
-      <div v-if="hasMore && !isSearchActive" class="load-more-section text-center mt-6">
-        <v-btn
-          :loading="loading"
-          color="primary"
-          variant="outlined"
-          size="large"
-          @click="handleLoadMore"
-        >
-          더 보기
-        </v-btn>
-      </div>
+      <!-- 페이지네이션 -->
+      <Pagination
+        v-if="totalPages > 1"
+        :current-page="currentPage"
+        :total-items="totalItems"
+        :items-per-page="itemsPerPage"
+        @page-change="handlePageChange"
+      />
     </div>
 
     <!-- 빈 상태 -->
@@ -100,7 +112,11 @@
       <v-icon icon="mdi-post-outline" size="64" color="grey-lighten-1" />
       <h3 class="text-h6 mt-4 mb-2">게시글이 없습니다</h3>
       <p class="text-body-2 text-grey">
-        {{ isSearchActive ? '검색 결과가 없습니다.' : '첫 번째 게시글을 작성해보세요!' }}
+        {{
+          isSearchActive
+            ? '검색 결과가 없습니다.'
+            : '첫 번째 게시글을 작성해보세요!'
+        }}
       </p>
       <div class="mt-4">
         <v-btn
@@ -126,12 +142,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useSearch } from '@/composables/useSearch'
-import PostListItem from './PostListItem.vue'
-// SearchFilters is no longer used
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+import { useSearch } from '@/composables/useSearch';
+import PostListItem from './PostListItem.vue';
+import Pagination from '@/components/common/Pagination.vue';
 
 const props = defineProps({
   boardType: {
@@ -142,90 +158,94 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
-})
+});
 
-const emit = defineEmits(['view-post'])
+const emit = defineEmits(['view-post']);
 
 // Stores
-const userStore = useUserStore()
-const router = useRouter()
+const userStore = useUserStore();
+const router = useRouter();
 
 // Search composable
-const boardTypeRef = ref(props.boardType)
+const boardTypeRef = ref(props.boardType);
 const {
   searchQuery,
   loading,
   error,
   posts,
-  hasMore,
   isSearchActive,
+  currentPage,
+  totalItems,
+  totalPages,
+  itemsPerPage,
   fetchPosts,
   searchPosts,
   clearSearch,
-  loadMore,
-} = useSearch(boardTypeRef)
+  goToPage,
+} = useSearch(boardTypeRef);
 
 // State
-const totalPosts = ref(0)
+const totalPosts = ref(0);
 
 // Computed
 const canWrite = computed(() => {
-  if (!userStore.isAuthenticated) return false
+  if (!userStore.isAuthenticated) return false;
   if (props.boardConfig?.adminOnly) {
-    return userStore.user?.role === 'admin'
+    return userStore.user?.role === 'admin';
   }
-  return true
-})
+  // 인증된 사용자 중에서도 관리자 승인을 받은 사용자만 글쓰기 가능
+  return userStore.isVerified;
+});
 
 const pinnedPosts = computed(() => {
-  return posts.value.filter((post) => post.isPinned)
-})
+  return posts.value.filter((post) => post.isPinned);
+});
 
 const regularPosts = computed(() => {
-  return posts.value.filter((post) => !post.isPinned)
-})
+  return posts.value.filter((post) => !post.isPinned);
+});
 
 // Methods
 function handleSearch() {
   // Trigger search only if there is a query
   if (searchQuery.value.trim()) {
-    searchPosts()
+    searchPosts();
   }
 }
 
 function handleClear() {
-  clearSearch()
+  clearSearch();
 }
 
-function handleLoadMore() {
-  loadMore()
+function handlePageChange(page) {
+  goToPage(page);
 }
 
 function handleWritePost() {
-  router.push(`/board/${props.boardType}/write`)
+  router.push(`/board/${props.boardType}/write`);
 }
 
 // Watchers
 watch(
   () => props.boardType,
   (newBoardType) => {
-    boardTypeRef.value = newBoardType
+    boardTypeRef.value = newBoardType;
   },
   { immediate: true },
-)
+);
 
 watch(
-  posts,
-  (newPosts) => {
-    totalPosts.value = newPosts.length
+  totalItems,
+  (newTotal) => {
+    totalPosts.value = newTotal;
   },
   { immediate: true },
-)
+);
 
 // Lifecycle
 onMounted(() => {
-  fetchPosts(true)
-})
+  fetchPosts(1);
+});
 </script>
 
 <style scoped>

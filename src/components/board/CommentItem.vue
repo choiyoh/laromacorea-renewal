@@ -1,11 +1,11 @@
 <template>
   <div class="comment-item" :class="{ 'reply-comment': comment.level > 0 }">
-    <div class="comment-wrapper py-2">
+    <div class="comment-wrapper pb-2">
       <div class="d-flex align-start">
         <!-- 작성자 아바타 -->
         <UserAvatar
           :user-id="comment.authorId"
-          :display-name="comment.authorName"
+          :display-name="currentAuthorName"
           :static-icon-url="comment.authorIcon"
           :size="comment.level > 0 ? 20 : 24"
           default-icon="mdi-account-circle"
@@ -20,15 +20,13 @@
           >
             <div class="d-flex align-center">
               <span class="font-weight-medium me-2">{{
-                comment.authorName
+                currentAuthorName
               }}</span>
               <span class="text-caption text-grey-darken-1">{{
                 formatDate(comment.createdAt)
               }}</span>
               <v-chip
-                v-if="
-                  comment.updatedAt && comment.updatedAt !== comment.createdAt
-                "
+                v-if="isCommentEdited"
                 size="x-small"
                 variant="outlined"
                 class="ms-2"
@@ -69,12 +67,10 @@
             <div class="d-flex align-center justify-space-between">
               <div class="d-flex align-center">
                 <span class="text-body-2 font-weight-medium me-2">{{
-                  comment.authorName
+                  currentAuthorName
                 }}</span>
                 <v-chip
-                  v-if="
-                    comment.updatedAt && comment.updatedAt !== comment.createdAt
-                  "
+                  v-if="isCommentEdited"
                   size="x-small"
                   variant="outlined"
                   class="ms-1"
@@ -172,6 +168,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
+import { commentService } from '@/services/database';
+import { useUserInfo } from '@/composables/useUserInfo';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const props = defineProps({
@@ -191,12 +189,14 @@ const props = defineProps({
 
 const emit = defineEmits(['reply', 'edit', 'delete', 'like']);
 
-// Stores
+// Stores & Composables
 const userStore = useUserStore();
+const { getUserDisplayName } = useUserInfo();
 
 // State
 const isLiked = ref(false);
 const likeCount = ref(props.comment.likeCount || 0);
+const currentAuthorName = ref(props.comment.authorName || '익명');
 
 // Computed
 const canEdit = computed(() => {
@@ -213,6 +213,27 @@ const canDelete = computed(() => {
     props.comment.authorId === userStore.user.uid ||
     userStore.user.role === 'admin'
   );
+});
+
+const isCommentEdited = computed(() => {
+  // updatedAt이 없으면 수정되지 않은 것
+  if (!props.comment.updatedAt) return false;
+
+  // createdAt이 없으면 비교할 수 없으므로 false
+  if (!props.comment.createdAt) return false;
+
+  // 두 타임스탬프를 Date 객체로 변환
+  const createdDate = props.comment.createdAt.toDate ?
+    props.comment.createdAt.toDate() :
+    new Date(props.comment.createdAt);
+
+  const updatedDate = props.comment.updatedAt.toDate ?
+    props.comment.updatedAt.toDate() :
+    new Date(props.comment.updatedAt);
+
+  // 1초 이상 차이가 나면 수정된 것으로 간주
+  const timeDiff = Math.abs(updatedDate.getTime() - createdDate.getTime());
+  return timeDiff > 1000;
 });
 
 // Methods
@@ -275,13 +296,30 @@ const loadLikeStatus = async () => {
       props.comment.id,
       userStore.user.uid,
     );
-  } catch (error) {
+  } catch {
     // Error loading like status
+  }
+};
+
+// 최신 작성자 정보 로드
+const loadAuthorInfo = async () => {
+  if (!props.comment.authorId) return;
+
+  try {
+    const displayName = await getUserDisplayName(
+      props.comment.authorId,
+      props.comment.authorName || '익명'
+    );
+    currentAuthorName.value = displayName;
+  } catch (error) {
+    // 사용자 정보 로드 실패 시 기존 이름 유지
+    console.warn('Failed to load author info:', error);
   }
 };
 
 onMounted(() => {
   loadLikeStatus();
+  loadAuthorInfo();
 });
 </script>
 
@@ -294,13 +332,11 @@ onMounted(() => {
 
 .comment-wrapper {
   transition: background-color 0.2s ease;
-  padding: 16px 0 !important;
 }
 
 .comment-wrapper:hover {
   background-color: rgba(var(--v-theme-surface), 0.5);
   border-radius: 8px;
-  padding: 16px 8px !important;
   margin: 0 -8px;
 }
 
@@ -330,9 +366,7 @@ onMounted(() => {
   margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
 }
 
-.replies {
-  /* 답글 목록 스타일 */
-}
+
 
 @media (max-width: 768px) {
   .comment-item {
@@ -348,12 +382,7 @@ onMounted(() => {
     margin-left: 0;
   }
 
-  .comment-wrapper {
-    padding: 14px 0 !important;
-  }
-
   .comment-wrapper:hover {
-    padding: 14px 4px !important;
     margin: 0 -4px;
   }
 

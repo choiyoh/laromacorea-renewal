@@ -4,11 +4,14 @@ import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useResponsive } from '@/composables/useResponsive';
 import { useNetworkStatus } from '@/composables/useNetworkStatus';
+import { initializeCacheManagement } from '@/utils/cacheUtils';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppNavigation from '@/components/layout/AppNavigation.vue';
 import AppFooter from '@/components/layout/AppFooter.vue';
 import ErrorNotification from '@/components/common/ErrorNotification.vue';
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue';
+import PWAUpdatePrompt from '@/components/common/PWAUpdatePrompt.vue';
+import PWAInstallPrompt from '@/components/common/PWAInstallPrompt.vue';
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -28,6 +31,9 @@ const isSplashScreen = computed(() => route.name === 'splash');
 
 // Initialize authentication state listener
 onMounted(() => {
+  // 캐시 관리 초기화
+  initializeCacheManagement();
+
   userStore.initializeAuth();
 
   // Add responsive classes to document (with safety check)
@@ -109,6 +115,10 @@ const handleDrawerOverlayClick = () => {
 
     <!-- Global Error Notifications -->
     <ErrorNotification />
+
+    <!-- PWA Components -->
+    <PWAUpdatePrompt />
+    <PWAInstallPrompt />
   </v-app>
 </template>
 
@@ -127,6 +137,14 @@ const handleDrawerOverlayClick = () => {
 
 .roma-yellow {
   color: #fbba00 !important;
+}
+
+/* v-btn hover color for primary buttons */
+.v-btn.bg-primary:hover {
+  background-color: rgba(
+    var(--v-theme-primary),
+    0.8
+  ) !important; /* Slightly darker primary on hover */
 }
 
 /* Responsive app styles */

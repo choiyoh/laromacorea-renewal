@@ -248,14 +248,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@vueuse/head';
 import { useBoardsStore } from '@/stores/boards';
 import { useUserStore } from '@/stores/user';
-import { postService } from '@/services/database';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/services/firebase';
+
+import { statsService } from '@/services/stats';
 import MatchSchedule from '@/components/match/MatchSchedule.vue';
 import MatchResults from '@/components/match/MatchResults.vue';
 
@@ -344,102 +343,40 @@ function formatDate(timestamp) {
   }
 }
 
-// 실제 통계 데이터 로드
+// 캐싱된 통계 데이터 로드 (Firestore 읽기 사용량 최소화)
 async function loadStats() {
   try {
-    // 사용자 수 조회
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    totalStats.value.users = usersSnapshot.size;
-
-    // 게시글 수 조회 (삭제되지 않은 것만)
-    const postsQuery = query(
-      collection(db, 'posts'),
-      where('isDeleted', '==', false),
-    );
-    const postsSnapshot = await getDocs(postsQuery);
-    totalStats.value.posts = postsSnapshot.size;
-
-    // 댓글 수 조회 (삭제되지 않은 것만)
-    const commentsQuery = query(
-      collection(db, 'comments'),
-      where('isDeleted', '==', false),
-    );
-    const commentsSnapshot = await getDocs(commentsQuery);
-    totalStats.value.comments = commentsSnapshot.size;
+    const stats = await statsService.getSiteStats();
+    totalStats.value = {
+      users: stats.users,
+      posts: stats.posts,
+      comments: stats.comments,
+    };
   } catch (error) {
+    console.error('통계 로드 실패:', error);
     // 에러 발생 시 기본값 유지
     totalStats.value = {
-      users: 1247,
-      posts: 3892,
-      comments: 8456,
+      users: 170,
+      posts: 850,
+      comments: 2100,
     };
   }
 }
 
-// 게시글의 실제 댓글 수와 좋아요 수 로드
-async function loadPostStats(posts) {
-  const postsWithStats = await Promise.all(
-    posts.map(async (post) => {
-      try {
-        // 댓글 수 조회
-        const commentsQuery = query(
-          collection(db, 'comments'),
-          where('postId', '==', post.id),
-          where('isDeleted', '==', false),
-        );
-        const commentsSnapshot = await getDocs(commentsQuery);
-
-        // 좋아요 수 조회 (likes 서브컬렉션)
-        const likesSnapshot = await getDocs(
-          collection(db, 'posts', post.id, 'likes'),
-        );
-
-        return {
-          ...post,
-          commentCount: commentsSnapshot.size,
-          likeCount: likesSnapshot.size,
-        };
-      } catch (error) {
-        return {
-          ...post,
-          commentCount: post.commentCount || 0,
-          likeCount: post.likeCount || 0,
-        };
-      }
-    }),
-  );
-
-  return postsWithStats;
-}
-
-// 각 게시판별 최근 게시물 로드
-async function loadBoardPosts() {
+// 각 게시판별 최근 게시물 로드 (캐싱됨, 통계 쿼리 제거)
+async function loadBoardPosts(forceRefresh = false) {
   loading.value = true;
 
   try {
-    const promises = boardTypes.value.map(async (board) => {
-      try {
-        const posts = await postService.getPosts(board.id, {
-          limitCount: 5,
-          sortBy: 'latest',
-        });
+    // 강제 새로고침 시 캐시 무효화
+    if (forceRefresh) {
+      statsService.invalidateCache();
+    }
 
-        // 실제 댓글 수와 좋아요 수 로드
-        const postsWithStats = await loadPostStats(posts);
-
-        return { boardId: board.id, posts: postsWithStats };
-      } catch (error) {
-        return { boardId: board.id, posts: [] };
-      }
-    });
-
-    const results = await Promise.all(promises);
-
-    // 결과를 boardPosts 객체에 저장
-    results.forEach(({ boardId, posts }) => {
-      boardPosts.value[boardId] = posts;
-    });
+    const cachedPosts = await statsService.getBoardPosts(boardTypes.value);
+    boardPosts.value = cachedPosts;
   } catch (error) {
+    console.error('게시판 게시글 로드 실패:', error);
     // 에러 발생 시 빈 배열로 설정
     boardTypes.value.forEach((board) => {
       boardPosts.value[board.id] = [];
@@ -488,9 +425,24 @@ useHead({
   ],
 });
 
+// 페이지 포커스 시 데이터 새로고침
+function handleVisibilityChange() {
+  if (!document.hidden) {
+    // 페이지가 다시 보일 때 데이터 새로고침
+    loadBoardPosts(true);
+  }
+}
+
 onMounted(() => {
   loadStats();
   loadBoardPosts();
+
+  // 페이지 가시성 변경 이벤트 리스너 추가
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 

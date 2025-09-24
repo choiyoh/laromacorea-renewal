@@ -14,10 +14,45 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css|woff2|woff|ttf|eot)",
+        "source": "/sw.js",
         "headers": [
           {
             "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "source": "/workbox-*.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/manifest.webmanifest",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(js|css|woff2|woff|ttf|eot)",
+        "headers": [
+          {
+            "key": "Cache-control",
             "value": "max-age=31536000, immutable"
           }
         ]
@@ -37,6 +72,14 @@
           {
             "key": "Cache-Control",
             "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
           },
           {
             "key": "X-Content-Type-Options",
@@ -71,6 +114,9 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "functions": {
+    "source": "functions"
   },
   "emulators": {
     "auth": {

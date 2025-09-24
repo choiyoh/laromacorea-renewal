@@ -1,12 +1,19 @@
 <template>
-  <v-avatar :size="size" :class="avatarClass">
+  <div
+    class="avatar-container"
+    :style="{ width: `${size}px`, height: `${size}px` }"
+    :class="avatarClass"
+  >
     <v-img
       v-if="currentIcon?.url || photoURL"
       :src="currentIcon?.url || photoURL"
       :alt="displayName || '익명'"
+      height="100%"
+      width="100%"
+      style="object-fit: contain;"
     />
     <v-icon v-else :icon="defaultIcon" :size="computedIconSize" />
-  </v-avatar>
+  </div>
 </template>
 
 <script setup>
@@ -96,3 +103,15 @@ watch(
   },
 );
 </script>
+
+<style scoped>
+.avatar-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  background-color: #f0f0f0; /* Add a background color for transparency */
+}
+</style>

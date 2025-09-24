@@ -2,7 +2,7 @@
   <v-footer
     color="primary"
     dark
-    app
+    :app="!mdAndUp"
     class="footer-container footer-transition"
     :class="{ 'footer-hidden': mobile && isScrollingDown }"
   >
@@ -61,7 +61,7 @@
       <!-- Mobile Footer - Copyright Only -->
       <div class="d-md-none text-center mobile-footer-minimal">
         <p class="text-caption mb-0">
-          © {{ currentYear }} www.laromacorea.com All Rights reserved.
+          © {{ currentYear }} www.laromacorea.co.kr All Rights reserved.
         </p>
       </div>
 
@@ -71,7 +71,7 @@
         <v-row>
           <v-col cols="12" class="text-center py-1">
             <p class="text-caption mt-1">
-              © {{ currentYear }} www.laromacorea.com All Rights reserved.
+              © {{ currentYear }} www.laromacorea.co.kr All Rights reserved.
             </p>
           </v-col>
         </v-row>
@@ -86,7 +86,7 @@ import { useDisplay } from 'vuetify';
 import { useScrollDirection } from '@/composables/useScrollDirection';
 
 // Composables
-const { mobile } = useDisplay();
+const { mobile, mdAndUp } = useDisplay();
 const { isScrollingDown } = useScrollDirection();
 
 // Computed
@@ -97,17 +97,17 @@ const socialLinks = [
   {
     name: 'Facebook',
     icon: 'mdi-facebook',
-    url: 'https://facebook.com/asroma',
+    url: 'https://www.facebook.com/officialasroma',
   },
   {
     name: 'Twitter',
     icon: 'mdi-twitter',
-    url: 'https://twitter.com/asroma',
+    url: 'https://x.com/officialasroma',
   },
   {
     name: 'Instagram',
     icon: 'mdi-instagram',
-    url: 'https://instagram.com/asroma',
+    url: 'https://www.instagram.com/officialasroma/',
   },
   {
     name: 'YouTube',

@@ -148,8 +148,11 @@
       </div>
 
       <!-- 게시글 내용 -->
-      <div class="post-content mb-8">
+      <div class="post-content mb-4">
         <div class="post-body mb-6" v-html="post.content"></div>
+
+        <!-- 트위터 임베드 -->
+        <TweetEmbed v-if="post.tweetUrl" :tweet-url="post.tweetUrl" />
 
         <!-- 미디어 첨부파일 -->
         <div
@@ -169,12 +172,15 @@
                 :src="mediaUrl"
                 class="rounded cursor-pointer"
                 cover
+                loading="lazy"
+                :eager="index < 2"
                 @click="openMediaViewer(mediaUrl)"
               />
               <video
                 v-else-if="isVideo(mediaUrl)"
                 :src="mediaUrl"
                 controls
+                preload="metadata"
                 class="rounded"
                 style="width: 100%; max-height: 300px"
               />
@@ -209,7 +215,172 @@
             >
               추천 {{ post.likeCount || 0 }}
             </v-btn>
+            <v-spacer></v-spacer>
+            <v-btn @click="goToList" color="primary"> 목록 </v-btn>
           </div>
+        </div>
+      </div>
+
+      <!-- 이전/다음 글 네비게이션 -->
+      <div
+        v-if="adjacentPosts.prevPost || adjacentPosts.nextPost"
+        class="post-navigation mb-6"
+      >
+        <div class="custom-divider mb-4"></div>
+
+        <!-- 이전 글 -->
+        <div v-if="adjacentPosts.prevPost" class="nav-post prev-post mb-1">
+          <v-card
+            variant="outlined"
+            class="nav-card cursor-pointer"
+            @click="navigateToPost(adjacentPosts.prevPost.id)"
+          >
+            <v-card-text class="pa-1">
+              <!-- Desktop Layout -->
+              <div class="d-none d-md-block">
+                <div class="d-flex align-center">
+                  <div class="nav-label me-3">
+                    <v-icon icon="mdi-chevron-left" size="18" class="me-1" />
+                    이전글
+                  </div>
+                  <div class="nav-post-title me-3 flex-grow-1">
+                    {{ adjacentPosts.prevPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="12" class="me-1" />
+                    <span>{{ adjacentPosts.prevPost.commentCount || 0 }}</span>
+                  </div>
+                  <div class="nav-post-meta">
+                    <div
+                      class="d-flex align-center justify-space-between text-caption text-grey-darken-1"
+                    >
+                      <div class="d-flex align-center">
+                        <UserAvatar
+                          :user-id="adjacentPosts.prevPost.authorId"
+                          :display-name="adjacentPosts.prevPost.authorName"
+                          :photo-u-r-l="adjacentPosts.prevPost.authorPhotoURL"
+                          :static-icon-url="adjacentPosts.prevPost.authorIcon"
+                          size="16"
+                          avatar-class="me-1"
+                        />
+                        <span>{{
+                          adjacentPosts.prevPost.authorName || '익명'
+                        }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mobile Layout -->
+              <div class="d-md-none">
+                <div class="d-flex align-center">
+                  <div class="nav-label me-2 flex-shrink-0">
+                    <v-icon icon="mdi-chevron-left" size="16" class="me-1" />
+                    이전글
+                  </div>
+                  <div class="nav-post-title flex-grow-1 me-2">
+                    {{ adjacentPosts.prevPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="10" class="me-1" />
+                    <span>{{ adjacentPosts.prevPost.commentCount || 0 }}</span>
+                  </div>
+                  <div class="nav-post-meta">
+                    <div
+                      class="d-flex align-center text-caption text-grey-darken-1"
+                    >
+                      <UserAvatar
+                        :user-id="adjacentPosts.prevPost.authorId"
+                        :display-name="adjacentPosts.prevPost.authorName"
+                        :photo-u-r-l="adjacentPosts.prevPost.authorPhotoURL"
+                        :static-icon-url="adjacentPosts.prevPost.authorIcon"
+                        size="14"
+                        avatar-class="me-1"
+                      />
+                      <span style="white-space: nowrap">{{
+                        adjacentPosts.prevPost.authorName || '익명'
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </div>
+        <div class="custom-divider" v-if="adjacentPosts.prevPost"></div>
+        <!-- 다음 글 -->
+        <div v-if="adjacentPosts.nextPost" class="nav-post next-post mt-1">
+          <v-card
+            variant="outlined"
+            class="nav-card cursor-pointer"
+            @click="navigateToPost(adjacentPosts.nextPost.id)"
+          >
+            <v-card-text class="pa-1">
+              <!-- Desktop Layout -->
+              <div class="d-none d-md-block">
+                <div class="d-flex align-center">
+                  <div class="nav-label me-3">
+                    다음글
+                    <v-icon icon="mdi-chevron-right" size="18" class="ms-1" />
+                  </div>
+                  <div class="nav-post-title me-3 flex-grow-1">
+                    {{ adjacentPosts.nextPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="12" class="me-1" />
+                    <span>{{ adjacentPosts.nextPost.commentCount || 0 }}</span>
+                  </div>
+
+                  <div class="nav-post-meta">
+                    <div
+                      class="d-flex align-center justify-space-between text-caption text-grey-darken-1"
+                    >
+                      <div class="d-flex align-center">
+                        <UserAvatar
+                          :user-id="adjacentPosts.nextPost.authorId"
+                          :display-name="adjacentPosts.nextPost.authorName"
+                          :photo-u-r-l="adjacentPosts.nextPost.authorPhotoURL"
+                          :static-icon-url="adjacentPosts.nextPost.authorIcon"
+                          size="16"
+                          avatar-class="me-1"
+                        />
+                        <span>{{
+                          adjacentPosts.nextPost.authorName || '익명'
+                        }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mobile Layout -->
+              <div class="d-md-none">
+                <div class="d-flex align-center">
+                  <div class="nav-label me-2 flex-shrink-0">
+                    다음글
+                    <v-icon icon="mdi-chevron-right" size="16" class="ms-1" />
+                  </div>
+                  <div class="nav-post-title flex-grow-1 me-2">
+                    {{ adjacentPosts.nextPost.title }}
+                    <v-icon icon="mdi-comment-outline" size="10" class="me-1" />
+                    <span>{{ adjacentPosts.nextPost.commentCount || 0 }}</span>
+                  </div>
+                  <div class="nav-post-meta">
+                    <div
+                      class="d-flex align-center text-caption text-grey-darken-1"
+                    >
+                      <UserAvatar
+                        :user-id="adjacentPosts.nextPost.authorId"
+                        :display-name="adjacentPosts.nextPost.authorName"
+                        :photo-u-r-l="adjacentPosts.nextPost.authorPhotoURL"
+                        :static-icon-url="adjacentPosts.nextPost.authorIcon"
+                        size="14"
+                        avatar-class="me-1"
+                      />
+                      <span style="white-space: nowrap">{{
+                        adjacentPosts.nextPost.authorName || '익명'
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
         </div>
       </div>
 
@@ -234,12 +405,16 @@
         v-else
         :post-id="post.id"
         :comments="comments"
+        :total-comments="post.commentCount"
         :loading="commentsLoading"
+        :loading-more="commentsLoadingMore"
+        :has-more="hasMoreComments"
         :board-type="post.boardType"
         @comment-added="handleCommentAdded"
         @comment-updated="handleCommentUpdated"
         @comment-deleted="handleCommentDeleted"
-        @refresh-comments="fetchComments"
+        @refresh-comments="() => fetchComments(false)"
+        @load-more="() => fetchComments(true)"
       />
     </div>
 
@@ -275,13 +450,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { postService, commentService } from '@/services/database';
+import { useRouter } from 'vue-router';
+import { useMobileOptimization } from '@/composables/useMobileOptimization';
 import CommentSystem from './CommentSystem.vue';
 import MatchCommentSystem from './MatchCommentSystem.vue';
 import MatchInfo from './MatchInfo.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+import TweetEmbed from '@/components/common/TweetEmbed.vue';
 
 const props = defineProps({
   postId: {
@@ -290,21 +468,37 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['edit-post', 'delete-post', 'post-updated']);
+const emit = defineEmits([
+  'edit-post',
+  'delete-post',
+  'post-updated',
+  'navigate-to-post',
+  'go-to-list',
+]);
+
+const router = useRouter();
 
 // Stores
 const userStore = useUserStore();
 
+// Mobile optimization
+const { isMobile, getOptimizedImageUrl, getCommentLoadingStrategy } =
+  useMobileOptimization();
+
 // State
 const post = ref(null);
 const comments = ref([]);
+const lastCommentDoc = ref(null); // 댓글 페이지네이션을 위한 마지막 문서 참조
 const loading = ref(false);
 const commentsLoading = ref(false);
+const commentsLoadingMore = ref(false);
+const hasMoreComments = ref(false);
 const error = ref(null);
 const isLiked = ref(false);
 const mediaViewerDialog = ref(false);
 const selectedMedia = ref('');
 const deleteDialog = ref(false);
+const adjacentPosts = ref({ prevPost: null, nextPost: null });
 
 // Computed
 const canEdit = computed(() => {
@@ -336,13 +530,32 @@ async function fetchPost() {
     }
     post.value = fetchedPost;
 
-    // Check if user has liked this post
+    // 병렬로 처리하여 로딩 시간 단축
+    const promises = [];
+
+    // Check if user has liked this post (비동기)
     if (userStore.isAuthenticated) {
-      isLiked.value = await postService.checkPostLike(
-        props.postId,
-        userStore.user.uid,
+      promises.push(
+        postService
+          .checkPostLike(props.postId, userStore.user.uid)
+          .then((liked) => {
+            isLiked.value = liked;
+          })
+          .catch(() => {
+            isLiked.value = false;
+          }),
       );
     }
+
+    // Fetch adjacent posts (비동기)
+    promises.push(
+      fetchAdjacentPosts().catch((error) => {
+        console.warn('Failed to fetch adjacent posts:', error);
+      }),
+    );
+
+    // 모든 비동기 작업을 병렬로 처리
+    await Promise.allSettled(promises);
   } catch (err) {
     error.value = '게시글을 불러오는 중 오류가 발생했습니다.';
   } finally {
@@ -350,33 +563,47 @@ async function fetchPost() {
   }
 }
 
-async function fetchComments() {
-  if (!props.postId) {
-    return;
+async function fetchComments(loadMore = false) {
+  if (!props.postId) return;
+
+  if (loadMore) {
+    commentsLoadingMore.value = true;
+  } else {
+    commentsLoading.value = true;
+    comments.value = [];
+    lastCommentDoc.value = null;
   }
 
-  commentsLoading.value = true;
   try {
-    const fetchedComments = await commentService.getComments(props.postId);
-    comments.value = fetchedComments;
+    // 모바일 최적화된 댓글 로딩 전략 사용
+    const strategy = getCommentLoadingStrategy();
+    const limitCount = loadMore ? strategy.loadMore : strategy.initialLoad;
 
-    // 댓글 수 동기화 (실제 댓글 수와 게시글의 commentCount 필드 동기화)
-    if (post.value && post.value.commentCount !== fetchedComments.length) {
-      try {
-        await commentService.syncPostCommentCount(props.postId);
-        // 게시글 정보 다시 로드하여 업데이트된 댓글 수 반영
-        const updatedPost = await postService.getPost(props.postId);
-        if (updatedPost) {
-          post.value = updatedPost;
-        }
-      } catch (syncError) {
-        // Failed to sync comment count
-      }
+    const {
+      comments: fetchedComments,
+      lastDoc,
+      hasMore,
+    } = await commentService.getComments(props.postId, {
+      lastDoc: lastCommentDoc.value,
+      limitCount,
+    });
+
+    comments.value.push(...fetchedComments);
+    lastCommentDoc.value = lastDoc;
+    hasMoreComments.value = hasMore;
+
+    // 댓글 수 동기화는 첫 로드 시에만 실행하여 정확한 총 댓글 수를 표시
+    if (!loadMore && post.value) {
+      const actualCommentCount = await commentService.syncPostCommentCount(
+        props.postId,
+      );
+      post.value.commentCount = actualCommentCount;
     }
   } catch (err) {
-    // Error fetching comments
+    console.error('댓글을 불러오는 중 오류가 발생했습니다:', err);
   } finally {
     commentsLoading.value = false;
+    commentsLoadingMore.value = false;
   }
 }
 
@@ -477,11 +704,44 @@ function handleCommentDeleted(commentId) {
   }
 }
 
+async function fetchAdjacentPosts() {
+  if (!post.value) return;
+
+  try {
+    const result = await postService.getAdjacentPosts(
+      props.postId,
+      post.value.boardType,
+    );
+
+    adjacentPosts.value = result;
+  } catch (error) {
+    console.error('Error fetching adjacent posts:', error);
+  }
+}
+
+function goToList() {
+  emit('go-to-list');
+}
+
+function navigateToPost(postId) {
+  emit('navigate-to-post', postId);
+}
+
 // Lifecycle
 onMounted(async () => {
-  await fetchPost();
-  await fetchComments();
+  // 게시글과 댓글을 병렬로 로드하여 성능 향상
+  await Promise.all([fetchPost(), fetchComments()]);
 });
+
+watch(
+  () => props.postId,
+  async (newPostId, oldPostId) => {
+    if (newPostId && newPostId !== oldPostId) {
+      await fetchPost();
+      await fetchComments();
+    }
+  },
+);
 </script>
 
 <style scoped>
@@ -506,7 +766,7 @@ onMounted(async () => {
 }
 
 .post-body {
-  line-height: 1.1;
+  line-height: 1.5;
   word-break: break-word;
   font-size: 1rem;
   min-height: 200px;
@@ -517,10 +777,10 @@ onMounted(async () => {
   height: auto;
   border-radius: 8px;
   margin: 16px 0;
-}
-
-.post-body :deep(p) {
-  margin-bottom: 1.2rem;
+  /* 이미지 로딩 최적화 */
+  loading: lazy;
+  /* 모바일에서 이미지 압축 */
+  image-rendering: optimizeQuality;
 }
 
 .post-body :deep(h1),
@@ -579,6 +839,109 @@ onMounted(async () => {
   padding: 0;
 }
 
+.post-navigation {
+  margin-top: 1rem;
+}
+
+.nav-post {
+  margin-bottom: 1rem;
+}
+
+.nav-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-primary));
+  white-space: nowrap;
+}
+
+.nav-card {
+  transition: all 0.2s ease;
+  border: 1px solid rgba(var(--v-theme-outline), 0.2);
+}
+
+.nav-card:hover {
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 2px 8px rgba(var(--v-theme-primary), 0.1);
+  transform: translateY(-1px);
+}
+
+.nav-post-title {
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+/* Desktop: 한 줄로 표시 */
+@media (min-width: 768px) {
+  .nav-post-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Mobile: 여러 줄 표시 */
+@media (max-width: 767px) {
+  .nav-post-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    font-weight: 500;
+  }
+
+  .nav-label {
+    font-size: 0.75rem;
+    align-self: flex-start;
+    margin-top: 1px;
+    line-height: 1.2;
+  }
+
+  /* 모바일 전용 간결한 스타일 */
+  .d-md-none .v-card-text {
+    padding: 8px 12px !important;
+  }
+
+  .d-md-none .nav-post-meta {
+    margin-top: 4px;
+  }
+
+  .d-md-none .nav-post-meta .text-caption {
+    font-size: 0.65rem;
+    line-height: 1.2;
+  }
+
+  .d-md-none .nav-post-meta .d-flex {
+    gap: 4px;
+  }
+
+  .d-md-none .nav-post-meta .me-2 {
+    margin-right: 6px !important;
+  }
+
+  /* 모바일에서 카드 간격 줄이기 */
+  .nav-post.prev-post {
+    margin-bottom: 8px !important;
+  }
+
+  /* 모바일에서 mb-2를 mb-1로 변경 */
+  .d-md-none .mb-2 {
+    margin-bottom: 4px !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .post-body :deep(img) {
+    max-width: 60%;
+  }
+}
+
 @media (max-width: 768px) {
   .post-header h1 {
     font-size: 1.5rem !important;
@@ -598,6 +961,16 @@ onMounted(async () => {
   .post-content,
   .post-actions {
     padding: 0;
+  }
+
+  .nav-post-meta .text-caption {
+    font-size: 0.65rem;
+  }
+
+  /* 네비게이션 전체 여백 줄이기 */
+  .post-navigation {
+    margin-top: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
   }
 }
 </style>

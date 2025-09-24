@@ -141,6 +141,22 @@ export const useUserStore = defineStore('user', () => {
         user.value = { ...user.value, ...updates };
       }
 
+      // 닉네임이 변경된 경우 사용자 정보 캐시 무효화
+      if (updates.displayName && user.value?.uid) {
+        try {
+          const { useUserInfo } = await import('@/composables/useUserInfo');
+          const { invalidateUserCache, updateUserInfo } = useUserInfo();
+
+          // 해당 사용자의 캐시 무효화
+          invalidateUserCache(user.value.uid);
+
+          // 새로운 정보로 캐시 업데이트
+          updateUserInfo(user.value.uid, user.value);
+        } catch (error) {
+          console.warn('Failed to invalidate user cache:', error);
+        }
+      }
+
       return user.value;
     } catch (err) {
       error.value = err.message;

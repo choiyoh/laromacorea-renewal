@@ -13,6 +13,7 @@ export const useBoardsStore = defineStore('boards', () => {
   const currentPost = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const pagination = ref({});
 
   // Board types configuration
   const boardTypes = ref([
@@ -40,19 +41,74 @@ export const useBoardsStore = defineStore('boards', () => {
   });
 
   // Actions
-  async function fetchPosts(boardType = null, limitCount = 20) {
+  async function fetchPosts(boardType = null, options = {}) {
+    const { page = 1, limitCount = 15, sortBy = 'latest' } = options;
     const loadingKey = `fetch-posts-${boardType || 'all'}`;
     errorStore.setLoading(loadingKey, true);
     error.value = null;
 
     try {
-      const options = {
-        limitCount,
-        sortBy: 'latest',
-      };
+      if (boardType) {
+        const boardPagination = pagination.value[boardType];
+        const isNextPage = page === (boardPagination?.currentPage || 0) + 1;
 
-      const fetchedPosts = await postService.getPosts(boardType, options);
-      posts.value = fetchedPosts;
+        let startAfterCursor = null;
+
+        if (isNextPage) {
+          startAfterCursor = boardPagination.cursors[page - 1];
+        } else {
+          // 페이지 점프 시 커서 캐시 초기화
+          if (pagination.value[boardType]) {
+            pagination.value[boardType].cursors = { 1: null };
+          }
+          startAfterCursor = await postService.getCursorForPage(
+            boardType,
+            page,
+            limitCount,
+            sortBy,
+          );
+        }
+
+        if (startAfterCursor === 'invalid-page') {
+          posts.value = [];
+          if (pagination.value[boardType]) {
+            pagination.value[boardType].totalCount = 0;
+            pagination.value[boardType].totalPages = 0;
+          }
+          return;
+        }
+
+        const result = await postService.getPostsWithPagination(boardType, {
+          lastDoc: startAfterCursor,
+          limitCount,
+          sortBy,
+        });
+
+        posts.value = result.posts;
+
+        if (!pagination.value[boardType]) {
+          pagination.value[boardType] = {
+            cursors: { 1: null },
+            currentPage: 0,
+            totalCount: 0,
+            totalPages: 0,
+          };
+        }
+
+        const currentBoardPagination = pagination.value[boardType];
+        currentBoardPagination.cursors[page] = result.lastDoc;
+        currentBoardPagination.currentPage = page;
+        currentBoardPagination.totalCount = result.totalCount;
+        currentBoardPagination.totalPages = Math.ceil(
+          result.totalCount / limitCount,
+        );
+      } else {
+        const fetchedPosts = await postService.getPosts(boardType, {
+          limitCount,
+          sortBy,
+        });
+        posts.value = fetchedPosts;
+      }
     } catch (err) {
       error.value = err.message;
       errorStore.handleFirebaseError(
@@ -168,6 +224,7 @@ export const useBoardsStore = defineStore('boards', () => {
     loading,
     error,
     boardTypes,
+    pagination,
 
     // Getters
     getPostsByBoard,

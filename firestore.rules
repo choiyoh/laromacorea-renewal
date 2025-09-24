@@ -13,122 +13,112 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    function isValidUser() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     // Users collection
     match /users/{userId} {
-      // Users can read their own profile and other users' public info
       allow read: if true;
-      // Users can only create/update their own profile
       allow create: if isOwner(userId) && 
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.role == 'user';
-      allow update: if isOwner(userId) || isAdmin();
-      // Only admins can delete users
-      allow delete: if isAdmin();
+      allow update: if isOwner(userId) || (isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow delete: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Posts collection
     match /posts/{postId} {
-      // Anyone can read posts
       allow read: if true;
-      
-      // Authenticated users can create posts
-      allow create: if isValidUser() && 
+      allow create: if (isAuthenticated() && 
                        request.resource.data.authorId == request.auth.uid &&
-                       request.resource.data.boardType in ['squad', 'match', 'calcio', 'free', 'special', 'media'] ||
+                       request.resource.data.boardType in ['squad', 'match', 'calcio', 'free', 'special', 'media']) ||
                        (isAdmin() && request.resource.data.boardType == 'notice');
-      
-      // Authors can update their own posts, admins can update any post
-      allow update: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || 
-                       isAdmin();
-      
-      // Authors can delete their own posts, admins can delete any post
-      allow delete: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || 
-                       isAdmin();
+      allow update: if 
+                       // Allow anyone to increment viewCount, and nothing else
+                       (request.resource.data.viewCount == resource.data.viewCount + 1 &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']))
+                       ||
+                       // Allow any authenticated user to sync commentCount, and nothing else
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']) &&
+                        isAuthenticated())
+                       ||
+                       // Allow author/admin to perform other updates
+                       ((isAuthenticated() && request.auth.uid == resource.data.authorId) || isAdmin());
+      allow delete: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || isAdmin();
+
+      // Likes subcollection for posts
+      match /likes/{userId} {
+        allow read: if isAuthenticated();
+        allow create, delete: if isOwner(userId);
+        allow update: if false;
+      }
     }
 
     // Comments collection
     match /comments/{commentId} {
-      // Anyone can read comments
       allow read: if true;
-      
-      // Authenticated users can create comments
-      allow create: if isValidUser() && 
+      allow create: if isAuthenticated() && 
                        request.resource.data.authorId == request.auth.uid;
-      
-      // Authors can update their own comments, admins can update any comment
-      allow update: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || 
-                       isAdmin();
-      
-      // Authors can delete their own comments, admins can delete any comment
-      allow delete: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || 
-                       isAdmin();
+      allow update: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || isAdmin();
+      allow delete: if (isAuthenticated() && request.auth.uid == resource.data.authorId) || isAdmin();
+
+      // Likes subcollection for comments
+      match /likes/{userId} {
+        allow read: if isAuthenticated();
+        allow create, delete: if isOwner(userId);
+        allow update: if false;
+      }
     }
 
     // Icons collection
     match /icons/{iconId} {
-      // Anyone can read icons
       allow read: if true;
-      
-      // Only admins can create, update, or delete icons
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || 
+                       (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['purchaseCount']));
     }
 
     // Points history collection
     match /points_history/{historyId} {
-      // Users can read their own points history, admins can read all
-      allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || 
-                     isAdmin();
-      
-      // Only the system (through Cloud Functions) or admins can create points history
-      allow create: if isAdmin() || 
-                       (isAuthenticated() && request.resource.data.userId == request.auth.uid);
-      
-      // Only admins can update or delete points history
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // User history collection
+    match /userHistory/{historyId} {
+      allow read: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       allow update, delete: if isAdmin();
     }
 
     // Boards collection (게시판 설정)
     match /boards/{boardId} {
-      // Anyone can read board configurations
       allow read: if true;
-      
-      // Only admins can modify board settings
       allow create, update, delete: if isAdmin();
     }
 
     // User purchased icons (subcollection)
     match /users/{userId}/purchased_icons/{iconId} {
-      // Users can read their own purchased icons
       allow read: if isOwner(userId) || isAdmin();
-      
-      // Only the system can create purchased icon records
       allow create: if isOwner(userId);
-      
-      // No updates or deletes allowed
       allow update, delete: if false;
     }
 
     // User notifications (subcollection)
     match /users/{userId}/notifications/{notificationId} {
-      // Users can read their own notifications
       allow read: if isOwner(userId);
-      
-      // System can create notifications
       allow create: if isAuthenticated();
-      
-      // Users can mark their notifications as read
       allow update: if isOwner(userId);
-      
-      // Users can delete their notifications
       allow delete: if isOwner(userId);
+    }
+
+    // Admin logs collection
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
     }
   }
 }

@@ -16,14 +16,14 @@ export function generateSitemap(urls) {
     <lastmod>${url.lastmod || new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>${url.changefreq || 'weekly'}</changefreq>
     <priority>${url.priority || '0.5'}</priority>
-  </url>`
+  </url>`;
     })
-    .join('')
+    .join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urlEntries}
-</urlset>`
+</urlset>`;
 }
 
 /**
@@ -31,7 +31,7 @@ ${urlEntries}
  * @param {string} baseUrl - Base URL of the site
  * @returns {Array} Array of static URL objects
  */
-export function getStaticRoutes(baseUrl = 'https://laromacorea.com') {
+export function getStaticRoutes(baseUrl = 'https://laromacorea.co.kr') {
   return [
     {
       loc: baseUrl,
@@ -73,7 +73,7 @@ export function getStaticRoutes(baseUrl = 'https://laromacorea.com') {
       changefreq: 'weekly',
       priority: '0.6',
     },
-  ]
+  ];
 }
 
 /**
@@ -82,13 +82,13 @@ export function getStaticRoutes(baseUrl = 'https://laromacorea.com') {
  * @param {string} baseUrl - Base URL of the site
  * @returns {Array} Array of dynamic URL objects
  */
-export function getDynamicRoutes(posts, baseUrl = 'https://laromacorea.com') {
+export function getDynamicRoutes(posts, baseUrl = 'https://laromacorea.co.kr') {
   return posts.map((post) => ({
     loc: `${baseUrl}/board/${post.boardType}/post/${post.id}`,
     lastmod: post.updatedAt || post.createdAt,
     changefreq: 'monthly',
     priority: '0.5',
-  }))
+  }));
 }
 
 /**
@@ -97,10 +97,13 @@ export function getDynamicRoutes(posts, baseUrl = 'https://laromacorea.com') {
  * @param {string} baseUrl - Base URL of the site
  * @returns {string} Generated sitemap XML
  */
-export function generateFullSitemap(posts = [], baseUrl = 'https://laromacorea.com') {
-  const staticRoutes = getStaticRoutes(baseUrl)
-  const dynamicRoutes = getDynamicRoutes(posts, baseUrl)
-  const allRoutes = [...staticRoutes, ...dynamicRoutes]
+export function generateFullSitemap(
+  posts = [],
+  baseUrl = 'https://laromacorea.co.kr',
+) {
+  const staticRoutes = getStaticRoutes(baseUrl);
+  const dynamicRoutes = getDynamicRoutes(posts, baseUrl);
+  const allRoutes = [...staticRoutes, ...dynamicRoutes];
 
-  return generateSitemap(allRoutes)
+  return generateSitemap(allRoutes);
 }

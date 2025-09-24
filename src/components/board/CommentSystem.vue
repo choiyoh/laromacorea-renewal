@@ -3,7 +3,7 @@
     <!-- 댓글 헤더 -->
     <div class="comments-header mb-4">
       <div class="text-body-1 font-weight-medium mb-3">
-        댓글 <span class="text-grey-darken-1">{{ comments.length }}</span>
+        댓글 <span class="text-grey-darken-1">{{ totalComments }}</span>
       </div>
       <div class="custom-divider"></div>
     </div>
@@ -143,6 +143,17 @@
           @like="handleLikeComment"
         />
       </div>
+
+      <!-- 더 보기 버튼 -->
+      <div v-if="hasMore" class="text-center mt-6">
+        <v-btn
+          variant="tonal"
+          :loading="loadingMore"
+          @click="$emit('load-more')"
+        >
+          댓글 더 보기
+        </v-btn>
+      </div>
     </div>
 
     <!-- 답글 작성 다이얼로그 -->
@@ -162,7 +173,7 @@
                 avatar-class="me-2"
               />
               <span class="font-weight-medium">{{
-                replyTarget?.authorName
+                replyTarget?.currentAuthorName || replyTarget?.authorName
               }}</span>
             </div>
             <p class="text-body-2">{{ replyTarget?.content }}</p>
@@ -261,6 +272,7 @@
 import { ref, computed, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { commentService } from '@/services/database';
+import { useUserInfo } from '@/composables/useUserInfo';
 import CommentItem from './CommentItem.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 
@@ -277,9 +289,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  loadingMore: {
+    type: Boolean,
+    default: false,
+  },
+  hasMore: {
+    type: Boolean,
+    default: false,
+  },
   boardType: {
     type: String,
     default: '',
+  },
+  totalComments: {
+    type: Number,
+    default: 0,
   },
 });
 
@@ -289,10 +313,12 @@ const emit = defineEmits([
   'comment-deleted',
   'login-required',
   'refresh-comments',
+  'load-more',
 ]);
 
-// Stores
+// Stores & Composables
 const userStore = useUserStore();
+const { getUserDisplayName } = useUserInfo();
 
 // State
 const newCommentContent = ref('');
@@ -346,7 +372,7 @@ async function handleSubmitComment() {
       postId: props.postId,
       content: newCommentContent.value.trim(),
       authorId: userStore.user.uid,
-      authorName: userStore.user.displayName || userStore.user.email,
+      authorName: userStore.userDisplayName,
       authorIcon: userStore.user.selectedIconData?.url || null,
     };
 
@@ -367,8 +393,22 @@ async function handleSubmitComment() {
   }
 }
 
-function handleReply(comment) {
-  replyTarget.value = comment;
+async function handleReply(comment) {
+  replyTarget.value = { ...comment };
+
+  // 답글 대상의 최신 작성자 정보 로드
+  if (comment.authorId) {
+    try {
+      const displayName = await getUserDisplayName(
+        comment.authorId,
+        comment.authorName || '익명'
+      );
+      replyTarget.value.currentAuthorName = displayName;
+    } catch (error) {
+      console.warn('Failed to load reply target author info:', error);
+    }
+  }
+
   replyContent.value = '';
   replyDialog.value = true;
 }
@@ -383,7 +423,7 @@ async function handleSubmitReply() {
       parentId: replyTarget.value.id,
       content: replyContent.value.trim(),
       authorId: userStore.user.uid,
-      authorName: userStore.user.displayName || userStore.user.email,
+      authorName: userStore.userDisplayName,
       authorIcon: userStore.user.selectedIconData?.url || null,
     };
 

@@ -114,6 +114,62 @@ export const userService = {
  * 게시글 관련 데이터베이스 작업
  */
 export const postService = {
+  // 페이지 점프를 위한 커서 조회 (비효율적일 수 있음)
+  async getCursorForPage(boardType, page, limitCount, sortBy = 'latest') {
+    if (page <= 1) {
+      return null;
+    }
+
+    const offset = (page - 1) * limitCount;
+
+    let constraints = [
+      where('boardType', '==', boardType),
+      where('isDeleted', '==', false),
+    ];
+
+    // 정렬 로직은 getPostsWithPagination와 반드시 일치해야 합니다.
+    switch (sortBy) {
+      case 'views':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('viewCount', 'desc'),
+        );
+        break;
+      case 'comments':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('commentCount', 'desc'),
+        );
+        break;
+      case 'likes':
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('likeCount', 'desc'),
+        );
+        break;
+      case 'latest':
+      default:
+        constraints.push(
+          orderBy('isPinned', 'desc'),
+          orderBy('createdAt', 'desc'),
+        );
+        break;
+    }
+
+    constraints.push(limit(offset));
+
+    const q = query(collection(db, collections.posts), ...constraints);
+    const snapshot = await getDocs(q);
+
+    // 요청된 페이지가 실제 게시물 수를 초과하는 경우
+    if (snapshot.docs.length < offset) {
+      console.warn(`Requested page ${page} is out of bounds.`);
+      return 'invalid-page';
+    }
+
+    return snapshot.docs[snapshot.docs.length - 1];
+  },
+
   // 게시판별 게시글 목록 조회 (검색 및 필터링 지원)
   async getPosts(boardType, options = {}) {
     const {
@@ -282,9 +338,11 @@ export const postService = {
     const postDoc = await getDoc(doc(db, collections.posts, postId));
     if (!postDoc.exists()) return null;
 
-    // 조회수 증가
-    await updateDoc(doc(db, collections.posts, postId), {
+    // 조회수 증가를 비동기로 처리 (응답 속도 향상)
+    updateDoc(doc(db, collections.posts, postId), {
       viewCount: increment(1),
+    }).catch((error) => {
+      console.warn('Failed to update view count:', error);
     });
 
     return { id: postDoc.id, ...postDoc.data() };
@@ -322,6 +380,17 @@ export const postService = {
 
       console.log('게시글 생성 완료:', docRef.id);
 
+      // 게시판 캐시 무효화 (새 게시글로 인한 카운트 변경)
+      this.invalidateBoardCache(postData.boardType);
+
+      // 통계 캐시 무효화 (새 게시글로 인한 통계 변경)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+
       // 작성자에게 포인트 지급
       try {
         await pointsService.autoAwardPoints(
@@ -343,20 +412,56 @@ export const postService = {
 
   // 게시글 수정
   async updatePost(postId, postData) {
+    // 기존 게시글 정보 조회 (게시판 타입 확인용)
     const postRef = doc(db, collections.posts, postId);
-    await updateDoc(postRef, {
-      ...postData,
-      updatedAt: serverTimestamp(),
-    });
+    const postDoc = await getDoc(postRef);
+
+    if (postDoc.exists()) {
+      const boardType = postDoc.data().boardType;
+
+      await updateDoc(postRef, {
+        ...postData,
+        updatedAt: serverTimestamp(),
+      });
+
+      // 게시판 캐시 무효화 (제목이나 내용 변경으로 검색 결과 영향)
+      this.invalidateSearchCache(null, boardType);
+
+      // 통계 캐시 무효화 (게시물 정보 변경으로 인한 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+    }
   },
 
   // 게시글 삭제 (소프트 삭제)
   async deletePost(postId) {
+    // 기존 게시글 정보 조회 (게시판 타입 확인용)
     const postRef = doc(db, collections.posts, postId);
-    await updateDoc(postRef, {
-      isDeleted: true,
-      updatedAt: serverTimestamp(),
-    });
+    const postDoc = await getDoc(postRef);
+
+    if (postDoc.exists()) {
+      const boardType = postDoc.data().boardType;
+
+      await updateDoc(postRef, {
+        isDeleted: true,
+        updatedAt: serverTimestamp(),
+      });
+
+      // 게시판 캐시 무효화 (게시글 삭제로 인한 카운트 변경)
+      this.invalidateBoardCache(boardType);
+
+      // 통계 캐시 무효화 (홈화면 게시물 목록 업데이트)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
+    }
   },
 
   // 게시글 좋아요 토글
@@ -415,21 +520,367 @@ export const postService = {
     );
     return likeDoc.exists();
   },
+
+  // 게시판 총 글 개수 조회 (캐싱 지원)
+  async getBoardPostCount(boardType) {
+    try {
+      // 캐시된 카운트 확인
+      const cacheKey = `board_count_${boardType}`;
+      const cachedCount = sessionStorage.getItem(cacheKey);
+      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+
+      // 5분 이내 캐시가 있으면 사용
+      if (
+        cachedCount &&
+        cacheTime &&
+        Date.now() - parseInt(cacheTime) < 300000
+      ) {
+        return parseInt(cachedCount);
+      }
+
+      // 실제 카운트 조회
+      const countQuery = query(
+        collection(db, collections.posts),
+        where('boardType', '==', boardType),
+        where('isDeleted', '==', false),
+      );
+
+      const countSnapshot = await getDocs(countQuery);
+      const totalCount = countSnapshot.size;
+
+      // 캐시 저장
+      sessionStorage.setItem(cacheKey, totalCount.toString());
+      sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+
+      return totalCount;
+    } catch (error) {
+      console.error('Error getting board post count:', error);
+      return 0;
+    }
+  },
+
+  // 페이지네이션을 지원하는 게시글 목록 조회 (서버 사이드)
+  async getPostsWithPagination(boardType, options = {}) {
+    const {
+      lastDoc = null,
+      limitCount = 15,
+      sortBy = 'latest',
+      searchQuery = '',
+      tags = [],
+    } = options;
+
+    try {
+      // 검색이 있는 경우 별도 처리 (주의: 이 검색 로직은 여전히 모든 문서를 읽어 비효율적입니다)
+      if (searchQuery || tags.length > 0) {
+        return await this.searchPostsWithPagination(searchQuery, {
+          boardType,
+          sortBy,
+          tags,
+          page: 1, // 페이지 기반 검색 로직은 아직 수정되지 않았습니다.
+          limitCount,
+        });
+      }
+
+      let constraints = [
+        where('boardType', '==', boardType),
+        where('isDeleted', '==', false),
+      ];
+
+      // 정렬 옵션 적용
+      switch (sortBy) {
+        case 'views':
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('viewCount', 'desc'),
+          );
+          break;
+        case 'comments':
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('commentCount', 'desc'),
+          );
+          break;
+        case 'likes':
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('likeCount', 'desc'),
+          );
+          break;
+        case 'latest':
+        default:
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('createdAt', 'desc'),
+          );
+          break;
+      }
+
+      // 총 개수 조회 (캐시 사용)
+      const totalCount = await this.getBoardPostCount(boardType);
+
+      // 페이지네이션 쿼리 생성
+      let postsQuery = query(
+        collection(db, collections.posts),
+        ...constraints,
+        limit(limitCount),
+      );
+
+      // 커서가 있으면 startAfter 적용
+      if (lastDoc) {
+        postsQuery = query(postsQuery, startAfter(lastDoc));
+      }
+
+      const postsSnapshot = await getDocs(postsQuery);
+      const posts = postsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // 다음 페이지를 위한 마지막 문서(커서)와 추가 페이지 존재 여부 반환
+      const newLastDoc = postsSnapshot.docs[postsSnapshot.docs.length - 1];
+      const hasMore = posts.length === limitCount;
+
+      return {
+        posts,
+        lastDoc: newLastDoc,
+        totalCount,
+        hasMore,
+      };
+    } catch (error) {
+      console.error('Error in getPostsWithPagination:', error);
+      throw error;
+    }
+  },
+
+  // 페이지네이션을 지원하는 게시글 검색 (최적화된 버전)
+  async searchPostsWithPagination(searchQuery, options = {}) {
+    const {
+      boardType = null,
+      sortBy = 'latest',
+      tags = [],
+      page = 1,
+      limitCount = 15,
+    } = options;
+
+    try {
+      // 검색 결과 캐싱을 위한 키 생성
+      const cacheKey = `search_${boardType || 'all'}_${searchQuery}_${tags.join(',')}_${sortBy}`;
+      const cachedResults = sessionStorage.getItem(cacheKey);
+      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+
+      let allPosts = [];
+
+      // 2분 이내 캐시가 있으면 사용
+      if (
+        cachedResults &&
+        cacheTime &&
+        Date.now() - parseInt(cacheTime) < 120000
+      ) {
+        allPosts = JSON.parse(cachedResults);
+      } else {
+        // 새로운 검색 수행
+        let constraints = [where('isDeleted', '==', false)];
+
+        if (boardType) {
+          constraints.push(where('boardType', '==', boardType));
+        }
+
+        if (tags.length > 0) {
+          constraints.push(where('tags', 'array-contains-any', tags));
+        }
+
+        // 정렬 적용
+        switch (sortBy) {
+          case 'views':
+            constraints.push(orderBy('viewCount', 'desc'));
+            break;
+          case 'comments':
+            constraints.push(orderBy('commentCount', 'desc'));
+            break;
+          case 'likes':
+            constraints.push(orderBy('likeCount', 'desc'));
+            break;
+          case 'latest':
+          default:
+            constraints.push(orderBy('createdAt', 'desc'));
+            break;
+        }
+
+        const q = query(collection(db, collections.posts), ...constraints);
+        const snapshot = await getDocs(q);
+
+        const searchTerm = searchQuery.toLowerCase();
+        allPosts = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((post) => {
+            return (
+              post.title.toLowerCase().includes(searchTerm) ||
+              post.content.toLowerCase().includes(searchTerm) ||
+              post.authorName.toLowerCase().includes(searchTerm) ||
+              (post.tags &&
+                post.tags.some((tag) => tag.toLowerCase().includes(searchTerm)))
+            );
+          });
+
+        // 검색 결과 캐싱
+        sessionStorage.setItem(cacheKey, JSON.stringify(allPosts));
+        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+      }
+
+      const totalCount = allPosts.length;
+      const startIndex = (page - 1) * limitCount;
+      const endIndex = startIndex + limitCount;
+      const posts = allPosts.slice(startIndex, endIndex);
+
+      return {
+        posts,
+        totalCount,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limitCount),
+        hasMore: endIndex < totalCount,
+      };
+    } catch (error) {
+      console.error('Error in searchPostsWithPagination:', error);
+      throw error;
+    }
+  },
+
+  // 이전/다음 게시글 조회 (최적화된 버전)
+  async getAdjacentPosts(postId, boardType, currentPostCreatedAt) {
+    if (!currentPostCreatedAt) {
+      const currentPostDoc = await getDoc(doc(db, collections.posts, postId));
+      if (currentPostDoc.exists()) {
+        currentPostCreatedAt = currentPostDoc.data().createdAt;
+      } else {
+        return { prevPost: null, nextPost: null };
+      }
+    }
+
+    const commonConstraints = [
+      where('boardType', '==', boardType),
+      where('isDeleted', '==', false),
+    ];
+
+    try {
+      // 이전 게시글 조회 (현재보다 최신 글 중 가장 오래된 것)
+      const prevPostQuery = query(
+        collection(db, collections.posts),
+        ...commonConstraints,
+        where('createdAt', '>', currentPostCreatedAt),
+        orderBy('createdAt', 'asc'),
+        limit(1),
+      );
+
+      // 다음 게시글 조회 (현재보다 오래된 글 중 가장 최신 것)
+      const nextPostQuery = query(
+        collection(db, collections.posts),
+        ...commonConstraints,
+        where('createdAt', '<', currentPostCreatedAt),
+        orderBy('createdAt', 'desc'),
+        limit(1),
+      );
+
+      const [prevSnapshot, nextSnapshot] = await Promise.all([
+        getDocs(prevPostQuery),
+        getDocs(nextPostQuery),
+      ]);
+
+      const prevPost = prevSnapshot.empty
+        ? null
+        : { id: prevSnapshot.docs[0].id, ...prevSnapshot.docs[0].data() };
+      const nextPost = nextSnapshot.empty
+        ? null
+        : { id: nextSnapshot.docs[0].id, ...nextSnapshot.docs[0].data() };
+
+      return { prevPost, nextPost };
+    } catch (error) {
+      console.error('Error fetching adjacent posts:', error);
+      return { prevPost: null, nextPost: null };
+    }
+  },
+
+  // 캐시 무효화 헬퍼 메서드들
+  invalidateBoardCache(boardType) {
+    try {
+      const cacheKey = `board_count_${boardType}`;
+      sessionStorage.removeItem(cacheKey);
+      sessionStorage.removeItem(`${cacheKey}_time`);
+
+      // 검색 캐시도 해당 게시판 관련 것들 제거
+      const keys = Object.keys(sessionStorage);
+      keys.forEach((key) => {
+        if (
+          key.startsWith(`search_${boardType}_`) ||
+          key.startsWith(`search_all_`)
+        ) {
+          sessionStorage.removeItem(key);
+          sessionStorage.removeItem(`${key}_time`);
+        }
+      });
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+    }
+  },
+
+  invalidateSearchCache(searchQuery = null, boardType = null) {
+    try {
+      const keys = Object.keys(sessionStorage);
+      keys.forEach((key) => {
+        if (key.startsWith('search_')) {
+          if (!searchQuery && !boardType) {
+            // 모든 검색 캐시 제거
+            sessionStorage.removeItem(key);
+            sessionStorage.removeItem(`${key}_time`);
+          } else if (searchQuery && key.includes(searchQuery)) {
+            sessionStorage.removeItem(key);
+            sessionStorage.removeItem(`${key}_time`);
+          } else if (boardType && key.includes(`search_${boardType}_`)) {
+            sessionStorage.removeItem(key);
+            sessionStorage.removeItem(`${key}_time`);
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('Search cache invalidation failed:', error);
+    }
+  },
+
+  clearAllCache() {
+    try {
+      const keys = Object.keys(sessionStorage);
+      keys.forEach((key) => {
+        if (key.startsWith('board_count_') || key.startsWith('search_')) {
+          sessionStorage.removeItem(key);
+          sessionStorage.removeItem(`${key}_time`);
+        }
+      });
+    } catch (error) {
+      console.warn('Clear all cache failed:', error);
+    }
+  },
 };
 
 /**
  * 댓글 관련 데이터베이스 작업
  */
 export const commentService = {
-  // 게시글의 댓글 목록 조회
-  async getComments(postId) {
+  // 게시글의 댓글 목록 조회 (페이지네이션 지원)
+  async getComments(postId, options = {}) {
+    const { lastDoc = null, limitCount = 50 } = options;
+
     try {
-      const q = query(
-        collection(db, collections.comments),
+      const constraints = [
         where('postId', '==', postId),
         where('isDeleted', '==', false),
         orderBy('createdAt', 'asc'),
-      );
+        limit(limitCount),
+      ];
+
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
+      }
+
+      const q = query(collection(db, collections.comments), ...constraints);
 
       const snapshot = await getDocs(q);
       const comments = snapshot.docs.map((doc) => {
@@ -447,7 +898,11 @@ export const commentService = {
         };
       });
 
-      return comments;
+      // 마지막 문서와 추가 페이지 여부 반환
+      const newLastDoc = snapshot.docs[snapshot.docs.length - 1];
+      const hasMore = snapshot.docs.length === limitCount;
+
+      return { comments, lastDoc: newLastDoc, hasMore };
     } catch (error) {
       console.error('Error fetching comments:', error);
       throw error;
@@ -464,7 +919,6 @@ export const commentService = {
       batch.set(commentRef, {
         ...commentData,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
         likeCount: 0,
         isDeleted: false,
         level: commentData.parentId ? 1 : 0,
@@ -479,6 +933,14 @@ export const commentService = {
       await batch.commit();
 
       console.log(`Comment created with ID: ${commentRef.id}`);
+
+      // 통계 캐시 무효화 (새 댓글로 인한 통계 변경)
+      try {
+        const { statsService } = await import('./stats');
+        statsService.invalidateCache();
+      } catch (error) {
+        console.warn('캐시 무효화 실패:', error);
+      }
 
       // 작성자에게 포인트 지급
       try {
@@ -791,6 +1253,71 @@ export const adminService = {
       return fixedCount;
     } catch (error) {
       console.error('Error fixing post author info:', error);
+      throw error;
+    }
+  },
+
+  // 댓글 작성자명 정리 (이메일 주소를 닉네임으로 변경)
+  async fixCommentAuthorNames() {
+    try {
+      console.log('🔧 댓글 작성자명 정리를 시작합니다...');
+
+      // 모든 댓글 조회
+      const commentsSnapshot = await getDocs(
+        collection(db, collections.comments),
+      );
+      let fixedCount = 0;
+
+      for (const commentDoc of commentsSnapshot.docs) {
+        const commentData = commentDoc.data();
+
+        // authorName이 이메일 형식인지 확인 (@ 포함하고 .temp 또는 실제 도메인 포함)
+        if (commentData.authorName && commentData.authorName.includes('@')) {
+          let newAuthorName = commentData.authorName;
+
+          // .temp 이메일인 경우 @ 앞부분만 사용
+          if (commentData.authorName.includes('.temp')) {
+            newAuthorName = commentData.authorName.split('@')[0];
+          }
+          // 실제 이메일인 경우도 @ 앞부분만 사용
+          else {
+            newAuthorName = commentData.authorName.split('@')[0];
+          }
+
+          // 작성자 ID로 실제 사용자 정보 조회해서 displayName 사용
+          if (commentData.authorId) {
+            try {
+              const userDoc = await getDoc(
+                doc(db, collections.users, commentData.authorId),
+              );
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                newAuthorName = userData.displayName || newAuthorName;
+              }
+            } catch (userError) {
+              console.warn(
+                `Failed to get user data for ${commentData.authorId}:`,
+                userError,
+              );
+            }
+          }
+
+          // 댓글 업데이트
+          await updateDoc(doc(db, collections.comments, commentDoc.id), {
+            authorName: newAuthorName,
+          });
+
+          console.log(
+            `Fixed comment ${commentDoc.id}: ${commentData.authorName} -> ${newAuthorName}`,
+          );
+          fixedCount++;
+        }
+      }
+
+      console.log(`✅ 완료: ${fixedCount}개 댓글의 작성자명이 수정되었습니다.`);
+      return fixedCount;
+    } catch (error) {
+      console.error('❌ 댓글 작성자명 정리 실패:', error);
       throw error;
     }
   },

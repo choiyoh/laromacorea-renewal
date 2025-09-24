@@ -23,7 +23,9 @@ export const storageService = {
    * @returns {Promise<string>} 다운로드 URL
    */
   async uploadImage(file, path, onProgress = null) {
-    return this.uploadFile(file, `images/${path}`, onProgress);
+    // path가 이미 images/로 시작하는지 확인
+    const finalPath = path.startsWith('images/') ? path : `images/${path}`;
+    return this.uploadFile(file, finalPath, onProgress);
   },
 
   /**
@@ -45,6 +47,13 @@ export const storageService = {
    * @returns {Promise<string>} 다운로드 URL
    */
   async uploadFile(file, path, onProgress = null) {
+    console.log('Uploading file:', {
+      fileName: file.name,
+      path,
+      fileSize: file.size,
+      fileType: file.type,
+    });
+
     const fileRef = storageRef(storage, path);
     const uploadTask = uploadBytesResumable(fileRef, file);
 
@@ -57,15 +66,24 @@ export const storageService = {
               (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             onProgress(progress);
           }
+          console.log(
+            'Upload progress:',
+            Math.round(
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
+            ) + '%',
+          );
         },
         (error) => {
+          console.error('Upload error:', error);
           reject(error);
         },
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log('Upload successful:', downloadURL);
             resolve(downloadURL);
           } catch (error) {
+            console.error('Error getting download URL:', error);
             reject(error);
           }
         },
