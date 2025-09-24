@@ -36,8 +36,6 @@
             auto-grow
             hide-details
             :disabled="submittingComment"
-            @keydown.space.prevent
-            @keydown.enter.prevent
           />
           <div class="d-flex justify-end mt-3">
             <v-btn
@@ -77,8 +75,6 @@
           auto-grow
           hide-details
           :disabled="submittingComment"
-          @keydown.space.prevent
-          @keydown.enter.prevent
         />
         <div class="d-flex justify-end mt-3">
           <v-btn
