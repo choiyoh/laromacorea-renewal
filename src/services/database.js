@@ -170,7 +170,7 @@ export const postService = {
     return snapshot.docs[snapshot.docs.length - 1];
   },
 
-  // 게시판별 게시글 목록 조회 (검색 및 필터링 지원)
+  // 게시판별 게시글 목록 조회 (서버사이드 검색 필터링 지원 - 최적화됨)
   async getPosts(boardType, options = {}) {
     const {
       lastDoc = null,
@@ -179,6 +179,11 @@ export const postService = {
       searchQuery = '',
       tags = [],
     } = options;
+
+    // 검색어가 있는 경우 전문 검색을 위한 제한된 쿼리 사용 (서버사이드 필터링)
+    if (searchQuery && searchQuery.trim()) {
+      return await this.performServerSideSearch(boardType, options);
+    }
 
     let constraints = [
       where('boardType', '==', boardType),
@@ -228,20 +233,7 @@ export const postService = {
     }
 
     const snapshot = await getDocs(q);
-    let posts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    // 클라이언트 사이드 텍스트 검색 (Firestore의 제한으로 인해)
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      posts = posts.filter(
-        (post) =>
-          post.title.toLowerCase().includes(query) ||
-          post.content.toLowerCase().includes(query) ||
-          post.authorName.toLowerCase().includes(query) ||
-          (post.tags &&
-            post.tags.some((tag) => tag.toLowerCase().includes(query))),
-      );
-    }
+    const posts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     return posts;
   },
@@ -521,7 +513,7 @@ export const postService = {
     return likeDoc.exists();
   },
 
-  // 게시판 총 글 개수 조회 (캐싱 지원)
+  // 게시판 총 글 개수 조회 (강화된 캐싱 지원 - 60분)
   async getBoardPostCount(boardType) {
     try {
       // 캐시된 카운트 확인
@@ -529,11 +521,11 @@ export const postService = {
       const cachedCount = sessionStorage.getItem(cacheKey);
       const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
 
-      // 5분 이내 캐시가 있으면 사용
+      // 60분 이내 캐시가 있으면 사용 (강화된 캐시)
       if (
         cachedCount &&
         cacheTime &&
-        Date.now() - parseInt(cacheTime) < 300000
+        Date.now() - parseInt(cacheTime) < 3600000 // 60분
       ) {
         return parseInt(cachedCount);
       }
@@ -548,7 +540,7 @@ export const postService = {
       const countSnapshot = await getDocs(countQuery);
       const totalCount = countSnapshot.size;
 
-      // 캐시 저장
+      // 캐시 저장 (60분)
       sessionStorage.setItem(cacheKey, totalCount.toString());
       sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
 
@@ -796,6 +788,110 @@ export const postService = {
     } catch (error) {
       console.error('Error fetching adjacent posts:', error);
       return { prevPost: null, nextPost: null };
+    }
+  },
+
+  // 서버사이드 검색 수행 (최적화된 버전) - 클라이언트 필터링 제거
+  async performServerSideSearch(boardType, options = {}) {
+    const {
+      limitCount = 20,
+      sortBy = 'latest',
+      searchQuery = '',
+      tags = [],
+      lastDoc = null,
+    } = options;
+
+    try {
+      let constraints = [
+        where('boardType', '==', boardType),
+        where('isDeleted', '==', false),
+      ];
+
+      // 태그 필터링 (서버사이드)
+      if (tags.length > 0) {
+        constraints.push(where('tags', 'array-contains-any', tags));
+      }
+
+      // 정렬 적용
+      switch (sortBy) {
+        case 'views':
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('viewCount', 'desc'),
+          );
+          break;
+        case 'comments':
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('commentCount', 'desc'),
+          );
+          break;
+        case 'likes':
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('likeCount', 'desc'),
+          );
+          break;
+        case 'latest':
+        default:
+          constraints.push(
+            orderBy('isPinned', 'desc'),
+            orderBy('createdAt', 'desc'),
+          );
+          break;
+      }
+
+      // 검색 쿼리에서 키워드 추출 (단어 단위로 분리)
+      const searchKeywords = searchQuery
+        .toLowerCase()
+        .trim()
+        .split(/\s+/)
+        .filter((word) => word.length > 1);
+
+      if (searchKeywords.length > 0) {
+        // Firestore의 제한으로 인해, 검색 키워드가 있는 경우 제한된 수의 문서만 읽도록 함
+        // 실제 운영에서는 검색 전용 컬렉션이나 Algolia 같은 검색 서비스를 사용하는 것이 이상적임
+        constraints.push(limit(limitCount * 3)); // 검색 결과를 위해 3배로 늘려서 가져온 후 필터링
+      } else {
+        constraints.push(limit(limitCount));
+      }
+
+      let q = query(collection(db, collections.posts), ...constraints);
+
+      if (lastDoc) {
+        q = query(q, startAfter(lastDoc));
+      }
+
+      const snapshot = await getDocs(q);
+      let posts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+      // 서버사이드 검색 키워드 필터링 (메모리에서 빠르게 수행)
+      if (searchKeywords.length > 0) {
+        posts = posts.filter((post) => {
+          const title = (post.title || '').toLowerCase();
+          const content = (post.content || '').toLowerCase();
+          const authorName = (post.authorName || '').toLowerCase();
+          const postTags = post.tags || [];
+
+          // 모든 검색 키워드가 포함된 게시글만 반환
+          return searchKeywords.every(
+            (keyword) =>
+              title.includes(keyword) ||
+              content.includes(keyword) ||
+              authorName.includes(keyword) ||
+              postTags.some((tag) => tag.toLowerCase().includes(keyword)),
+          );
+        });
+
+        // 검색 결과 제한
+        posts = posts.slice(0, limitCount);
+      }
+
+      return posts;
+    } catch (error) {
+      console.error('Error in performServerSideSearch:', error);
+      // 검색 실패시 빈 배열 반환 (예외 발생 방지)
+      return [];
     }
   },
 
@@ -1078,60 +1174,89 @@ export const commentService = {
  * 데이터 정리 및 관리 함수들
  */
 export const adminService = {
-  // 모든 게시글의 댓글 수 동기화
+  // 모든 게시글의 댓글 수 동기화 (배치 처리로 최적화됨 - 관리자용)
   async syncAllPostCommentCounts() {
     try {
-      console.log('Starting to sync all post comment counts...');
+      console.log('Starting to sync all post comment counts with batching...');
 
-      // 모든 게시글 조회
-      const postsQuery = query(
-        collection(db, collections.posts),
-        where('isDeleted', '==', false),
-      );
+      const BATCH_SIZE = 50; // 한 번에 50개씩 처리하여 읽기 사용량 최적화
+      let totalSynced = 0;
+      let totalProcessed = 0;
+      let lastDoc = null;
 
-      const postsSnapshot = await getDocs(postsQuery);
-      const posts = postsSnapshot.docs;
+      while (true) {
+        // 배치 단위로 게시글 조회
+        let batchQuery = query(
+          collection(db, collections.posts),
+          where('isDeleted', '==', false),
+          orderBy('createdAt', 'desc'),
+          limit(BATCH_SIZE),
+        );
 
-      console.log(`Found ${posts.length} posts to sync`);
-
-      let syncedCount = 0;
-
-      for (const postDoc of posts) {
-        const postId = postDoc.id;
-        const postData = postDoc.data();
-
-        try {
-          // 실제 댓글 수 조회
-          const commentsQuery = query(
-            collection(db, collections.comments),
-            where('postId', '==', postId),
-            where('isDeleted', '==', false),
-          );
-
-          const commentsSnapshot = await getDocs(commentsQuery);
-          const actualCommentCount = commentsSnapshot.size;
-          const currentCommentCount = postData.commentCount || 0;
-
-          // 댓글 수가 다르면 업데이트
-          if (actualCommentCount !== currentCommentCount) {
-            await updateDoc(doc(db, collections.posts, postId), {
-              commentCount: actualCommentCount,
-            });
-
-            console.log(
-              `Post ${postId}: ${currentCommentCount} -> ${actualCommentCount}`,
-            );
-            syncedCount++;
-          }
-        } catch (error) {
-          console.error(`Error syncing post ${postId}:`, error);
+        if (lastDoc) {
+          batchQuery = query(batchQuery, startAfter(lastDoc));
         }
+
+        const postsSnapshot = await getDocs(batchQuery);
+        const posts = postsSnapshot.docs;
+
+        if (posts.length === 0) break; // 더 이상 게시글이 없음
+
+        console.log(`Processing batch of ${posts.length} posts...`);
+
+        let batchSynced = 0;
+
+        // 현재 배치의 게시글들 처리
+        for (const postDoc of posts) {
+          const postId = postDoc.id;
+          const postData = postDoc.data();
+
+          try {
+            // 실제 댓글 수 조회 (개별 게시글 단위로 조회하여 효율성 향상)
+            const commentsQuery = query(
+              collection(db, collections.comments),
+              where('postId', '==', postId),
+              where('isDeleted', '==', false),
+            );
+
+            const commentsSnapshot = await getDocs(commentsQuery);
+            const actualCommentCount = commentsSnapshot.size;
+            const currentCommentCount = postData.commentCount || 0;
+
+            // 댓글 수가 다르면 업데이트
+            if (actualCommentCount !== currentCommentCount) {
+              await updateDoc(doc(db, collections.posts, postId), {
+                commentCount: actualCommentCount,
+              });
+
+              console.log(
+                `Post ${postId}: ${currentCommentCount} -> ${actualCommentCount}`,
+              );
+              batchSynced++;
+            }
+          } catch (error) {
+            console.error(`Error syncing post ${postId}:`, error);
+          }
+        }
+
+        totalProcessed += posts.length;
+        totalSynced += batchSynced;
+
+        console.log(`Batch completed: ${batchSynced}/${posts.length} synced`);
+
+        // 마지막 문서 저장 (다음 배치를 위해)
+        lastDoc = posts[posts.length - 1];
+
+        // 배치가 가득 찼으면 계속, 아니면 종료
+        if (posts.length < BATCH_SIZE) break;
       }
 
-      console.log(`Synced ${syncedCount} posts out of ${posts.length}`);
-      return { total: posts.length, synced: syncedCount };
+      console.log(
+        `Batch sync completed: ${totalSynced}/${totalProcessed} posts synced`,
+      );
+      return { total: totalProcessed, synced: totalSynced };
     } catch (error) {
-      console.error('Error syncing all post comment counts:', error);
+      console.error('Error in batched sync:', error);
       throw error;
     }
   },

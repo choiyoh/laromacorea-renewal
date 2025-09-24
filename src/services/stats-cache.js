@@ -5,7 +5,12 @@
 
 // 메모리 캐시
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5분
+// 캐시 기간 설정 (메인페이지 캐싱 강화)
+const CACHE_DURATIONS = {
+  SITE_STATS: 60 * 60 * 1000, // 60분 (강화됨)
+  BOARD_POSTS: 60 * 60 * 1000, // 60분 (강화됨)
+  DEFAULT: 5 * 60 * 1000, // 5분 (기본)
+};
 
 // 로컬스토리지 캐시 키
 const CACHE_KEYS = {
@@ -18,9 +23,11 @@ export const statsCache = {
    * 캐시에서 데이터 가져오기
    */
   get(key) {
+    const duration = CACHE_DURATIONS[key] || CACHE_DURATIONS.DEFAULT;
+
     // 메모리 캐시 먼저 확인
     const memoryData = cache.get(key);
-    if (memoryData && Date.now() - memoryData.timestamp < CACHE_DURATION) {
+    if (memoryData && Date.now() - memoryData.timestamp < duration) {
       return memoryData.data;
     }
 
@@ -29,7 +36,7 @@ export const statsCache = {
       const stored = localStorage.getItem(key);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+        if (Date.now() - parsed.timestamp < duration) {
           // 메모리 캐시에도 저장
           cache.set(key, parsed);
           return parsed.data;
@@ -43,12 +50,16 @@ export const statsCache = {
   },
 
   /**
-   * 캐시에 데이터 저장
+   * 캐시에 데이터 저장 (선택적 기간 지정 가능)
    */
-  set(key, data) {
+  set(key, data, customDuration = null) {
+    const duration =
+      customDuration || CACHE_DURATIONS[key] || CACHE_DURATIONS.DEFAULT;
+
     const cacheData = {
       data,
       timestamp: Date.now(),
+      duration, // 캐시 기간도 저장 (디버깅용)
     };
 
     // 메모리 캐시에 저장
