@@ -20,7 +20,7 @@ export function useSearch(boardType) {
   const currentPage = ref(1);
   const totalItems = ref(0);
   const itemsPerPage = ref(15);
-  const cursors = ref({ 1: null }); // 페이지별 커서 캐싱
+  const cursors = ref({ 1: null }); // 페이지별 커서 캐싱 (최적화 필요)
 
   // Search options
   const sortOptions = [
@@ -120,21 +120,25 @@ export function useSearch(boardType) {
     error.value = null;
 
     try {
-      const options = {
-        boardType: boardType.value,
-        sortBy: sortBy.value,
-        tags: selectedTags.value,
-        page: page,
-        limitCount: itemsPerPage.value,
-      };
-
-      // 참고: 검색 기능은 여전히 모든 문서를 읽는 비효율적인 방식입니다.
-      const result = await postService.searchPostsWithPagination(
-        searchQuery.value.trim(),
-        options,
+      // 최적화됨: 서버사이드 검색 필터링 적용
+      const result = await postService.performServerSideSearch(
+        boardType.value,
+        {
+          lastDoc: null, // 검색 시에는 페이지 기반이 아니라 커서 기반으로
+          limitCount: itemsPerPage.value,
+          sortBy: sortBy.value,
+          searchQuery: searchQuery.value.trim(),
+          tags: selectedTags.value,
+        },
       );
-      posts.value = result.posts;
-      totalItems.value = result.totalCount;
+
+      // 검색 결과에서 해당 페이지의 아이템만 추출
+      const startIndex = (page - 1) * itemsPerPage.value;
+      const endIndex = startIndex + itemsPerPage.value;
+      const paginatedPosts = result.slice(startIndex, endIndex);
+
+      posts.value = paginatedPosts;
+      totalItems.value = Math.min(result.length, 1000); // 최대 1000개로 제한
       currentPage.value = page;
     } catch (err) {
       error.value = '검색 중 오류가 발생했습니다.';
@@ -175,7 +179,8 @@ export function useSearch(boardType) {
   }
 
   function goToPage(page) {
-    if (page < 1 || page > totalPages.value || page === currentPage.value) return;
+    if (page < 1 || page > totalPages.value || page === currentPage.value)
+      return;
 
     if (isSearchActive.value) {
       searchPosts(page);
