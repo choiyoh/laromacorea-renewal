@@ -25,7 +25,7 @@
             height="32"
             class="me-2"
           />
-          <span class="font-weight-bold">La Roma Corea</span>
+          <span class="font-weight-bold cinzel-font">La Roma Corea</span>
         </router-link>
       </v-app-bar-title>
 
@@ -36,7 +36,7 @@
           :key="board.key"
           :to="`/board/${board.key}`"
           variant="text"
-          class="text-black mx-1 touch-friendly"
+          class="text-black mx-1 touch-friendly cinzel-font"
           :class="{ 'v-btn--active': $route.params.boardType === board.key }"
           min-width="60"
         >
@@ -48,7 +48,7 @@
           v-if="userStore.isAdmin"
           to="/admin"
           variant="text"
-          class="text-black mx-1 touch-friendly admin-btn"
+          class="text-black mx-1 touch-friendly admin-btn cinzel-font"
           :class="{ 'v-btn--active': $route.path.startsWith('/admin') }"
           min-width="60"
         >
@@ -134,7 +134,7 @@
         <!-- Center: Logo -->
         <div class="mobile-center">
           <router-link to="/home" class="text-decoration-none text-black">
-            <span class="font-weight-bold mobile-title">La Roma Corea</span>
+            <span class="font-weight-bold mobile-title cinzel-font">La Roma Corea</span>
           </router-link>
         </div>
 
@@ -221,7 +221,24 @@ const boards = [
 </script>
 
 <style scoped>
-/* 전역 스타일로 Vuetify 오버라이드 */
+/* Cinzel 폰트 적용 */
+.cinzel-font {
+  font-family: 'Cinzel', serif !important;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* 로고에 더 강한 폰트 웨이트 적용 */
+.v-app-bar-title .cinzel-font {
+  font-weight: 600 !important;
+  letter-spacing: 1px;
+}
+
+/* 모바일 타이틀에도 적용 */
+.mobile-title.cinzel-font {
+  font-weight: 600 !important;
+  letter-spacing: 0.8px;
+}
 </style>
 
 <style>
