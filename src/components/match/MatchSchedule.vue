@@ -3,7 +3,7 @@
     <v-card-title class="match-header d-flex align-center py-2 px-4">
       <v-icon icon="mdi-soccer" color="white" class="mr-3" size="28" />
       <div class="flex-grow-1">
-        <div class="text-h6 font-weight-bold text-white">Next Match</div>
+        <div class="text-h6 font-weight-bold text-white cinzel-font">Next Match</div>
       </div>
       <div class="d-flex align-center">
         <v-btn
@@ -162,7 +162,7 @@
       <v-card>
         <v-card-title class="match-header d-flex align-center pa-4">
           <v-icon icon="mdi-soccer" color="white" class="mr-3" size="24" />
-          <span class="text-h6 font-weight-bold text-white"
+          <span class="text-h6 font-weight-bold text-white cinzel-font"
             >AS 로마 경기 일정</span
           >
           <v-spacer />
@@ -414,6 +414,13 @@ onUnmounted(() => {
   overflow: hidden;
   border: 1px solid #e0e0e0;
   background: #ffffff;
+}
+
+/* Cinzel 폰트 적용 */
+.cinzel-font {
+  font-family: 'Cinzel', serif !important;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 .match-header {

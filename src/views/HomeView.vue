@@ -46,7 +46,7 @@
                 size="28"
               />
               <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold text-white">Notice</div>
+                <div class="text-h6 font-weight-bold text-white cinzel-font">Notice</div>
               </div>
               <v-btn
                 to="/board/notice"
@@ -147,7 +147,7 @@
             >
               <v-icon :icon="board.icon" color="white" class="mr-3" size="28" />
               <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold text-white">
+                <div class="text-h6 font-weight-bold text-white cinzel-font">
                   {{ board.name }}
                 </div>
                 <!-- <div class="text-caption text-white" style="opacity: 0.9">
@@ -450,6 +450,13 @@ onUnmounted(() => {
 .home {
   background: #ffffff;
   min-height: 100vh;
+}
+
+/* Cinzel 폰트 적용 */
+.cinzel-font {
+  font-family: 'Cinzel', serif !important;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 .home-container {
