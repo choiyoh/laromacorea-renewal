@@ -189,7 +189,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive } from 'vue';
 import { adminService } from '@/services/admin';
 import { statsService } from '@/services/stats';
 
@@ -234,7 +234,8 @@ const loadStats = async () => {
     });
 
     showSnackbar('통계가 업데이트되었습니다.', 'success');
-  } catch (error) {
+  } catch (_error) {
+    console.error('통계 로드 실패:', _error);
     showSnackbar('통계를 불러올 수 없습니다.', 'error');
   } finally {
     loading.value = false;
@@ -276,10 +277,10 @@ const showSnackbar = (message, color = 'success') => {
   snackbar.show = true;
 };
 
-// 컴포넌트 마운트 시 통계 로드
-onMounted(() => {
-  loadStats();
-});
+// 컴포넌트 마운트 시 통계 로드하지 않음 - 관리자가 수동으로만 업데이트하도록 변경
+// onMounted(() => {
+//   loadStats();
+// });
 </script>
 
 <style scoped>

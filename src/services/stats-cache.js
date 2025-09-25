@@ -7,9 +7,9 @@
 const cache = new Map();
 // 캐시 기간 설정 (메인페이지 캐싱 강화)
 const CACHE_DURATIONS = {
-  SITE_STATS: 60 * 60 * 1000, // 60분 (강화됨)
-  BOARD_POSTS: 60 * 60 * 1000, // 60분 (강화됨)
-  DEFAULT: 5 * 60 * 1000, // 5분 (기본)
+  SITE_STATS: 60 * 60 * 1000, // 60분
+  BOARD_POSTS: 120 * 60 * 1000, // 120분 (연장하여 읽기 최적화)
+  DEFAULT: 5 * 60 * 1000, // 5분
 };
 
 // 로컬스토리지 캐시 키

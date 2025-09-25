@@ -46,7 +46,9 @@
                 size="28"
               />
               <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold text-white cinzel-font">Notice</div>
+                <div class="text-h6 font-weight-bold text-white cinzel-font">
+                  Notice
+                </div>
               </div>
               <v-btn
                 to="/board/notice"
@@ -425,24 +427,23 @@ useHead({
   ],
 });
 
-// 페이지 포커스 시 데이터 새로고침
-function handleVisibilityChange() {
-  if (!document.hidden) {
-    // 페이지가 다시 보일 때 데이터 새로고침
-    loadBoardPosts(true);
-  }
-}
+// 페이지 포커스 시 데이터 새로고침 (비활성화)
+// function handleVisibilityChange() {
+//   if (!document.hidden) {
+//     // 페이지가 다시 보일 때 데이터 새로고침
+//     loadBoardPosts(true);
+//   }
+// }
 
 onMounted(() => {
   loadStats();
   loadBoardPosts();
 
-  // 페이지 가시성 변경 이벤트 리스너 추가
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+  // 페이지 가시성 변경 이벤트 리스너 제거 (성능 최적화)
 });
 
 onUnmounted(() => {
-  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  // 이벤트 리스너 제거 불필요
 });
 </script>
 

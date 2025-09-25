@@ -19,7 +19,6 @@
     <v-row>
       <v-col cols="12">
         <v-tabs v-model="activeTab" color="primary">
-          <v-tab value="dashboard">대시보드</v-tab>
           <v-tab value="notices">공지사항</v-tab>
           <v-tab value="icons">아이콘 상점</v-tab>
           <v-tab value="points">포인트 관리</v-tab>
@@ -28,10 +27,7 @@
         </v-tabs>
 
         <v-tabs-window v-model="activeTab" class="mt-4">
-          <!-- 대시보드 탭 -->
-          <v-tabs-window-item value="dashboard">
-            <AdminDashboard @change-tab="activeTab = $event" />
-          </v-tabs-window-item>
+          <!-- 공지사항 관리 기본 탭 -->
 
           <!-- 공지사항 관리 탭 -->
           <v-tabs-window-item value="notices">
@@ -65,15 +61,14 @@
 
 <script setup>
 import { ref } from 'vue';
-import AdminDashboard from '@/components/admin/AdminDashboard.vue';
 import AdminNoticeManager from '@/components/admin/AdminNoticeManager.vue';
 import AdminIconManager from '@/components/admin/AdminIconManager.vue';
 import AdminPointsManager from '@/components/admin/AdminPointsManager.vue';
 import AdminUserManager from '@/components/admin/AdminUserManager.vue';
 import AdminDataManager from '@/components/admin/AdminDataManager.vue';
 
-// 활성 탭
-const activeTab = ref('dashboard');
+// 활성 탭 (공지사항 기본)
+const activeTab = ref('notices');
 
 // 사용자 업데이트 핸들러
 const handleUserUpdated = () => {

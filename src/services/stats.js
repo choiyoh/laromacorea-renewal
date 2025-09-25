@@ -59,11 +59,14 @@ export const statsService = {
   async getBoardPosts(boardTypes) {
     const cacheKey = CACHE_KEYS.BOARD_POSTS;
 
-    // 캐시에서 먼저 확인
+    // 캐시에서 먼저 확인 (읽기 최적화 로깅)
     const cached = statsCache.get(cacheKey);
     if (cached) {
+      console.log('📊 게시판 최근 게시글 캐시 히트 (읽기 최적화)');
       return cached;
     }
+
+    console.log('📊 게시판 최근 게시글 Firestore 쿼리 실행 (캐시 없음)');
 
     try {
       const boardPosts = {};
