@@ -214,7 +214,7 @@ export const matchService = {
    * TheSportsDB에서 지난 경기 결과 가져오기
    */
   async fetchRecentResult() {
-    const url = `${THESPORTSDB_CONFIG.baseUrl}/eventslast.php?id=${HOME_TEAM_ID}`;
+    const url = `${THESPORTSDB_CONFIG.baseUrl}/eventslast.php?id=${AS_ROMA_TEAM_ID}`;
 
     const response = await fetch(url);
 
