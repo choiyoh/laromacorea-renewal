@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:clean": "rm -rf dist && vite build",
+    "build:clean": "vite build",
     "preview": "vite preview",
     "test:unit": "vitest",
     "test:run": "vitest --run",
@@ -18,7 +18,7 @@
     "format": "prettier --write src/",
     "generate-sitemap": "node scripts/generate-sitemap.js",
     "generate-sitemap:dynamic": "node scripts/generate-dynamic-sitemap.js",
-    "build:prod": "node scripts/update-version.js && node scripts/generate-sitemap.js && rm -rf dist && vite build --mode production",
+    "build:prod": "node scripts/update-version.js && node scripts/generate-sitemap.js && vite build --mode production",
     "deploy": "npm run pre-deploy-check && npm run build:prod && npx firebase-tools deploy && node scripts/post-deploy-cache-bust.js",
     "deploy:hosting": "npm run pre-deploy-check && npm run build:prod && npx firebase-tools deploy --only hosting && node scripts/post-deploy-cache-bust.js",
     "deploy:rules": "npx firebase-tools deploy --only firestore:rules,storage",
