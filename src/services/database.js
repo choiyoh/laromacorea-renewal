@@ -905,14 +905,16 @@ export const postService = {
  */
 export const commentService = {
   // 게시글의 댓글 목록 조회 (페이지네이션 지원)
-  async getComments(postId, options = {}) {
+  async getComments(postId, boardType = 'default', options = {}) {
     const { lastDoc = null, limitCount = 50 } = options;
 
     try {
+      const sortOrder = boardType === 'match' ? 'desc' : 'asc';
+
       const constraints = [
         where('postId', '==', postId),
         where('isDeleted', '==', false),
-        orderBy('createdAt', 'asc'),
+        orderBy('createdAt', sortOrder),
         limit(limitCount),
       ];
 

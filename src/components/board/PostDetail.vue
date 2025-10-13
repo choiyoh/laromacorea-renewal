@@ -583,7 +583,7 @@ async function fetchComments(loadMore = false) {
       comments: fetchedComments,
       lastDoc,
       hasMore,
-    } = await commentService.getComments(props.postId, {
+    } = await commentService.getComments(props.postId, post.value.boardType, {
       lastDoc: lastCommentDoc.value,
       limitCount,
     });
@@ -729,8 +729,10 @@ function navigateToPost(postId) {
 
 // Lifecycle
 onMounted(async () => {
-  // 게시글과 댓글을 병렬로 로드하여 성능 향상
-  await Promise.all([fetchPost(), fetchComments()]);
+  await fetchPost();
+  if (post.value && post.value.boardType !== 'match') {
+    await fetchComments();
+  }
 });
 
 watch(
@@ -738,7 +740,9 @@ watch(
   async (newPostId, oldPostId) => {
     if (newPostId && newPostId !== oldPostId) {
       await fetchPost();
-      await fetchComments();
+      if (post.value && post.value.boardType !== 'match') {
+        await fetchComments();
+      }
     }
   },
 );
