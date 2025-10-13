@@ -143,6 +143,7 @@ export default defineConfig({
     },
   },
   build: {
+    emptyOutDir: true,
     // Performance optimizations
     target: 'es2015',
     minify: 'esbuild',
