@@ -114,62 +114,6 @@ export const userService = {
  * 게시글 관련 데이터베이스 작업
  */
 export const postService = {
-  // 페이지 점프를 위한 커서 조회 (비효율적일 수 있음)
-  async getCursorForPage(boardType, page, limitCount, sortBy = 'latest') {
-    if (page <= 1) {
-      return null;
-    }
-
-    const offset = (page - 1) * limitCount;
-
-    let constraints = [
-      where('boardType', '==', boardType),
-      where('isDeleted', '==', false),
-    ];
-
-    // 정렬 로직은 getPostsWithPagination와 반드시 일치해야 합니다.
-    switch (sortBy) {
-      case 'views':
-        constraints.push(
-          orderBy('isPinned', 'desc'),
-          orderBy('viewCount', 'desc'),
-        );
-        break;
-      case 'comments':
-        constraints.push(
-          orderBy('isPinned', 'desc'),
-          orderBy('commentCount', 'desc'),
-        );
-        break;
-      case 'likes':
-        constraints.push(
-          orderBy('isPinned', 'desc'),
-          orderBy('likeCount', 'desc'),
-        );
-        break;
-      case 'latest':
-      default:
-        constraints.push(
-          orderBy('isPinned', 'desc'),
-          orderBy('createdAt', 'desc'),
-        );
-        break;
-    }
-
-    constraints.push(limit(offset));
-
-    const q = query(collection(db, collections.posts), ...constraints);
-    const snapshot = await getDocs(q);
-
-    // 요청된 페이지가 실제 게시물 수를 초과하는 경우
-    if (snapshot.docs.length < offset) {
-      console.warn(`Requested page ${page} is out of bounds.`);
-      return 'invalid-page';
-    }
-
-    return snapshot.docs[snapshot.docs.length - 1];
-  },
-
   // 게시판별 게시글 목록 조회 (서버사이드 검색 필터링 지원 - 최적화됨)
   async getPosts(boardType, options = {}) {
     const {
@@ -851,7 +795,7 @@ export const postService = {
       if (searchKeywords.length > 0) {
         // Firestore의 제한으로 인해, 검색 키워드가 있는 경우 제한된 수의 문서만 읽도록 함
         // 실제 운영에서는 검색 전용 컬렉션이나 Algolia 같은 검색 서비스를 사용하는 것이 이상적임
-        constraints.push(limit(limitCount * 3)); // 검색 결과를 위해 3배로 늘려서 가져온 후 필터링
+        constraints.push(limit(limitCount)); // 검색 시에도 요청된 수만큼만 가져옴
       } else {
         constraints.push(limit(limitCount));
       }
@@ -1393,49 +1337,50 @@ export const adminService = {
       );
       let fixedCount = 0;
 
+      // 1. 모든 사용자 ID 수집
+      const userIds = new Set();
+      commentsSnapshot.docs.forEach(doc => {
+        const commentData = doc.data();
+        if (commentData.authorId) {
+          userIds.add(commentData.authorId);
+        }
+      });
+
+      // 2. 모든 사용자 정보 한 번에 조회
+      const usersMap = new Map();
+      if (userIds.size > 0) {
+        const usersQuery = query(
+          collection(db, collections.users),
+          where('__name__', 'in', Array.from(userIds))
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+        usersSnapshot.docs.forEach(doc => {
+          usersMap.set(doc.id, doc.data());
+        });
+      }
+
+      // 3. 댓글 업데이트
       for (const commentDoc of commentsSnapshot.docs) {
         const commentData = commentDoc.data();
 
-        // authorName이 이메일 형식인지 확인 (@ 포함하고 .temp 또는 실제 도메인 포함)
         if (commentData.authorName && commentData.authorName.includes('@')) {
-          let newAuthorName = commentData.authorName;
+          let newAuthorName = commentData.authorName.split('@')[0];
 
-          // .temp 이메일인 경우 @ 앞부분만 사용
-          if (commentData.authorName.includes('.temp')) {
-            newAuthorName = commentData.authorName.split('@')[0];
-          }
-          // 실제 이메일인 경우도 @ 앞부분만 사용
-          else {
-            newAuthorName = commentData.authorName.split('@')[0];
+          if (commentData.authorId && usersMap.has(commentData.authorId)) {
+            const userData = usersMap.get(commentData.authorId);
+            newAuthorName = userData.displayName || newAuthorName;
           }
 
-          // 작성자 ID로 실제 사용자 정보 조회해서 displayName 사용
-          if (commentData.authorId) {
-            try {
-              const userDoc = await getDoc(
-                doc(db, collections.users, commentData.authorId),
-              );
-              if (userDoc.exists()) {
-                const userData = userDoc.data();
-                newAuthorName = userData.displayName || newAuthorName;
-              }
-            } catch (userError) {
-              console.warn(
-                `Failed to get user data for ${commentData.authorId}:`,
-                userError,
-              );
-            }
+          if (newAuthorName !== commentData.authorName) {
+            await updateDoc(doc(db, collections.comments, commentDoc.id), {
+              authorName: newAuthorName,
+            });
+
+            console.log(
+              `Fixed comment ${commentDoc.id}: ${commentData.authorName} -> ${newAuthorName}`,
+            );
+            fixedCount++;
           }
-
-          // 댓글 업데이트
-          await updateDoc(doc(db, collections.comments, commentDoc.id), {
-            authorName: newAuthorName,
-          });
-
-          console.log(
-            `Fixed comment ${commentDoc.id}: ${commentData.authorName} -> ${newAuthorName}`,
-          );
-          fixedCount++;
         }
       }
 
