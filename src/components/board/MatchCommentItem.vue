@@ -421,9 +421,19 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .comment-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .comment-header > .d-flex {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-width: 0; /* Prevent overflow */
+  }
+
+  .comment-header .font-weight-medium {
+    word-break: break-word;
   }
 
   .comment-actions {

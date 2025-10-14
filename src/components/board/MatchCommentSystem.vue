@@ -53,28 +53,7 @@
       </v-card-text>
     </v-card>
 
-    <!-- 빠른 응원 버튼 -->
-    <v-card class="quick-cheering mb-4" variant="outlined">
-      <v-card-text class="pa-3">
-        <div class="text-subtitle-2 mb-3">빠른 응원</div>
 
-        <div class="cheering-buttons">
-          <v-row dense>
-            <v-col cols="6" sm="3" v-for="cheer in quickCheers" :key="cheer.id">
-              <v-btn
-                :color="cheer.color"
-                variant="outlined"
-                size="small"
-                block
-                @click="handleQuickCheer(cheer)"
-              >
-                {{ cheer.emoji }} {{ cheer.text }}
-              </v-btn>
-            </v-col>
-          </v-row>
-        </div>
-      </v-card-text>
-    </v-card>
 
     <!-- 댓글 작성 폼 -->
     <v-card class="comment-form mb-4" variant="outlined">
@@ -240,17 +219,6 @@ const hasMoreComments = ref(false);
 const newComment = ref('');
 const commentType = ref('general');
 
-// Quick cheering options
-const quickCheers = ref([
-  { id: 1, text: 'FORZA ROMA!', emoji: '🔥', color: 'error', type: 'roma' },
-  { id: 2, text: 'DAJE ROMA!', emoji: '💪', color: 'error', type: 'roma' },
-  { id: 3, text: '승리하자!', emoji: '🏆', color: 'warning', type: 'general' },
-  { id: 4, text: '화이팅!', emoji: '⚡', color: 'primary', type: 'general' },
-  { id: 5, text: '골 넣자!', emoji: '⚽', color: 'success', type: 'general' },
-  { id: 6, text: '응원해요!', emoji: '📣', color: 'info', type: 'general' },
-  { id: 7, text: '로마니스타!', emoji: '❤️', color: 'error', type: 'roma' },
-  { id: 8, text: '최고야!', emoji: '👏', color: 'success', type: 'general' },
-]);
 
 // Computed
 const canSubmitComment = computed(() => {
@@ -314,6 +282,7 @@ async function fetchComments(loadMore = false) {
   try {
     const { comments: fetchedComments, lastDoc, hasMore } = await commentService.getComments(
       props.postId,
+      'match',
       { lastDoc: lastCommentDoc.value, limitCount: 20 } // 경기 댓글은 더 자주 로드
     );
 
@@ -326,38 +295,6 @@ async function fetchComments(loadMore = false) {
   } finally {
     loading.value = false;
     loadingMore.value = false;
-  }
-}
-
-async function handleQuickCheer(cheer) {
-  if (!userStore.isAuthenticated) {
-    // Show login prompt
-    return;
-  }
-
-  const commentData = {
-    postId: props.postId,
-    content: cheer.text,
-    authorId: userStore.user.uid,
-    authorName: userStore.userDisplayName,
-    authorIcon: userStore.user.selectedIconData?.url || null,
-    cheerType: cheer.type,
-    isQuickCheer: true,
-  };
-
-  try {
-    const commentId = await commentService.createComment(commentData);
-    const newCommentObj = {
-      id: commentId,
-      ...commentData,
-      createdAt: new Date(),
-      likeCount: 0,
-    };
-
-    comments.value.push(newCommentObj);
-    emit('comment-added', newCommentObj);
-  } catch (error) {
-    // Error creating quick cheer
   }
 }
 
@@ -383,7 +320,7 @@ async function handleSubmitComment() {
       likeCount: 0,
     };
 
-    comments.value.push(newCommentObj);
+    comments.value.unshift(newCommentObj);
     emit('comment-added', newCommentObj);
 
     // Reset form

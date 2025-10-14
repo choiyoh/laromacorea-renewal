@@ -1,86 +1,68 @@
 <template>
-  <div v-if="totalPages > 1" class="pagination-wrapper">
-    <v-pagination
-      :model-value="currentPage"
-      :length="totalPages"
-      :total-visible="dynamicTotalVisible"
-      variant="elevated"
-      color="primary"
-      class="my-4"
-      density="compact"
-      @update:model-value="handlePageChange"
-    />
+  <div class="pagination-wrapper text-center my-8">
+    <v-btn
+      :disabled="currentPage <= 1"
+      @click="onPrev"
+      class="mr-2"
+      variant="tonal"
+      prepend-icon="mdi-chevron-left"
+    >
+      이전
+    </v-btn>
 
-    <!-- 페이지 정보 표시 -->
-    <div class="pagination-info text-center mt-2">
-      <span class="text-caption text-medium-emphasis">
-        {{ startItem }}-{{ endItem }} / {{ totalItems }}개
-      </span>
-    </div>
+    <span class="current-page-display text-subtitle-1 font-weight-bold mx-4">
+      {{ currentPage }}
+    </span>
+
+    <v-btn
+      :disabled="!hasMore"
+      @click="onNext"
+      class="ml-2"
+      variant="tonal"
+      append-icon="mdi-chevron-right"
+    >
+      다음
+    </v-btn>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useResponsive } from '@/composables/useResponsive';
-
 const props = defineProps({
   currentPage: {
     type: Number,
     required: true,
   },
-  totalItems: {
-    type: Number,
+  hasMore: {
+    type: Boolean,
     required: true,
   },
-  itemsPerPage: {
-    type: Number,
-    default: 10,
-  },
-  totalVisible: {
-    type: Number,
-    default: 7,
-  },
 });
 
-const emit = defineEmits(['update:currentPage', 'page-change']);
+const emit = defineEmits(['prev', 'next']);
 
-const { isMobile } = useResponsive();
+function onPrev() {
+  if (props.currentPage > 1) {
+    emit('prev');
+  }
+}
 
-// Computed
-const totalPages = computed(() => {
-  return Math.ceil(props.totalItems / props.itemsPerPage);
-});
-
-const dynamicTotalVisible = computed(() => {
-  return isMobile.value ? 5 : props.totalVisible;
-});
-
-const startItem = computed(() => {
-  return (props.currentPage - 1) * props.itemsPerPage + 1;
-});
-
-const endItem = computed(() => {
-  const end = props.currentPage * props.itemsPerPage;
-  return Math.min(end, props.totalItems);
-});
-
-// Methods
-function handlePageChange(page) {
-  emit('update:currentPage', page);
-  emit('page-change', page);
+function onNext() {
+  if (props.hasMore) {
+    emit('next');
+  }
 }
 </script>
 
 <style scoped>
 .pagination-wrapper {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  margin: 2rem 0;
+  justify-content: center;
 }
 
-.pagination-info {
-  margin-top: 0.5rem;
+.current-page-display {
+  min-width: 30px; /* 페이지 번호가 바뀌어도 너비 유지 */
+  display: inline-block;
+  text-align: center;
 }
 </style>

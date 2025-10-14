@@ -99,11 +99,11 @@
 
       <!-- 페이지네이션 -->
       <Pagination
-        v-if="totalPages > 1"
+        v-if="totalItems > itemsPerPage"
         :current-page="currentPage"
-        :total-items="totalItems"
-        :items-per-page="itemsPerPage"
-        @page-change="handlePageChange"
+        :has-more="hasMore"
+        @prev="goToPrevPage"
+        @next="goToNextPage"
       />
     </div>
 
@@ -176,8 +176,8 @@ const {
   isSearchActive,
   currentPage,
   totalItems,
-  totalPages,
   itemsPerPage,
+  hasMore, // hasMore 추가
   fetchPosts,
   searchPosts,
   clearSearch,
@@ -217,8 +217,12 @@ function handleClear() {
   clearSearch();
 }
 
-function handlePageChange(page) {
-  goToPage(page);
+function goToPrevPage() {
+  goToPage(currentPage.value - 1);
+}
+
+function goToNextPage() {
+  goToPage(currentPage.value + 1);
 }
 
 function handleWritePost() {
