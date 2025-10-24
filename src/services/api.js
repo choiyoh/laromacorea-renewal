@@ -1,4 +1,6 @@
-// API service for Firestore operations
+// API service for Firestore operations (Legacy - 실제로는 database.js 사용)
+// 이 파일은 테스트에서만 사용되며, 실제 코드에서는 database.js를 사용합니다.
+
 import {
   collection,
   doc,
@@ -8,103 +10,69 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
-  orderBy,
-  limit,
-  onSnapshot,
-} from 'firebase/firestore'
-import { db } from './firebase'
+} from 'firebase/firestore';
+import { db } from './firebase';
 
 export class ApiService {
   // Get collection reference
   static getCollection(collectionName) {
-    return collection(db, collectionName)
+    return collection(db, collectionName);
   }
 
   // Get document reference
-  static getDocument(collectionName, docId) {
-    return doc(db, collectionName, docId)
+  static getDocRef(collectionName, docId) {
+    return doc(db, collectionName, docId);
   }
 
   // Get all documents from a collection
   static async getDocuments(collectionName, queryConstraints = []) {
-    try {
-      const q = query(this.getCollection(collectionName), ...queryConstraints)
-      const querySnapshot = await getDocs(q)
-      return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-    } catch (error) {
-      throw error
-    }
+    const q = query(this.getCollection(collectionName), ...queryConstraints);
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
   }
 
   // Get a single document
   static async getDocument(collectionName, docId) {
-    try {
-      const docRef = this.getDocument(collectionName, docId)
-      const docSnap = await getDoc(docRef)
+    const docRef = this.getDocRef(collectionName, docId);
+    const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists()) {
-        return {
-          id: docSnap.id,
-          ...docSnap.data(),
-        }
-      } else {
-        return null
-      }
-    } catch (error) {
-      throw error
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data(),
+      };
+    } else {
+      return null;
     }
   }
 
   // Add a new document
   static async addDocument(collectionName, data) {
-    try {
-      const docRef = await addDoc(this.getCollection(collectionName), {
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      return docRef.id
-    } catch (error) {
-      throw error
-    }
+    const docRef = await addDoc(this.getCollection(collectionName), {
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return docRef.id;
   }
 
   // Update a document
   static async updateDocument(collectionName, docId, data) {
-    try {
-      const docRef = this.getDocument(collectionName, docId)
-      await updateDoc(docRef, {
-        ...data,
-        updatedAt: new Date(),
-      })
-    } catch (error) {
-      throw error
-    }
+    const docRef = this.getDocRef(collectionName, docId);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: new Date(),
+    });
   }
 
   // Delete a document
   static async deleteDocument(collectionName, docId) {
-    try {
-      const docRef = this.getDocument(collectionName, docId)
-      await deleteDoc(docRef)
-    } catch (error) {
-      throw error
-    }
+    const docRef = this.getDocRef(collectionName, docId);
+    await deleteDoc(docRef);
   }
 
-  // Listen to real-time updates
-  static onSnapshot(collectionName, callback, queryConstraints = []) {
-    const q = query(this.getCollection(collectionName), ...queryConstraints)
-    return onSnapshot(q, (querySnapshot) => {
-      const documents = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      callback(documents)
-    })
-  }
+  // 실시간 리스너는 사용하지 않으므로 제거 (onSnapshot 메서드 제거)
 }

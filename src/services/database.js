@@ -274,12 +274,21 @@ export const postService = {
     const postDoc = await getDoc(doc(db, collections.posts, postId));
     if (!postDoc.exists()) return null;
 
-    // 조회수 증가를 비동기로 처리 (응답 속도 향상)
-    updateDoc(doc(db, collections.posts, postId), {
-      viewCount: increment(1),
-    }).catch((error) => {
-      console.warn('Failed to update view count:', error);
-    });
+    // sessionStorage로 중복 조회수 방지 (읽기 최적화)
+    const viewKey = `post_viewed_${postId}`;
+    const isAlreadyViewed = sessionStorage.getItem(viewKey);
+
+    if (!isAlreadyViewed) {
+      // 조회수 증가를 비동기로 처리 (응답 속도 향상)
+      updateDoc(doc(db, collections.posts, postId), {
+        viewCount: increment(1),
+      }).catch((error) => {
+        console.warn('Failed to update view count:', error);
+      });
+
+      // 세션 동안 중복 조회 방지
+      sessionStorage.setItem(viewKey, 'true');
+    }
 
     return { id: postDoc.id, ...postDoc.data() };
   },
@@ -465,11 +474,11 @@ export const postService = {
       const cachedCount = sessionStorage.getItem(cacheKey);
       const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
 
-      // 60분 이내 캐시가 있으면 사용 (강화된 캐시)
+      // 6시간 이내 캐시가 있으면 사용 (읽기 최적화)
       if (
         cachedCount &&
         cacheTime &&
-        Date.now() - parseInt(cacheTime) < 3600000 // 60분
+        Date.now() - parseInt(cacheTime) < 21600000 // 6시간
       ) {
         return parseInt(cachedCount);
       }
@@ -606,11 +615,11 @@ export const postService = {
 
       let allPosts = [];
 
-      // 2분 이내 캐시가 있으면 사용
+      // 10분 이내 캐시가 있으면 사용 (읽기 최적화)
       if (
         cachedResults &&
         cacheTime &&
-        Date.now() - parseInt(cacheTime) < 120000
+        Date.now() - parseInt(cacheTime) < 600000
       ) {
         allPosts = JSON.parse(cachedResults);
       } else {
@@ -1341,7 +1350,7 @@ export const adminService = {
 
       // 1. 모든 사용자 ID 수집
       const userIds = new Set();
-      commentsSnapshot.docs.forEach(doc => {
+      commentsSnapshot.docs.forEach((doc) => {
         const commentData = doc.data();
         if (commentData.authorId) {
           userIds.add(commentData.authorId);
@@ -1353,10 +1362,10 @@ export const adminService = {
       if (userIds.size > 0) {
         const usersQuery = query(
           collection(db, collections.users),
-          where('__name__', 'in', Array.from(userIds))
+          where('__name__', 'in', Array.from(userIds)),
         );
         const usersSnapshot = await getDocs(usersQuery);
-        usersSnapshot.docs.forEach(doc => {
+        usersSnapshot.docs.forEach((doc) => {
           usersMap.set(doc.id, doc.data());
         });
       }

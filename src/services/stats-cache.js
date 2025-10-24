@@ -7,8 +7,10 @@
 const cache = new Map();
 // 캐시 기간 설정 (메인페이지 캐싱 강화)
 const CACHE_DURATIONS = {
-  SITE_STATS: 60 * 60 * 1000, // 60분
-  BOARD_POSTS: 120 * 60 * 1000, // 120분 (연장하여 읽기 최적화)
+  SITE_STATS: 6 * 60 * 60 * 1000, // 60분 → 6시간 (읽기 최적화)
+  BOARD_POSTS: 6 * 60 * 60 * 1000, // 120분 → 6시간 (읽기 최적화)
+  BOARD_COUNT: 6 * 60 * 60 * 1000, // 새로 추가: 게시판 카운트 6시간
+  SEARCH_RESULTS: 10 * 60 * 1000, // 새로 추가: 검색 결과 10분
   DEFAULT: 5 * 60 * 1000, // 5분
 };
 
