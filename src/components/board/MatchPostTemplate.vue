@@ -261,7 +261,7 @@ function handleCreatePost() {
     matchData: selectedMatchData.value,
     templateOptions: templateOptions.value,
     boardType: 'match',
-    tags: ['경기', selectedMatchData.value?.competition || ''],
+    tags: ['경기', selectedMatchData.value?.competition?.name || ''],
     isMatchPost: true,
   };
 

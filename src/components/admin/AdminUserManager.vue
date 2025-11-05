@@ -856,8 +856,13 @@ const toggleUserStatus = async (user) => {
 const toggleVerificationStatus = async (user) => {
   try {
     const newVerified = !user.verified;
+    const adminId = userStore.user?.uid;
 
-    await adminService.updateUserVerification(user.id, newVerified);
+    if (!adminId) {
+      throw new Error('관리자 정보를 찾을 수 없습니다.');
+    }
+
+    await adminService.updateUserVerification(adminId, user.id, newVerified);
 
     // 로컬 상태 업데이트
     const index = users.value.findIndex((u) => u.id === user.id);

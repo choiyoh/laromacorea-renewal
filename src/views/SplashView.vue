@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -21,22 +21,6 @@ const imageLoaded = ref(false);
 const enterSite = () => {
   router.push('/home');
 };
-
-// 키보드 이벤트로도 입장 가능
-onMounted(() => {
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      enterSite();
-    }
-  };
-
-  document.addEventListener('keydown', handleKeyPress);
-
-  // 컴포넌트 언마운트 시 이벤트 리스너 제거
-  return () => {
-    document.removeEventListener('keydown', handleKeyPress);
-  };
-});
 </script>
 
 <style scoped>

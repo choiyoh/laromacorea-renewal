@@ -155,23 +155,7 @@ class PreDeploymentChecker {
         throw new Error('Build output missing index.html')
       }
 
-      // 빌드 크기 확인 (대략적인 체크)
-      const stats = execSync('du -sh dist', { encoding: 'utf8' })
-      const sizeMatch = stats.match(/^(\d+(?:\.\d+)?)(K|M|G)/)
-
-      if (sizeMatch) {
-        const [, size, unit] = sizeMatch
-        const sizeInMB =
-          unit === 'K'
-            ? parseFloat(size) / 1024
-            : unit === 'M'
-              ? parseFloat(size)
-              : parseFloat(size) * 1024
-
-        if (sizeInMB > 50) {
-          return 'warning' // 빌드 크기가 50MB 초과시 경고
-        }
-      }
+      // 빌드 크기 확인은 플랫폼 호환성 문제로 제거
 
       return true
     } catch (error) {

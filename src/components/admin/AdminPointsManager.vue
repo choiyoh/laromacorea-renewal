@@ -370,6 +370,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { adminService } from '@/services/admin';
 import { useUserStore } from '@/stores/user';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 const emit = defineEmits(['points-updated']);
 
@@ -519,15 +521,38 @@ const formatDateTime = (timestamp) => {
 // 통계 로드
 const loadStats = async () => {
   try {
-    const stats = await adminService.getSystemStats();
-    totalPoints.value = stats.totalPoints || 0;
-    avgPoints.value = Math.floor(totalPoints.value / (stats.totalUsers || 1));
+    // 기본 대시보드 통계 로드
+    const dashboardStats = await adminService.getDashboardStats();
 
-    // 오늘 포인트 통계는 실제 구현에서는 별도 API 필요
-    todayEarned.value = 150;
-    todaySpent.value = 80;
+    // 포인트 통계는 선택적으로 로드 (실패해도 계속 진행)
+    let pointsStats = {
+      netPoints: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+    };
+
+    try {
+      pointsStats = await adminService.getPointsStatistics(userStore.user.uid);
+    } catch (pointsError) {
+      console.warn('포인트 통계 로드 실패, 기본값 사용:', pointsError);
+    }
+
+    // 전체 포인트 통계
+    totalPoints.value = pointsStats.netPoints || 0;
+    avgPoints.value = Math.floor(
+      totalPoints.value / (dashboardStats.totalUsers || 1),
+    );
+
+    // 오늘 포인트 통계는 간단하게 계산
+    todayEarned.value = pointsStats.totalEarned || 0;
+    todaySpent.value = pointsStats.totalSpent || 0;
   } catch (error) {
     console.error('Failed to load stats:', error);
+    // 에러 시 기본값 설정
+    totalPoints.value = 0;
+    todayEarned.value = 0;
+    todaySpent.value = 0;
+    avgPoints.value = 0;
   }
 };
 
@@ -535,82 +560,230 @@ const loadStats = async () => {
 const loadHistory = async () => {
   loading.value = true;
   try {
-    // 실제 구현에서는 포인트 히스토리 API 호출
-    history.value = [
-      {
-        id: 1,
-        userId: 'user1',
-        userName: '로마팬123',
-        userPhoto: null,
-        points: 10,
-        type: 'post_create',
-        reason: '게시글 작성',
-        createdAt: new Date(),
-      },
-      {
-        id: 2,
-        userId: 'user2',
-        userName: '티포시',
-        userPhoto: null,
-        points: -50,
-        type: 'admin_penalty',
-        reason: '부적절한 댓글',
-        createdAt: new Date(Date.now() - 1000 * 60 * 30),
-      },
-    ];
+    // 포인트 히스토리가 없을 수도 있으므로 기본 데이터로 시작
+    const historyData = await adminService.getPointsHistory(
+      userStore.user.uid,
+      { limit: 100 },
+    );
+
+    if (!historyData || historyData.length === 0) {
+      // 데이터가 없으면 샘플 데이터 표시
+      history.value = [
+        {
+          id: 'sample-1',
+          userId: 'system',
+          userName: '시스템',
+          userPhoto: null,
+          points: 0,
+          type: 'system',
+          reason: '포인트 히스토리가 없습니다',
+          createdAt: new Date(),
+        },
+      ];
+      return;
+    }
+
+    // 사용자 정보와 함께 히스토리 데이터 매핑
+    history.value = await Promise.all(
+      historyData.map(async (item) => {
+        let userName = '알 수 없음';
+        let userPhoto = null;
+
+        if (item.userId && item.userId !== 'system') {
+          try {
+            // 사용자 정보 조회
+            const userDoc = await getDoc(doc(db, 'users', item.userId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              userName = userData.displayName || userData.email || '알 수 없음';
+              userPhoto = userData.photoURL || null;
+            }
+          } catch (userError) {
+            console.warn('사용자 정보 조회 실패:', item.userId, userError);
+          }
+        }
+
+        return {
+          id: item.id,
+          userId: item.userId,
+          userName,
+          userPhoto,
+          points: item.amount || 0,
+          type: item.reason || 'unknown',
+          reason: item.note || getReasonText(item.reason),
+          createdAt: item.createdAt,
+        };
+      }),
+    );
   } catch (error) {
     console.error('Failed to load history:', error);
+    // 에러 시 기본 메시지 표시
+    history.value = [
+      {
+        id: 'error-1',
+        userId: 'system',
+        userName: '시스템',
+        userPhoto: null,
+        points: 0,
+        type: 'error',
+        reason: '히스토리 로드 실패: ' + error.message,
+        createdAt: new Date(),
+      },
+    ];
   } finally {
     loading.value = false;
+  }
+};
+
+// 사유 텍스트 변환
+const getReasonText = (reason) => {
+  switch (reason) {
+    case 'post_created':
+      return '게시글 작성';
+    case 'comment_created':
+      return '댓글 작성';
+    case 'post_liked':
+      return '좋아요 받기';
+    case 'admin_bonus':
+      return '관리자 지급';
+    case 'admin_penalty':
+      return '관리자 차감';
+    case 'icon_purchase':
+      return '아이콘 구매';
+    case 'daily_login':
+      return '일일 로그인';
+    default:
+      return '기타';
   }
 };
 
 // 사용자 목록 로드
 const loadUsers = async () => {
   try {
-    const users = await adminService.getUsers({ limitCount: 100 });
-    userOptions.value = users.map((user) => ({
+    const result = await adminService.getUsers({
+      page: 1,
+      itemsPerPage: 100,
+      filters: { status: 'active' },
+    });
+
+    userOptions.value = result.users.map((user) => ({
       id: user.id,
-      displayName: user.displayName || user.email,
+      displayName: user.displayName || user.email || '이름 없음',
       email: user.email,
     }));
   } catch (error) {
     console.error('Failed to load users:', error);
+    userOptions.value = [];
   }
 };
 
 // 일괄 포인트 지급
 const bulkAwardPoints = async () => {
+  if (!bulkPoints.value || bulkPoints.value <= 0) {
+    alert('지급할 포인트를 입력해주세요.');
+    return;
+  }
+
+  if (!bulkReason.value.trim()) {
+    alert('지급 사유를 입력해주세요.');
+    return;
+  }
+
+  if (
+    !confirm(
+      `${getTargetDescription(bulkTarget.value)}에게 ${bulkPoints.value}포인트를 지급하시겠습니까?`,
+    )
+  ) {
+    return;
+  }
+
   bulkLoading.value = true;
   try {
-    // 실제 구현에서는 일괄 지급 API 호출
-    console.log('Bulk award:', {
-      bulkTarget: bulkTarget.value,
-      bulkPoints: bulkPoints.value,
-      bulkReason: bulkReason.value,
-    });
+    const result = await adminService.bulkAwardPoints(
+      userStore.user.uid,
+      bulkTarget.value,
+      bulkPoints.value,
+      bulkReason.value,
+    );
+
+    const message =
+      result.message ||
+      `성공적으로 ${result.targetCount}명의 사용자에게 총 ${result.totalPoints}포인트를 지급했습니다.`;
+    alert(message);
 
     // 초기화
     bulkPoints.value = 0;
     bulkReason.value = '';
 
+    // 데이터 새로고침
+    await loadHistory();
+    await loadStats();
     emit('points-updated');
   } catch (error) {
     console.error('Failed to bulk award points:', error);
+    alert(`일괄 지급 실패: ${error.message}`);
   } finally {
     bulkLoading.value = false;
   }
 };
 
+// 대상 설명 텍스트
+const getTargetDescription = (target) => {
+  switch (target) {
+    case 'all_users':
+      return '모든 사용자';
+    case 'active_users':
+      return '활성 사용자 (최근 30일 로그인)';
+    case 'new_users':
+      return '신규 사용자 (최근 7일 가입)';
+    case 'vip_users':
+      return 'VIP 사용자 (1000포인트 이상)';
+    default:
+      return '선택된 사용자';
+  }
+};
+
 // 개별 포인트 지급
 const awardIndividualPoints = async () => {
+  if (!individualUser.value) {
+    alert('사용자를 선택해주세요.');
+    return;
+  }
+
+  if (!individualPoints.value || individualPoints.value === 0) {
+    alert('지급할 포인트를 입력해주세요.');
+    return;
+  }
+
+  if (!individualReason.value.trim()) {
+    alert('지급 사유를 입력해주세요.');
+    return;
+  }
+
+  const selectedUser = userOptions.value.find(
+    (u) => u.id === individualUser.value,
+  );
+  const userName = selectedUser?.displayName || '선택된 사용자';
+
+  if (
+    !confirm(
+      `${userName}에게 ${individualPoints.value}포인트를 지급하시겠습니까?`,
+    )
+  ) {
+    return;
+  }
+
   individualLoading.value = true;
   try {
-    await adminService.adjustUserPoints(
+    await adminService.adjustUserPointsWithHistory(
       individualUser.value,
       individualPoints.value,
       individualReason.value,
       userStore.user.uid,
+    );
+
+    alert(
+      `${userName}에게 ${individualPoints.value}포인트를 성공적으로 지급했습니다.`,
     );
 
     // 초기화
@@ -618,10 +791,13 @@ const awardIndividualPoints = async () => {
     individualPoints.value = 0;
     individualReason.value = '';
 
+    // 데이터 새로고침
+    await loadHistory();
+    await loadStats();
     emit('points-updated');
-    loadHistory();
   } catch (error) {
     console.error('Failed to award individual points:', error);
+    alert(`개별 지급 실패: ${error.message}`);
   } finally {
     individualLoading.value = false;
   }

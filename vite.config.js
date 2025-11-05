@@ -19,12 +19,30 @@ export default defineConfig({
     }),
     vueDevTools(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      // Force immediate update without user prompt
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        // 더 강력한 캐시 무효화
+        cleanupOutdatedCaches: true,
+        // 네비게이션 요청에 대한 캐시 전략
+        navigateFallback: null,
         globPatterns: [
           '**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}',
         ],
         runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'font',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'local-fonts-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -65,6 +83,8 @@ export default defineConfig({
         'apple-touch-icon.png',
         'pwa-*.png',
         'images/lupi.svg',
+        'sitemap.xml',
+        'robots.txt',
       ],
       manifest: {
         name: 'AS 로마 한국 팬 커뮤니티',
@@ -123,11 +143,32 @@ export default defineConfig({
     },
   },
   build: {
+    emptyOutDir: true,
     // Performance optimizations
     target: 'es2015',
     minify: 'esbuild',
+    // Force cache busting for all builds
+    assetsInlineLimit: 0, // Don't inline any assets to ensure proper cache busting
+    // 더 강력한 해시 생성
     rollupOptions: {
       output: {
+        // 파일 내용 기반의 해시를 사용하여 캐시 관리
+        entryFileNames: `js/[name]-[hash].js`,
+        chunkFileNames: `js/[name]-[hash].js`,
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
+            return `images/[name]-[hash].${ext}`;
+          }
+          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
+            return `fonts/[name]-[hash].${ext}`;
+          }
+          if (/\.css$/i.test(assetInfo.name)) {
+            return `css/[name]-[hash].${ext}`;
+          }
+          return `assets/[name]-[hash].${ext}`;
+        },
         // Manual chunk splitting for better caching
         manualChunks: {
           // Vendor chunks
@@ -142,37 +183,16 @@ export default defineConfig({
           'editor-vendor': ['quill', 'vue-quill-editor'],
           'utils-vendor': ['lodash-es'],
         },
-        // Optimize chunk file names
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId;
-          if (facadeModuleId) {
-            const fileName = facadeModuleId
-              .split('/')
-              .pop()
-              .replace('.vue', '');
-            return `js/${fileName}-[hash].js`;
-          }
-          return 'js/[name]-[hash].js';
-        },
-        assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
-          const ext = info[info.length - 1];
-          if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
-            return `images/[name]-[hash].${ext}`;
-          }
-          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-            return `fonts/[name]-[hash].${ext}`;
-          }
-          return `assets/[name]-[hash].${ext}`;
-        },
       },
     },
     // Enable source maps for production debugging
     sourcemap: false,
     // Optimize CSS
     cssCodeSplit: true,
-    // Set chunk size warning limit
-    chunkSizeWarningLimit: 1000,
+    // Set chunk size warning limit (모바일 최적화)
+    chunkSizeWarningLimit: 800,
+    // 모바일 성능 최적화
+    reportCompressedSize: false,
   },
   // Performance optimizations for development
   server: {

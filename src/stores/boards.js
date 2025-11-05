@@ -13,6 +13,7 @@ export const useBoardsStore = defineStore('boards', () => {
   const currentPost = ref(null);
   const loading = ref(false);
   const error = ref(null);
+  const pagination = ref({});
 
   // Board types configuration
   const boardTypes = ref([
@@ -40,19 +41,28 @@ export const useBoardsStore = defineStore('boards', () => {
   });
 
   // Actions
-  async function fetchPosts(boardType = null, limitCount = 20) {
+  async function fetchPosts(boardType = null, options = {}) {
+    const { limitCount = 15, sortBy = 'latest', lastDoc = null } = options;
     const loadingKey = `fetch-posts-${boardType || 'all'}`;
     errorStore.setLoading(loadingKey, true);
     error.value = null;
 
     try {
-      const options = {
+      const result = await postService.getPostsWithPagination(boardType, {
+        lastDoc,
         limitCount,
-        sortBy: 'latest',
-      };
+        sortBy,
+      });
 
-      const fetchedPosts = await postService.getPosts(boardType, options);
-      posts.value = fetchedPosts;
+      posts.value = result.posts;
+
+      // 페이지네이션 정보는 이제 컴포저블에서 직접 관리합니다.
+      // 스토어는 더 이상 페이지네이션 상태를 복잡하게 추적하지 않습니다.
+      pagination.value[boardType] = {
+        lastDoc: result.lastDoc,
+        hasMore: result.hasMore,
+        totalCount: result.totalCount,
+      };
     } catch (err) {
       error.value = err.message;
       errorStore.handleFirebaseError(
@@ -168,6 +178,7 @@ export const useBoardsStore = defineStore('boards', () => {
     loading,
     error,
     boardTypes,
+    pagination,
 
     // Getters
     getPostsByBoard,

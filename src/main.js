@@ -33,6 +33,8 @@ import App from './App.vue';
 import router from './router';
 import { useUserStore } from './stores/user';
 import { useErrorStore } from './stores/error';
+import { firebaseConfig } from './services/firebase';
+import VueGtag from 'vue-gtag-next';
 
 // Create Vuetify instance with AS Roma theme colors
 const vuetify = createVuetify({
@@ -73,6 +75,15 @@ const head = createHead();
 
 app.use(pinia);
 app.use(router);
+
+// Add Google Analytics
+app.use(VueGtag, {
+  property: {
+    id: firebaseConfig.measurementId
+  },
+  router
+});
+
 app.use(vuetify);
 app.use(head);
 
@@ -80,7 +91,7 @@ app.use(head);
 app.directive('lazy-image', vLazyImage);
 
 // Initialize browser compatibility
-initializeBrowserCompatibility();
+// initializeBrowserCompatibility();
 
 // Initialize performance optimizations
 inlineCriticalCSS();

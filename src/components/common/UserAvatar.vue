@@ -10,7 +10,7 @@
       :alt="displayName || '익명'"
       height="100%"
       width="100%"
-      style="object-fit: contain;"
+      style="object-fit: cover;"
     />
     <v-icon v-else :icon="defaultIcon" :size="computedIconSize" />
   </div>
@@ -112,6 +112,8 @@ watch(
   border-radius: 50%;
   overflow: hidden;
   position: relative;
-  background-color: #f0f0f0; /* Add a background color for transparency */
+  background-color: #f0f0f0;
+  flex-shrink: 0; /* 컨테이너 크기 고정 */
+  aspect-ratio: 1; /* 정사각형 비율 강제 */
 }
 </style>

@@ -4,7 +4,11 @@
       <!-- 경기 헤더 -->
       <div class="match-header mb-4">
         <div class="d-flex align-center justify-space-between mb-2">
-          <v-chip :color="getMatchStatusColor(matchData.status)" size="small" variant="flat">
+          <v-chip
+            :color="getMatchStatusColor(matchData.status)"
+            size="small"
+            variant="flat"
+          >
             {{ getMatchStatusText(matchData.status) }}
           </v-chip>
           <div class="text-caption text-grey">
@@ -13,7 +17,7 @@
         </div>
 
         <div class="text-subtitle-2 text-grey mb-2">
-          {{ matchData.competition }} - {{ matchData.round }}
+          {{ matchData.competition.name }} - {{ matchData.round }}
         </div>
       </div>
 
@@ -24,7 +28,10 @@
           <v-col cols="4" class="text-center">
             <div class="team-info">
               <v-avatar size="48" class="mb-2">
-                <v-img :src="matchData.homeTeam.logo" :alt="matchData.homeTeam.name" />
+                <v-img
+                  :src="matchData.homeTeam.logo"
+                  :alt="matchData.homeTeam.name"
+                />
               </v-avatar>
               <div class="text-subtitle-2 font-weight-bold">
                 {{ matchData.homeTeam.name }}
@@ -36,7 +43,9 @@
           <v-col cols="4" class="text-center">
             <div class="match-score">
               <div
-                v-if="matchData.status === 'finished' || matchData.status === 'live'"
+                v-if="
+                  matchData.status === 'finished' || matchData.status === 'live'
+                "
                 class="score-display"
               >
                 <span class="text-h4 font-weight-bold">
@@ -60,7 +69,10 @@
           <v-col cols="4" class="text-center">
             <div class="team-info">
               <v-avatar size="48" class="mb-2">
-                <v-img :src="matchData.awayTeam.logo" :alt="matchData.awayTeam.name" />
+                <v-img
+                  :src="matchData.awayTeam.logo"
+                  :alt="matchData.awayTeam.name"
+                />
               </v-avatar>
               <div class="text-subtitle-2 font-weight-bold">
                 {{ matchData.awayTeam.name }}
@@ -93,12 +105,26 @@
         </div>
 
         <!-- 득점자 정보 -->
-        <div v-if="matchData.scorers && matchData.scorers.length > 0" class="scorers-info mt-3">
+        <div
+          v-if="matchData.scorers && matchData.scorers.length > 0"
+          class="scorers-info mt-3"
+        >
           <div class="text-subtitle-2 font-weight-bold mb-2">득점자</div>
-          <div v-for="scorer in matchData.scorers" :key="scorer.id" class="scorer-item mb-1">
-            <v-chip size="small" variant="outlined" class="me-2"> {{ scorer.minute }}' </v-chip>
+          <div
+            v-for="scorer in matchData.scorers"
+            :key="scorer.id"
+            class="scorer-item mb-1"
+          >
+            <v-chip size="small" variant="outlined" class="me-2">
+              {{ scorer.minute }}'
+            </v-chip>
             <span class="text-body-2">{{ scorer.player }}</span>
-            <v-icon v-if="scorer.type === 'penalty'" icon="mdi-soccer" size="16" class="ml-1" />
+            <v-icon
+              v-if="scorer.type === 'penalty'"
+              icon="mdi-soccer"
+              size="16"
+              class="ml-1"
+            />
             <v-icon
               v-if="scorer.type === 'own_goal'"
               icon="mdi-close-circle"
@@ -121,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const props = defineProps({
   matchData: {
@@ -151,55 +177,55 @@ const props = defineProps({
       scorers: [],
     }),
   },
-})
+});
 
 // State
-const showDetails = ref(false)
+const showDetails = ref(false);
 
 // Methods
 function getMatchStatusColor(status) {
   switch (status) {
     case 'live':
-      return 'error'
+      return 'error';
     case 'finished':
-      return 'success'
+      return 'success';
     case 'postponed':
-      return 'warning'
+      return 'warning';
     default:
-      return 'primary'
+      return 'primary';
   }
 }
 
 function getMatchStatusText(status) {
   switch (status) {
     case 'live':
-      return '경기중'
+      return '경기중';
     case 'finished':
-      return '경기종료'
+      return '경기종료';
     case 'postponed':
-      return '연기'
+      return '연기';
     case 'scheduled':
     default:
-      return '예정'
+      return '예정';
   }
 }
 
 function formatMatchDate(date) {
-  const matchDate = new Date(date)
+  const matchDate = new Date(date);
   return matchDate.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'short',
-  })
+  });
 }
 
 function formatMatchTime(date) {
-  const matchDate = new Date(date)
+  const matchDate = new Date(date);
   return matchDate.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
-  })
+  });
 }
 </script>
 
