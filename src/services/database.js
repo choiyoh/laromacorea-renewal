@@ -10,6 +10,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -21,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { pointsService } from './points';
+import { statsCache } from './stats-cache';
 
 // Collection references
 export const collections = {
@@ -212,7 +214,7 @@ export const postService = {
       .map(([tag, count]) => ({ tag, count }));
   },
 
-  // 게시글 검색 (제목, 내용, 작성자 기준)
+  // 게시글 검색 (제목, 내용, 작성자 기준) - 최적화 버전
   async searchPosts(searchQuery, options = {}) {
     const {
       boardType = null,
@@ -220,6 +222,16 @@ export const postService = {
       tags = [],
       limitCount = 20,
     } = options;
+
+    // 검색 캐시 확인 (읽기 최적화)
+    const cacheKey = `search_${boardType || 'all'}_${searchQuery}_${tags.join(',')}_${sortBy}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+
+    if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 300000) {
+      // 5분 캐시
+      return JSON.parse(cached);
+    }
 
     let constraints = [where('isDeleted', '==', false)];
 
@@ -248,13 +260,22 @@ export const postService = {
         break;
     }
 
-    constraints.push(limit(limitCount * 2)); // 검색 필터링을 위해 더 많이 가져옴
+    // 검색 최적화: 키워드별로 제한된 수의 문서만 조회
+    const searchKeywords = searchQuery
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 1);
+    const maxDocs =
+      searchKeywords.length > 0 ? Math.min(limitCount * 3, 100) : limitCount; // 키워드 검색 시 최대 100개로 제한
+
+    constraints.push(limit(maxDocs));
 
     const q = query(collection(db, collections.posts), ...constraints);
     const snapshot = await getDocs(q);
 
     const query = searchQuery.toLowerCase();
-    const posts = snapshot.docs
+    let posts = snapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter(
         (post) =>
@@ -265,6 +286,10 @@ export const postService = {
             post.tags.some((tag) => tag.toLowerCase().includes(query))),
       )
       .slice(0, limitCount);
+
+    // 검색 결과 캐싱
+    sessionStorage.setItem(cacheKey, JSON.stringify(posts));
+    sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
 
     return posts;
   },
@@ -466,24 +491,80 @@ export const postService = {
     return likeDoc.exists();
   },
 
-  // 게시판 총 글 개수 조회 (강화된 캐싱 지원 - 60분)
+  // 게시판 총 글 개수 조회 (최적화된 버전 - 카운트 컬렉션 사용)
   async getBoardPostCount(boardType) {
     try {
-      // 캐시된 카운트 확인
+      // 캐시된 카운트 확인 (더 긴 캐시 시간 적용)
       const cacheKey = `board_count_${boardType}`;
       const cachedCount = sessionStorage.getItem(cacheKey);
       const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
 
-      // 6시간 이내 캐시가 있으면 사용 (읽기 최적화)
+      // 12시간 이내 캐시가 있으면 사용 (읽기 최적화 강화)
       if (
         cachedCount &&
         cacheTime &&
-        Date.now() - parseInt(cacheTime) < 21600000 // 6시간
+        Date.now() - parseInt(cacheTime) < 43200000 // 12시간
       ) {
         return parseInt(cachedCount);
       }
 
-      // 실제 카운트 조회
+      // 카운트 컬렉션에서 조회 시도 (더 효율적)
+      try {
+        const countDoc = await getDoc(doc(db, 'post_counts', boardType));
+        if (countDoc.exists()) {
+          const count = countDoc.data().count || 0;
+          // 캐시 저장
+          sessionStorage.setItem(cacheKey, count.toString());
+          sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+          return count;
+        }
+      } catch (countError) {
+        console.warn(
+          'Count collection not available, falling back to query:',
+          countError,
+        );
+      }
+
+      // 폴백: 실제 쿼리로 카운트 (최적화된 쿼리 사용)
+      // 최근 1000개 게시글만 확인하여 대략적인 카운트 추정
+      const estimateQuery = query(
+        collection(db, collections.posts),
+        where('boardType', '==', boardType),
+        where('isDeleted', '==', false),
+        orderBy('createdAt', 'desc'),
+        limit(1000),
+      );
+
+      const estimateSnapshot = await getDocs(estimateQuery);
+      const estimatedCount = estimateSnapshot.size;
+
+      // 정확한 카운트가 필요하면 전체 조회 (하지만 캐시 저장)
+      let totalCount = estimatedCount;
+      if (estimatedCount >= 1000) {
+        // 1000개 이상이면 전체 카운트 조회 (비용이 많이 들지만 정확도 위해)
+        const countQuery = query(
+          collection(db, collections.posts),
+          where('boardType', '==', boardType),
+          where('isDeleted', '==', false),
+        );
+        const countSnapshot = await getDocs(countQuery);
+        totalCount = countSnapshot.size;
+      }
+
+      // 캐시 저장 (12시간)
+      sessionStorage.setItem(cacheKey, totalCount.toString());
+      sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+
+      return totalCount;
+    } catch (error) {
+      console.error('Error getting board post count:', error);
+      return 0;
+    }
+  },
+
+  // 게시판 카운트 컬렉션 업데이트 (관리자용)
+  async updateBoardPostCount(boardType) {
+    try {
       const countQuery = query(
         collection(db, collections.posts),
         where('boardType', '==', boardType),
@@ -493,14 +574,18 @@ export const postService = {
       const countSnapshot = await getDocs(countQuery);
       const totalCount = countSnapshot.size;
 
-      // 캐시 저장 (60분)
-      sessionStorage.setItem(cacheKey, totalCount.toString());
-      sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+      // 카운트 컬렉션에 저장
+      await setDoc(doc(db, 'post_counts', boardType), {
+        count: totalCount,
+        updatedAt: serverTimestamp(),
+        boardType,
+      });
 
+      console.log(`Updated count for ${boardType}: ${totalCount}`);
       return totalCount;
     } catch (error) {
-      console.error('Error getting board post count:', error);
-      return 0;
+      console.error('Error updating board post count:', error);
+      throw error;
     }
   },
 
