@@ -645,9 +645,6 @@ export const postService = {
           break;
       }
 
-      // 총 개수 조회 (캐시 사용)
-      const totalCount = await this.getBoardPostCount(boardType);
-
       // 페이지네이션 쿼리 생성
       let postsQuery = query(
         collection(db, collections.posts),
@@ -666,14 +663,13 @@ export const postService = {
         ...doc.data(),
       }));
 
-      // 다음 페이지를 위한 마지막 문서(커서)와 추가 페이지 존재 여부 반환
+      // 마지막 문서와 추가 페이지 존재 여부 반환
       const newLastDoc = postsSnapshot.docs[postsSnapshot.docs.length - 1];
       const hasMore = posts.length === limitCount;
 
       return {
         posts,
         lastDoc: newLastDoc,
-        totalCount,
         hasMore,
       };
     } catch (error) {

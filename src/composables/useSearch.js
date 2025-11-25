@@ -19,8 +19,6 @@ export function useSearch(boardType) {
   const popularTags = ref([]);
 
   const currentPage = ref(1);
-  const totalItems = ref(0);
-  const itemsPerPage = ref(15);
   const hasMore = ref(false);
 
   // 페이지별 커서를 저장하는 객체. cursors[1]은 항상 null (첫 페이지)
@@ -49,9 +47,7 @@ export function useSearch(boardType) {
     return parts.join(' | ');
   });
 
-  const totalPages = computed(() => {
-    return Math.ceil(totalItems.value / itemsPerPage.value);
-  });
+  // totalPages는 더 이상 사용하지 않음
 
   // Methods
   async function fetchData(page = 1) {
@@ -62,7 +58,7 @@ export function useSearch(boardType) {
 
     try {
       const options = {
-        limitCount: itemsPerPage.value,
+        limitCount: 15, // 하드코딩: itemsPerPage
         sortBy: sortBy.value,
         searchQuery: searchQuery.value.trim(),
         tags: selectedTags.value,
@@ -77,11 +73,9 @@ export function useSearch(boardType) {
       if (isSearchActive.value) {
         // 검색 결과는 페이지네이션 정보가 없으므로 직접 처리
         posts.value = result;
-        totalItems.value = result.length; // 검색은 전체 카운트를 알 수 없음
         hasMore.value = false; // 검색 결과는 단일 페이지로 처리
       } else {
         posts.value = result.posts;
-        totalItems.value = result.totalCount;
         hasMore.value = result.hasMore;
 
         // 다음 페이지를 위한 커서 저장
@@ -182,15 +176,12 @@ export function useSearch(boardType) {
     posts,
     popularTags,
     currentPage,
-    totalItems,
-    itemsPerPage,
     hasMore,
 
     // Computed
     isSearchActive,
     searchSummary,
     sortOptions,
-    totalPages,
 
     // Methods
     fetchPosts: fetchData, // fetchData를 fetchPosts로 노출

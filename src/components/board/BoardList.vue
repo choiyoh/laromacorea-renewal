@@ -7,14 +7,6 @@
         <div class="d-flex align-center">
           <v-icon :icon="boardConfig?.icon" size="large" class="me-2" />
           <h2 class="text-h5">{{ boardConfig?.name }}</h2>
-          <v-chip
-            v-if="totalPosts > 0"
-            size="small"
-            variant="outlined"
-            class="ms-2"
-          >
-            {{ totalPosts.toLocaleString() }}개
-          </v-chip>
         </div>
 
         <!-- Search and Write Button (Right) -->
@@ -99,7 +91,7 @@
 
       <!-- 페이지네이션 -->
       <Pagination
-        v-if="totalItems > itemsPerPage"
+        v-if="posts.length > 0"
         :current-page="currentPage"
         :has-more="hasMore"
         @prev="goToPrevPage"
@@ -175,17 +167,12 @@ const {
   posts,
   isSearchActive,
   currentPage,
-  totalItems,
-  itemsPerPage,
-  hasMore, // hasMore 추가
+  hasMore,
   fetchPosts,
   searchPosts,
   clearSearch,
   goToPage,
 } = useSearch(boardTypeRef);
-
-// State
-const totalPosts = ref(0);
 
 // Computed
 const canWrite = computed(() => {
@@ -234,14 +221,6 @@ watch(
   () => props.boardType,
   (newBoardType) => {
     boardTypeRef.value = newBoardType;
-  },
-  { immediate: true },
-);
-
-watch(
-  totalItems,
-  (newTotal) => {
-    totalPosts.value = newTotal;
   },
   { immediate: true },
 );
