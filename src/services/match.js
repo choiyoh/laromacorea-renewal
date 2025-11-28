@@ -5,7 +5,7 @@
 
 // AS 로마 팀 ID (TheSportsDB 기준)
 const AS_ROMA_TEAM_ID = '133682';
-const HOME_TEAM_ID = '134224';
+const HOME_TEAM_ID = '133682';
 // TheSportsDB API 설정
 const THESPORTSDB_CONFIG = {
   baseUrl: 'https://www.thesportsdb.com/api/v1/json/123',
