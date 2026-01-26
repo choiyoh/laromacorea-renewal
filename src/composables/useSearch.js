@@ -93,23 +93,23 @@ export function useSearch(boardType) {
     }
   }
 
-  async function loadPopularTags() {
-    try {
-      // 인기 태그는 한 번만 로드하거나 세션 캐시 사용
-      const cacheKey = `popular_tags_${boardType.value}`;
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        popularTags.value = JSON.parse(cached);
-        return;
-      }
-
-      const tags = await postService.getPopularTags(boardType.value, 20);
-      popularTags.value = tags;
-      sessionStorage.setItem(cacheKey, JSON.stringify(tags));
-    } catch (err) {
-      console.error('Error loading popular tags:', err);
-    }
-  }
+  // async function loadPopularTags() {
+  //   try {
+  //     // 인기 태그는 한 번만 로드하거나 세션 캐시 사용
+  //     const cacheKey = `popular_tags_${boardType.value}`;
+  //     const cached = sessionStorage.getItem(cacheKey);
+  //     if (cached) {
+  //       popularTags.value = JSON.parse(cached);
+  //       return;
+  //     }
+  //
+  //     const tags = await postService.getPopularTags(boardType.value, 20);
+  //     popularTags.value = tags;
+  //     sessionStorage.setItem(cacheKey, JSON.stringify(tags));
+  //   } catch (err) {
+  //     console.error('Error loading popular tags:', err);
+  //   }
+  // }
 
   function resetAndFetch() {
     currentPage.value = 1;
@@ -161,7 +161,7 @@ export function useSearch(boardType) {
     () => {
       clearSearch();
       resetAndFetch();
-      loadPopularTags();
+      // loadPopularTags(); // 최적화: 사용하지 않는 인기 태그 로드 중단 (일일 10만건 읽기 절약)
     },
     { immediate: true },
   );

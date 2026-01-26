@@ -22,7 +22,6 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { pointsService } from './points';
-import { statsCache } from './stats-cache';
 
 // Collection references
 export const collections = {
@@ -525,31 +524,18 @@ export const postService = {
         );
       }
 
-      // 폴백: 실제 쿼리로 카운트 (최적화된 쿼리 사용)
-      // 최근 1000개 게시글만 확인하여 대략적인 카운트 추정
-      const estimateQuery = query(
+      // 폴백: 실제 쿼리로 카운트 (최적화된 버전 - getCountFromServer 사용)
+      // 기존에는 1000개를 읽어왔으나, 이제는 집계 쿼리를 사용하여 읽기 비용을 대폭 절감
+      const { getCountFromServer } = await import('firebase/firestore');
+
+      const countQuery = query(
         collection(db, collections.posts),
         where('boardType', '==', boardType),
         where('isDeleted', '==', false),
-        orderBy('createdAt', 'desc'),
-        limit(1000),
       );
 
-      const estimateSnapshot = await getDocs(estimateQuery);
-      const estimatedCount = estimateSnapshot.size;
-
-      // 정확한 카운트가 필요하면 전체 조회 (하지만 캐시 저장)
-      let totalCount = estimatedCount;
-      if (estimatedCount >= 1000) {
-        // 1000개 이상이면 전체 카운트 조회 (비용이 많이 들지만 정확도 위해)
-        const countQuery = query(
-          collection(db, collections.posts),
-          where('boardType', '==', boardType),
-          where('isDeleted', '==', false),
-        );
-        const countSnapshot = await getDocs(countQuery);
-        totalCount = countSnapshot.size;
-      }
+      const snapshot = await getCountFromServer(countQuery);
+      let totalCount = snapshot.data().count;
 
       // 캐시 저장 (12시간)
       sessionStorage.setItem(cacheKey, totalCount.toString());
