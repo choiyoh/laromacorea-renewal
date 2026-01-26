@@ -39,22 +39,18 @@ export const adminService = {
    * 관리자 권한 확인
    */
   async checkAdminPermission(userId) {
-    try {
-      // userId 유효성 검사
-      if (!userId || typeof userId !== 'string') {
-        throw new Error('유효하지 않은 사용자 ID입니다.');
-      }
-
-      const userDoc = await getDoc(doc(db, collections.users, userId));
-      if (!userDoc.exists()) {
-        throw new Error('사용자를 찾을 수 없습니다.');
-      }
-
-      const userData = userDoc.data();
-      return userData.role === 'admin';
-    } catch (error) {
-      throw error;
+    // userId 유효성 검사
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('유효하지 않은 사용자 ID입니다.');
     }
+
+    const userDoc = await getDoc(doc(db, collections.users, userId));
+    if (!userDoc.exists()) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    const userData = userDoc.data();
+    return userData.role === 'admin';
   },
 
   /**
@@ -248,23 +244,19 @@ export const adminService = {
   },
 
   async toggleNoticePin(adminUserId, postId, isPinned) {
-    try {
-      // 관리자 권한 확인
-      const isAdmin = await this.checkAdminPermission(adminUserId);
-      if (!isAdmin) {
-        throw new Error('관리자 권한이 필요합니다.');
-      }
-
-      const postRef = doc(db, collections.posts, postId);
-      await updateDoc(postRef, {
-        isPinned,
-        updatedAt: serverTimestamp(),
-      });
-
-      return true;
-    } catch (error) {
-      throw error;
+    // 관리자 권한 확인
+    const isAdmin = await this.checkAdminPermission(adminUserId);
+    if (!isAdmin) {
+      throw new Error('관리자 권한이 필요합니다.');
     }
+
+    const postRef = doc(db, collections.posts, postId);
+    await updateDoc(postRef, {
+      isPinned,
+      updatedAt: serverTimestamp(),
+    });
+
+    return true;
   },
 
   /**
@@ -298,7 +290,7 @@ export const adminService = {
       });
 
       return icons;
-    } catch (error) {
+    } catch {
       // 빈 배열 반환하여 UI가 깨지지 않도록 함
       return [];
     }
@@ -351,24 +343,20 @@ export const adminService = {
   },
 
   async toggleIconStatus(adminUserId, iconId, isActive) {
-    try {
-      // 관리자 권한 확인
-      const isAdmin = await this.checkAdminPermission(adminUserId);
-      if (!isAdmin) {
-        throw new Error('관리자 권한이 필요합니다.');
-      }
-
-      const iconRef = doc(db, collections.icons, iconId);
-      await updateDoc(iconRef, {
-        isActive,
-        updatedAt: serverTimestamp(),
-        updatedBy: adminUserId,
-      });
-
-      return true;
-    } catch (error) {
-      throw error;
+    // 관리자 권한 확인
+    const isAdmin = await this.checkAdminPermission(adminUserId);
+    if (!isAdmin) {
+      throw new Error('관리자 권한이 필요합니다.');
     }
+
+    const iconRef = doc(db, collections.icons, iconId);
+    await updateDoc(iconRef, {
+      isActive,
+      updatedAt: serverTimestamp(),
+      updatedBy: adminUserId,
+    });
+
+    return true;
   },
 
   async deleteIcon(adminUserId, iconId) {
@@ -467,55 +455,47 @@ export const adminService = {
   },
 
   async updateUserRole(adminUserId, targetUserId, newRole) {
-    try {
-      // 관리자 권한 확인
-      const isAdmin = await this.checkAdminPermission(adminUserId);
-      if (!isAdmin) {
-        throw new Error('관리자 권한이 필요합니다.');
-      }
-
-      if (!['user', 'admin'].includes(newRole)) {
-        throw new Error('유효하지 않은 역할입니다.');
-      }
-
-      const userRef = doc(db, collections.users, targetUserId);
-      await updateDoc(userRef, {
-        role: newRole,
-        updatedAt: serverTimestamp(),
-        updatedBy: adminUserId,
-      });
-
-      return true;
-    } catch (error) {
-      throw error;
+    // 관리자 권한 확인
+    const isAdmin = await this.checkAdminPermission(adminUserId);
+    if (!isAdmin) {
+      throw new Error('관리자 권한이 필요합니다.');
     }
+
+    if (!['user', 'admin'].includes(newRole)) {
+      throw new Error('유효하지 않은 역할입니다.');
+    }
+
+    const userRef = doc(db, collections.users, targetUserId);
+    await updateDoc(userRef, {
+      role: newRole,
+      updatedAt: serverTimestamp(),
+      updatedBy: adminUserId,
+    });
+
+    return true;
   },
 
   async toggleUserStatus(adminUserId, targetUserId, isActive) {
-    try {
-      // 개발 환경에서는 권한 확인 우회 (임시)
-      if (adminUserId !== 'admin') {
-        try {
-          const isAdmin = await this.checkAdminPermission(adminUserId);
-          if (!isAdmin) {
-            // 관리자 권한이 없지만 개발 환경에서 허용
-          }
-        } catch (error) {
-          // 권한 확인 실패, 개발 환경에서 계속 진행
+    // 개발 환경에서는 권한 확인 우회 (임시)
+    if (adminUserId !== 'admin') {
+      try {
+        const isAdmin = await this.checkAdminPermission(adminUserId);
+        if (!isAdmin) {
+          // 관리자 권한이 없지만 개발 환경에서 허용
         }
+      } catch {
+        // 권한 확인 실패, 개발 환경에서 계속 진행
       }
-
-      const userRef = doc(db, collections.users, targetUserId);
-      await updateDoc(userRef, {
-        isActive,
-        updatedAt: serverTimestamp(),
-        updatedBy: adminUserId,
-      });
-
-      return true;
-    } catch (error) {
-      throw error;
     }
+
+    const userRef = doc(db, collections.users, targetUserId);
+    await updateDoc(userRef, {
+      isActive,
+      updatedAt: serverTimestamp(),
+      updatedBy: adminUserId,
+    });
+
+    return true;
   },
 
   /**
@@ -532,52 +512,74 @@ export const adminService = {
         recentPosts: 0,
       };
 
-      // 병렬로 통계 데이터 수집
-      const [usersSnapshot, postsSnapshot, commentsSnapshot, iconsSnapshot] =
-        await Promise.all([
-          getDocs(collection(db, collections.users)),
-          getDocs(
-            query(
-              collection(db, collections.posts),
-              where('isDeleted', '==', false),
-            ),
-          ),
-          getDocs(
-            query(
-              collection(db, collections.comments),
-              where('isDeleted', '==', false),
-            ),
-          ),
-          getDocs(collection(db, collections.icons)),
-        ]);
-
-      stats.totalUsers = usersSnapshot.size;
-      stats.totalPosts = postsSnapshot.size;
-      stats.totalComments = commentsSnapshot.size;
-      stats.totalIcons = iconsSnapshot.size;
-
-      // 활성 사용자 수 (최근 30일 내 로그인)
+      // 날짜 계산
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      stats.activeUsers = usersSnapshot.docs.filter((doc) => {
-        const userData = doc.data();
-        const lastLogin = userData.lastLoginAt?.toDate();
-        return lastLogin && lastLogin > thirtyDaysAgo;
-      }).length;
-
-      // 최근 7일 내 게시글 수
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      stats.recentPosts = postsSnapshot.docs.filter((doc) => {
-        const postData = doc.data();
-        const createdAt = postData.createdAt?.toDate();
-        return createdAt && createdAt > sevenDaysAgo;
-      }).length;
+      // 병렬로 카운트 쿼리 실행 (읽기 최적화)
+      // 기존에는 모든 문서를 가져와서 클라이언트에서 필터링했으나(비효율적),
+      // 이제는 서버 사이드 집계를 사용하여 문서 수만큼의 읽기 비용을 절약함
+      const [
+        totalUsersSnap,
+        totalPostsSnap,
+        totalCommentsSnap,
+        totalIconsSnap,
+        activeUsersSnap,
+        recentPostsSnap,
+      ] = await Promise.all([
+        // 전체 사용자
+        getCountFromServer(collection(db, collections.users)),
+
+        // 전체 게시글 (삭제되지 않은)
+        getCountFromServer(
+          query(
+            collection(db, collections.posts),
+            where('isDeleted', '==', false),
+          ),
+        ),
+
+        // 전체 댓글 (삭제되지 않은)
+        getCountFromServer(
+          query(
+            collection(db, collections.comments),
+            where('isDeleted', '==', false),
+          ),
+        ),
+
+        // 전체 아이콘
+        getCountFromServer(collection(db, collections.icons)),
+
+        // 활성 사용자 (최근 30일 로그인)
+        getCountFromServer(
+          query(
+            collection(db, collections.users),
+            where('lastLoginAt', '>', thirtyDaysAgo),
+          ),
+        ),
+
+        // 최근 게시글 (최근 7일)
+        getCountFromServer(
+          query(
+            collection(db, collections.posts),
+            where('isDeleted', '==', false),
+            where('createdAt', '>', sevenDaysAgo),
+          ),
+        ),
+      ]);
+
+      stats.totalUsers = totalUsersSnap.data().count;
+      stats.totalPosts = totalPostsSnap.data().count;
+      stats.totalComments = totalCommentsSnap.data().count;
+      stats.totalIcons = totalIconsSnap.data().count;
+      stats.activeUsers = activeUsersSnap.data().count;
+      stats.recentPosts = recentPostsSnap.data().count;
 
       return stats;
     } catch (error) {
+      console.error('대시보드 통계 로드 실패:', error);
       throw error;
     }
   },
@@ -588,9 +590,6 @@ export const adminService = {
   },
 
   // 사용자 역할 업데이트 (래퍼 함수)
-  async updateUserRole(userId, role, reason = '관리자에 의한 역할 변경') {
-    return this.updateUserRoleWithHistory('admin', userId, role, reason);
-  },
 
   // 사용자 인증 상태 업데이트
   async updateUserVerification(adminId, userId, verified) {
@@ -625,18 +624,14 @@ export const adminService = {
 
   // 게시글 목록 조회
   async getPosts(options = {}) {
-    try {
-      const q = query(
-        collection(db, collections.posts),
-        orderBy('createdAt', 'desc'),
-        limit(options.limitCount || 50),
-      );
+    const q = query(
+      collection(db, collections.posts),
+      orderBy('createdAt', 'desc'),
+      limit(options.limitCount || 50),
+    );
 
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-      throw error;
-    }
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   },
 
   // 게시글 고정/해제
