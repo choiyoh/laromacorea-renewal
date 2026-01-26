@@ -640,7 +640,29 @@ export const postService = {
 
       // 커서가 있으면 startAfter 적용
       if (lastDoc) {
-        postsQuery = query(postsQuery, startAfter(lastDoc));
+        if (Array.isArray(lastDoc)) {
+          // 값 기반 커서 (Serializable)
+          // createdAt 타임스탬프가 문자열로 넘어올 경우를 대비해 Date 객체로 변환 필요?
+          // Firestore V9 startAfter는 Date 객체나 Timestamp 객체, 혹은 ISO 문자열도 받을 수 있는지 확인 필요.
+          // 보통 Date 객체로 변환해서 넘기는 것이 안전함.
+
+          const hydratedLastDoc = lastDoc.map((val) => {
+            // ISO Date pattern string check (simple)
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(val)) {
+              return new Date(val);
+            }
+            // Timestamp object structure { seconds, nanoseconds } check
+            if (typeof val === 'object' && val !== null && 'seconds' in val) {
+              return new Date(val.seconds * 1000); // Simple date conversion
+            }
+            return val;
+          });
+
+          postsQuery = query(postsQuery, startAfter(...hydratedLastDoc));
+        } else {
+          // 문서 스냅샷 커서
+          postsQuery = query(postsQuery, startAfter(lastDoc));
+        }
       }
 
       const postsSnapshot = await getDocs(postsQuery);

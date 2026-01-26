@@ -134,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useSearch } from '@/composables/useSearch';
@@ -152,7 +152,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['view-post']);
+defineEmits(['view-post']);
 
 // Stores
 const userStore = useUserStore();
@@ -168,7 +168,7 @@ const {
   isSearchActive,
   currentPage,
   hasMore,
-  fetchPosts,
+
   searchPosts,
   clearSearch,
   goToPage,
@@ -226,9 +226,6 @@ watch(
 );
 
 // Lifecycle
-onMounted(() => {
-  fetchPosts(1);
-});
 </script>
 
 <style scoped>

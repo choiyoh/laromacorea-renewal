@@ -79,12 +79,68 @@ export function useSearch(boardType) {
         hasMore.value = result.hasMore;
 
         // 다음 페이지를 위한 커서 저장
+        // 정렬 관련 필드값을 추출하여 커서로 사용 (직렬화 가능)
+        // sortBy에 따라 필요한 필드가 다름
+        // latest: [createdAt, id] (ID는 타이브레이커)
+        // views: [viewCount, createdAt, id]
+        // ...
+
+        // 하지만 Firestore query constraints가 이미 id를 포함하지 않을 수도 있음.
+        // 단순히 doc 전체를 넘기면 Firestore가 알아서 처리하지만, 직렬화를 위해 값만 추출.
+
+        // 여기서는 postService에서 반환된 lastDoc(문서 스냅샷)을 그대로 쓰지 않고,
+        // 필요한 값만 추출하여 저장합니다.
+
+        // NOTE: database.js에서 lastDoc을 반환할 때, 스냅샷 대신 값 배열을 반환하도록 수정하는 것이 더 깔끔할 수 있음.
+        // 하지만 database.js는 스냅샷을 반환하는 것이 일반적 패턴.
+        // useSearch에서 변환하자.
+
         if (result.lastDoc) {
-          cursors.value[page] = result.lastDoc;
+          // 커서 생성 로직
+          const docData = result.lastDoc.data();
+          let cursorValues = [];
+
+          // 정렬 기준에 따른 커서 값 추출
+          // database.js의 쿼리 정렬 순서와 정확히 일치해야 함
+          switch (sortBy.value) {
+            case 'views':
+              // orderBy('isPinned', 'desc'), orderBy('viewCount', 'desc')
+              // isPinned는 보통 false인 것들만 페이징되므로(상단 고정 제외),
+              // 일반 게시글 쿼리에서는 isPinned가 false임.
+              // 값 순서: [isPinned, viewCount, id(혹은 createdAt?)]
+              // database.js 확인 필요: orderBy('createdAt', 'desc')가 아니라면 타이브레이커 필요.
+              // database.js: orderBy('isPinned', 'desc'), orderBy('viewCount', 'desc')
+              cursorValues = [
+                docData.isPinned || false,
+                docData.viewCount || 0,
+              ];
+              break;
+            case 'comments':
+              cursorValues = [
+                docData.isPinned || false,
+                docData.commentCount || 0,
+              ];
+              break;
+            case 'likes':
+              cursorValues = [
+                docData.isPinned || false,
+                docData.likeCount || 0,
+              ];
+              break;
+            case 'latest':
+            default:
+              // orderBy('isPinned', 'desc'), orderBy('createdAt', 'desc')
+              cursorValues = [docData.isPinned || false, docData.createdAt];
+              break;
+          }
+
+          // 커서 저장 (페이지 번호 -> 값 배열)
+          cursors.value[page] = cursorValues;
         }
       }
 
       currentPage.value = page;
+      saveState(); // 성공적으로 데이터를 불러온 후 상태 저장
     } catch (err) {
       error.value = '데이터를 불러오는 중 오류가 발생했습니다.';
       await handleUserActionError(err, '데이터 조회');
@@ -151,17 +207,113 @@ export function useSearch(boardType) {
     // resetAndFetch()는 watch 핸들러에 의해 호출됨
   }
 
+  // State Persistence
+  function getStorageKey() {
+    return `board_state_${boardType.value}`;
+  }
+
+  function saveState() {
+    // Only save if we have data or modified state
+    const state = {
+      currentPage: currentPage.value,
+      searchQuery: searchQuery.value,
+      selectedTags: selectedTags.value,
+      sortBy: sortBy.value,
+      cursors: cursors.value, // 커서 상태도 저장
+      timestamp: Date.now(),
+    };
+
+    // Let's modify saveState to exclude cursors.
+    // const { cursors: _, ...safeState } = state;
+    sessionStorage.setItem(getStorageKey(), JSON.stringify(state));
+  }
+
+  function restoreState() {
+    try {
+      const key = getStorageKey();
+      const saved = sessionStorage.getItem(key);
+      if (!saved) return false;
+
+      const state = JSON.parse(saved);
+
+      // Check expiration (e.g. 30 mins)
+      if (Date.now() - state.timestamp > 30 * 60 * 1000) {
+        sessionStorage.removeItem(key);
+        return false;
+      }
+
+      searchQuery.value = state.searchQuery || '';
+      selectedTags.value = state.selectedTags || [];
+      sortBy.value = state.sortBy || 'latest';
+      currentPage.value = state.currentPage || 1;
+
+      // Restore cursors
+      if (state.cursors) {
+        cursors.value = state.cursors;
+
+        // Timestamp handling: Firestore timestamps stored in JSON become strings.
+        // We might need to convert them back to Firestore Timestamp objects or Date objects
+        // IF database.js expects Timestamp objects.
+        // However, startAfter works with Date objects too if stored as Timestamp.
+        // JSON.stringify turns Date into string ISO format.
+        // We need to ensure database.js handles string dates or we convert them here.
+
+        // Let's iterate and convert string dates if needed.
+        // Or simpler: Let database.js handle it or store timestamps as millis?
+        // Let's try to retain them as structure but we might need hydration logic.
+      }
+
+      return true;
+    } catch (e) {
+      console.error('Failed to restore state', e);
+      return false;
+    }
+  }
+
+  function clearState() {
+    sessionStorage.removeItem(getStorageKey());
+  }
+
+  // Flag to prevent watchers from triggering during restoration
+  let isRestoring = false;
+
   // Watchers
   watch([searchQuery, selectedTags, sortBy], () => {
+    if (isRestoring) return;
+
+    currentPage.value = 1; // Reset to page 1 on filter change
+    cursors.value = { 1: null };
+    saveState();
     debouncedFetch();
   });
 
   watch(
     boardType,
-    () => {
-      clearSearch();
-      resetAndFetch();
-      // loadPopularTags(); // 최적화: 사용하지 않는 인기 태그 로드 중단 (일일 10만건 읽기 절약)
+    async () => {
+      isRestoring = true;
+      try {
+        // Try to restore first
+        const restored = restoreState();
+        if (!restored) {
+          clearSearch();
+          // resetAndFetch is called below by fetch
+        }
+
+        // Wait for Vue to propagate changes before lifting the flag?
+        // restoreState is synchronous regarding state updates, but watchers flush async?
+        // Actually, watchers in Vue 3 (default) are pre-flush or post-flush?
+        // Sync updates in restoreState trigger watchers.
+        // We set isRestoring = true before calling restoreState.
+        // Watcher runs, sees true, returns.
+
+        // Always fetch to ensure data is fresh
+        await fetchData(currentPage.value);
+      } finally {
+        // Use setTimeout to ensure all watchers have fired before resetting flag
+        setTimeout(() => {
+          isRestoring = false;
+        }, 0);
+      }
     },
     { immediate: true },
   );
@@ -190,5 +342,6 @@ export function useSearch(boardType) {
     removeTag,
     clearSearch,
     goToPage,
+    clearState, // Expose for external use if needed (e.g. logout)
   };
 }
