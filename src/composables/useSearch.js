@@ -289,22 +289,30 @@ export function useSearch(boardType) {
 
   watch(
     boardType,
-    async () => {
+    async (newVal, oldVal) => {
       isRestoring = true;
       try {
-        // Try to restore first
-        const restored = restoreState();
-        if (!restored) {
-          clearSearch();
-          // resetAndFetch is called below by fetch
-        }
+        // 게시판이 실제로 변경되었는지 확인 (다른 게시판으로 이동)
+        const isBoardChanged = oldVal !== undefined && oldVal !== newVal;
 
-        // Wait for Vue to propagate changes before lifting the flag?
-        // restoreState is synchronous regarding state updates, but watchers flush async?
-        // Actually, watchers in Vue 3 (default) are pre-flush or post-flush?
-        // Sync updates in restoreState trigger watchers.
-        // We set isRestoring = true before calling restoreState.
-        // Watcher runs, sees true, returns.
+        if (isBoardChanged) {
+          // 다른 게시판으로 이동 시 무조건 1페이지로 초기화
+          searchQuery.value = '';
+          selectedTags.value = [];
+          sortBy.value = 'latest';
+          currentPage.value = 1;
+          cursors.value = { 1: null };
+        } else {
+          // 같은 게시판으로 돌아온 경우 (뒤로가기 등) 저장된 상태 복원 시도
+          const restored = restoreState();
+          if (!restored) {
+            searchQuery.value = '';
+            selectedTags.value = [];
+            sortBy.value = 'latest';
+            currentPage.value = 1;
+            cursors.value = { 1: null };
+          }
+        }
 
         // Always fetch to ensure data is fresh
         await fetchData(currentPage.value);
