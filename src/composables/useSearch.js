@@ -10,6 +10,7 @@ import { handleUserActionError } from '@/utils/errorHandler';
 
 export function useSearch(boardType) {
   // State
+  // State
   const searchQuery = ref('');
   const selectedTags = ref([]);
   const sortBy = ref('latest');
@@ -20,6 +21,7 @@ export function useSearch(boardType) {
 
   const currentPage = ref(1);
   const hasMore = ref(false);
+  const totalPages = ref(1); // 페이지네이션 정보 추가
 
   // 페이지별 커서를 저장하는 객체. cursors[1]은 항상 null (첫 페이지)
   const cursors = ref({ 1: null });
@@ -47,8 +49,6 @@ export function useSearch(boardType) {
     return parts.join(' | ');
   });
 
-  // totalPages는 더 이상 사용하지 않음
-
   // Methods
   async function fetchData(page = 1) {
     if (loading.value) return;
@@ -58,58 +58,50 @@ export function useSearch(boardType) {
 
     try {
       const options = {
-        limitCount: 15, // 하드코딩: itemsPerPage
+        limitCount: 15,
         sortBy: sortBy.value,
         searchQuery: searchQuery.value.trim(),
         tags: selectedTags.value,
-        // 요청하는 페이지의 이전 페이지 커서를 사용
         lastDoc: cursors.value[page - 1],
+        page: page - 1, // Algolia는 0-indexed 페이지 사용
       };
 
-      const result = isSearchActive.value
-        ? await postService.performServerSideSearch(boardType.value, options)
-        : await postService.getPostsWithPagination(boardType.value, options);
-
       if (isSearchActive.value) {
-        // 검색 결과는 페이지네이션 정보가 없으므로 직접 처리
-        posts.value = result;
-        hasMore.value = false; // 검색 결과는 단일 페이지로 처리
+        // 검색 활성화 시 Algolia 검색 (페이지네이션 지원)
+        const result = await postService.performServerSideSearch(
+          boardType.value,
+          options,
+        );
+
+        // 검색 결과가 배열인 경우 (폴백)와 객체인 경우 (Algolia) 분기 처리
+        if (Array.isArray(result)) {
+          // Firestore 폴백 검색 결과 (기존 로직 유지)
+          posts.value = result;
+          hasMore.value = false;
+          totalPages.value = 1;
+        } else {
+          // Algolia 검색 결과 (페이지 정보 포함)
+          posts.value = result.posts || [];
+          hasMore.value = result.hasMore || false;
+          totalPages.value = result.totalPages || 1;
+        }
       } else {
+        // 일반 목록 조회 (Firestore 페이지네이션)
+        const result = await postService.getPostsWithPagination(
+          boardType.value,
+          options,
+        );
         posts.value = result.posts;
         hasMore.value = result.hasMore;
+        totalPages.value = 0; // 무한 스크롤/더보기 방식에서는 totalPages 미사용
 
         // 다음 페이지를 위한 커서 저장
-        // 정렬 관련 필드값을 추출하여 커서로 사용 (직렬화 가능)
-        // sortBy에 따라 필요한 필드가 다름
-        // latest: [createdAt, id] (ID는 타이브레이커)
-        // views: [viewCount, createdAt, id]
-        // ...
-
-        // 하지만 Firestore query constraints가 이미 id를 포함하지 않을 수도 있음.
-        // 단순히 doc 전체를 넘기면 Firestore가 알아서 처리하지만, 직렬화를 위해 값만 추출.
-
-        // 여기서는 postService에서 반환된 lastDoc(문서 스냅샷)을 그대로 쓰지 않고,
-        // 필요한 값만 추출하여 저장합니다.
-
-        // NOTE: database.js에서 lastDoc을 반환할 때, 스냅샷 대신 값 배열을 반환하도록 수정하는 것이 더 깔끔할 수 있음.
-        // 하지만 database.js는 스냅샷을 반환하는 것이 일반적 패턴.
-        // useSearch에서 변환하자.
-
         if (result.lastDoc) {
-          // 커서 생성 로직
           const docData = result.lastDoc.data();
           let cursorValues = [];
 
-          // 정렬 기준에 따른 커서 값 추출
-          // database.js의 쿼리 정렬 순서와 정확히 일치해야 함
           switch (sortBy.value) {
             case 'views':
-              // orderBy('isPinned', 'desc'), orderBy('viewCount', 'desc')
-              // isPinned는 보통 false인 것들만 페이징되므로(상단 고정 제외),
-              // 일반 게시글 쿼리에서는 isPinned가 false임.
-              // 값 순서: [isPinned, viewCount, id(혹은 createdAt?)]
-              // database.js 확인 필요: orderBy('createdAt', 'desc')가 아니라면 타이브레이커 필요.
-              // database.js: orderBy('isPinned', 'desc'), orderBy('viewCount', 'desc')
               cursorValues = [
                 docData.isPinned || false,
                 docData.viewCount || 0,
@@ -129,18 +121,16 @@ export function useSearch(boardType) {
               break;
             case 'latest':
             default:
-              // orderBy('isPinned', 'desc'), orderBy('createdAt', 'desc')
               cursorValues = [docData.isPinned || false, docData.createdAt];
               break;
           }
 
-          // 커서 저장 (페이지 번호 -> 값 배열)
           cursors.value[page] = cursorValues;
         }
       }
 
       currentPage.value = page;
-      saveState(); // 성공적으로 데이터를 불러온 후 상태 저장
+      saveState();
     } catch (err) {
       error.value = '데이터를 불러오는 중 오류가 발생했습니다.';
       await handleUserActionError(err, '데이터 조회');
@@ -149,26 +139,11 @@ export function useSearch(boardType) {
     }
   }
 
-  // async function loadPopularTags() {
-  //   try {
-  //     // 인기 태그는 한 번만 로드하거나 세션 캐시 사용
-  //     const cacheKey = `popular_tags_${boardType.value}`;
-  //     const cached = sessionStorage.getItem(cacheKey);
-  //     if (cached) {
-  //       popularTags.value = JSON.parse(cached);
-  //       return;
-  //     }
-  //
-  //     const tags = await postService.getPopularTags(boardType.value, 20);
-  //     popularTags.value = tags;
-  //     sessionStorage.setItem(cacheKey, JSON.stringify(tags));
-  //   } catch (err) {
-  //     console.error('Error loading popular tags:', err);
-  //   }
-  // }
+  // ... (loadPopularTags 생략)
 
   function resetAndFetch() {
     currentPage.value = 1;
+    // cursors 초기화는 fetchData 내부에서 처리되거나 필요에 따라 여기서
     cursors.value = { 1: null };
     posts.value = [];
     fetchData(1);
@@ -179,10 +154,10 @@ export function useSearch(boardType) {
   function goToPage(page) {
     if (page < 1 || page === currentPage.value) return;
 
-    // 검색 중에는 페이지 이동 불가 (단일 결과 페이지만 표시)
-    if (isSearchActive.value) return;
+    // 검색 중에도 페이지 이동 가능하도록 수정됨
+    // if (isSearchActive.value) return;
 
-    // 다음 페이지로만 이동 가능
+    // 다음 페이지 이동 조건 체크 (검색 중일 때는 totalPages 체크 등 추가 가능)
     if (page > currentPage.value && !hasMore.value) return;
 
     fetchData(page);

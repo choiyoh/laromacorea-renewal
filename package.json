@@ -32,12 +32,14 @@
     "check-admin-user": "node scripts/check-admin-user.js",
     "update-posts-icons": "node scripts/update-existing-posts-icons.js",
     "check-user-icons": "node scripts/check-user-icons.js",
-    "generate-pwa-icons": "node scripts/generate-pwa-icons.js"
+    "generate-pwa-icons": "node scripts/generate-pwa-icons.js",
+    "sync-algolia": "node scripts/sync-algolia.js"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "@unhead/vue": "^2.0.14",
     "@vueuse/head": "^2.0.0",
+    "algoliasearch": "^5.47.0",
     "firebase": "^12.1.0",
     "lodash-es": "^4.17.21",
     "pinia": "^3.0.3",
@@ -57,6 +59,7 @@
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.31.0",
     "eslint-plugin-vue": "~10.3.0",
+    "firebase-admin": "^13.6.0",
     "firebase-tools": "^14.12.1",
     "globals": "^16.3.0",
     "jsdom": "^26.1.0",

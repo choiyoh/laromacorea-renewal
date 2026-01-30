@@ -833,16 +833,40 @@ export const postService = {
     }
   },
 
-  // 서버사이드 검색 수행 (최적화된 버전) - 클라이언트 필터링 제거
+  // 서버사이드 검색 수행 - Algolia 우선, Firestore 폴백
   async performServerSideSearch(boardType, options = {}) {
     const {
       limitCount = 20,
       sortBy = 'latest',
       searchQuery = '',
       tags = [],
-      lastDoc = null,
+      page = 0,
     } = options;
 
+    // Algolia 검색 시도
+    try {
+      const { isAlgoliaEnabled, searchPosts } = await import('./algolia');
+
+      if (isAlgoliaEnabled()) {
+        const result = await searchPosts(searchQuery, {
+          boardType,
+          sortBy,
+          tags,
+          limitCount,
+          page,
+        });
+
+        console.log(`Algolia 검색 완료: ${result.posts.length}개 결과`);
+        return result; // 페이지네이션 정보 포함하여 전체 반환
+      }
+    } catch (algoliaError) {
+      console.warn(
+        'Algolia 검색 실패, Firestore로 폴백:',
+        algoliaError.message,
+      );
+    }
+
+    // Firestore 폴백 검색
     try {
       let constraints = [
         where('boardType', '==', boardType),
@@ -890,24 +914,17 @@ export const postService = {
         .split(/\s+/)
         .filter((word) => word.length > 1);
 
-      if (searchKeywords.length > 0) {
-        // Firestore의 제한으로 인해, 검색 키워드가 있는 경우 제한된 수의 문서만 읽도록 함
-        // 실제 운영에서는 검색 전용 컬렉션이나 Algolia 같은 검색 서비스를 사용하는 것이 이상적임
-        constraints.push(limit(limitCount)); // 검색 시에도 요청된 수만큼만 가져옴
-      } else {
+      // 검색어가 있으면 전체 검색, 없으면 제한된 결과
+      if (searchKeywords.length === 0) {
         constraints.push(limit(limitCount));
       }
 
       let q = query(collection(db, collections.posts), ...constraints);
 
-      if (lastDoc) {
-        q = query(q, startAfter(lastDoc));
-      }
-
       const snapshot = await getDocs(q);
       let posts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-      // 서버사이드 검색 키워드 필터링 (메모리에서 빠르게 수행)
+      // 키워드 필터링 (클라이언트)
       if (searchKeywords.length > 0) {
         posts = posts.filter((post) => {
           const title = (post.title || '').toLowerCase();
@@ -915,7 +932,6 @@ export const postService = {
           const authorName = (post.authorName || '').toLowerCase();
           const postTags = post.tags || [];
 
-          // 모든 검색 키워드가 포함된 게시글만 반환
           return searchKeywords.every(
             (keyword) =>
               title.includes(keyword) ||
@@ -925,14 +941,12 @@ export const postService = {
           );
         });
 
-        // 검색 결과 제한
         posts = posts.slice(0, limitCount);
       }
 
       return posts;
     } catch (error) {
       console.error('Error in performServerSideSearch:', error);
-      // 검색 실패시 빈 배열 반환 (예외 발생 방지)
       return [];
     }
   },
