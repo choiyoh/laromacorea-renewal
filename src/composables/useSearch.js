@@ -58,7 +58,7 @@ export function useSearch(boardType) {
 
     try {
       const options = {
-        limitCount: 15,
+        limitCount: 25,
         sortBy: sortBy.value,
         searchQuery: searchQuery.value.trim(),
         tags: selectedTags.value,
