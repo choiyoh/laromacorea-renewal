@@ -179,7 +179,7 @@ export function useSearch(boardType) {
   function clearSearch() {
     searchQuery.value = '';
     selectedTags.value = [];
-    // resetAndFetch()는 watch 핸들러에 의해 호출됨
+    resetAndFetch(); // watch에서 제거되었으므로 명시적 호출 필요
   }
 
   // State Persistence
@@ -253,7 +253,8 @@ export function useSearch(boardType) {
   let isRestoring = false;
 
   // Watchers
-  watch([searchQuery, selectedTags, sortBy], () => {
+  // searchQuery는 watch에서 제외 (엔터 키로만 검색 실행)
+  watch([selectedTags, sortBy], () => {
     if (isRestoring) return;
 
     currentPage.value = 1; // Reset to page 1 on filter change
