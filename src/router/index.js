@@ -105,9 +105,6 @@ const router = createRouter({
   ],
 });
 
-// Import auth middleware
-import { requireAuth, requireAdmin } from '@/middleware/auth';
-
 // Navigation guard for authentication
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
@@ -153,6 +150,16 @@ router.beforeEach(async (to, from, next) => {
     }
   } else {
     next();
+  }
+});
+// 게시판 이동 시 이전 게시판의 상태 초기화 (뒤로가기 시 복원 유지용)
+router.afterEach((to, from) => {
+  const fromBoardType = from.params?.boardType;
+  const toBoardType = to.params?.boardType;
+
+  // 이전 페이지가 특정 게시판(목록/글보기)이었고, 지금 가는 페이지가 다른 게시판이거나 게시판이 아닌 경우
+  if (fromBoardType && fromBoardType !== toBoardType) {
+    sessionStorage.removeItem(`board_state_${fromBoardType}`);
   }
 });
 
