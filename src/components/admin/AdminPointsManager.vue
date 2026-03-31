@@ -370,8 +370,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { adminService } from '@/services/admin';
 import { useUserStore } from '@/stores/user';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/services/firebase';
+import { userService } from '@/services/database';
 
 const emit = defineEmits(['points-updated']);
 
@@ -591,12 +590,10 @@ const loadHistory = async () => {
 
         if (item.userId && item.userId !== 'system') {
           try {
-            // 사용자 정보 조회
-            const userDoc = await getDoc(doc(db, 'users', item.userId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              userName = userData.displayName || userData.email || '알 수 없음';
-              userPhoto = userData.photoURL || null;
+            const user = await userService.getUser(item.userId);
+            if (user) {
+              userName = user.displayName || user.email || '알 수 없음';
+              userPhoto = user.photoURL || null;
             }
           } catch (userError) {
             console.warn('사용자 정보 조회 실패:', item.userId, userError);
