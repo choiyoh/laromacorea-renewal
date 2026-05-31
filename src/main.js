@@ -36,6 +36,7 @@ import { useErrorStore } from './stores/error';
 import { firebaseConfig } from './services/firebase';
 import VueGtag from 'vue-gtag-next';
 
+// AI가 수정/작성한 코드 - 2026-05-27
 // Create Vuetify instance with AS Roma theme colors
 const vuetify = createVuetify({
   components,
@@ -48,6 +49,8 @@ const vuetify = createVuetify({
           primary: '#990a2c', // AS Roma Red
           secondary: '#fbba00', // AS Roma Yellow
           accent: '#1976D2',
+          background: '#FAFAFA',
+          surface: '#FFFFFF',
           error: '#FF5252',
           info: '#2196F3',
           success: '#4CAF50',
@@ -55,14 +58,20 @@ const vuetify = createVuetify({
         },
       },
       dark: {
+        dark: true,
         colors: {
-          primary: '#990a2c', // AS Roma Red
+          primary: '#ff3d60', // AS Roma Red
           secondary: '#fbba00', // AS Roma Yellow
-          accent: '#1976D2',
-          error: '#FF5252',
-          info: '#2196F3',
-          success: '#4CAF50',
-          warning: '#FFC107',
+          accent: '#90CAF9',
+          background: '#121212',
+          surface: '#1E1E1E',
+          'surface-variant': '#2A2A2A',
+          'on-background': '#E0E0E0',
+          'on-surface': '#E0E0E0',
+          error: '#CF6679',
+          info: '#64B5F6',
+          success: '#81C784',
+          warning: '#FFD54F',
         },
       },
     },

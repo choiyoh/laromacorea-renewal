@@ -1,10 +1,11 @@
+<!-- AI가 수정/작성한 코드 - 2026-05-27 -->
 <template>
   <v-navigation-drawer
     v-model="drawer"
     temporary
     location="left"
     width="280"
-    class="d-md-none"
+    class="d-md-none glass-panel"
   >
     <!-- User Profile Section -->
     <div v-if="userStore.isAuthenticated" class="pa-4 bg-primary">
@@ -36,7 +37,7 @@
     </div>
 
     <!-- Guest Section -->
-    <div v-else class="pa-4 bg-grey-lighten-4">
+    <div v-else class="pa-4 bg-surface-variant">
       <div class="text-center">
         <v-icon size="48" class="text-grey mb-2">mdi-account-circle</v-icon>
         <div class="text-body-2 text-grey-darken-1 mb-3">
@@ -186,8 +187,20 @@ const handleSignOut = async () => {
 </script>
 
 <style scoped>
+/* AI가 수정/작성한 코드 - 2026-05-27 */
 .roma-yellow {
   color: #fbba00 !important;
+}
+
+.v-navigation-drawer.glass-panel {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  color: rgba(var(--v-theme-on-surface), 0.87) !important;
+  
+  .v-theme--dark & {
+    background: rgba(30, 30, 30, 0.8) !important;
+  }
 }
 
 .v-list-item--active {
@@ -197,6 +210,18 @@ const handleSignOut = async () => {
 .v-list-item--active .v-list-item-title {
   color: #990a2c !important;
   font-weight: bold;
+  
+  .v-theme--dark & {
+    color: #ff3d60 !important;
+  }
+}
+
+.v-list-item--active .v-icon {
+  color: #990a2c !important;
+  
+  .v-theme--dark & {
+    color: #ff3d60 !important;
+  }
 }
 
 /* Admin menu item styling */
@@ -207,9 +232,17 @@ const handleSignOut = async () => {
 .admin-menu-item .v-list-item-title {
   color: #990a2c !important;
   font-weight: bold !important;
+  
+  .v-theme--dark & {
+    color: #ff3d60 !important;
+  }
 }
 
 .admin-menu-item .v-icon {
   color: #990a2c !important;
+  
+  .v-theme--dark & {
+    color: #ff3d60 !important;
+  }
 }
 </style>

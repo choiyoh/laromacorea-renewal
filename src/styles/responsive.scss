@@ -380,3 +380,55 @@ $breakpoints: (
     page-break-after: avoid;
   }
 }
+
+// AI가 수정/작성한 코드 - 2026-05-27
+// Glassmorphic layouts for premium visual design
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.25s ease;
+
+  .v-theme--dark & {
+    background: rgba(30, 30, 30, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+}
+
+// Modern soft card shadow & borders
+.modern-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+
+  .v-theme--dark & {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: #1e1e1e !important;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
+
+    .v-theme--dark & {
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    @media (max-width: 600px) {
+      transform: none !important;
+    }
+  }
+}
+
+// Roma point border highlight
+.roma-accent-border {
+  border-left: 4px solid #990a2c !important;
+  
+  .v-theme--dark & {
+    border-left: 4px solid #ff3d60 !important;
+  }
+}

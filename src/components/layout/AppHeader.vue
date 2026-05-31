@@ -1,11 +1,10 @@
+<!-- AI가 수정/작성한 코드 - 2026-05-27 -->
 <template>
   <v-app-bar
-    color="secondary"
-    dark
     app
-    elevation="2"
+    elevation="0"
     :class="{ 'header-hidden': mobile && isScrollingDown }"
-    class="header-transition"
+    class="header-transition glass-panel"
   >
     <!-- Desktop Layout -->
     <template v-if="!mobile">
@@ -367,5 +366,24 @@ const boards = [
   .header-transition {
     transition: none !important;
   }
+}
+
+/* AI가 수정/작성한 코드 - 2026-05-27 */
+.v-app-bar.glass-panel {
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.08) !important;
+  color: rgba(var(--v-theme-on-surface), 0.87) !important;
+}
+
+/* 다크/라이트 테마에 맞추어 텍스트 색상 유연 변환 */
+.v-app-bar.glass-panel .text-black {
+  color: rgba(var(--v-theme-on-surface), 0.87) !important;
+}
+
+.v-app-bar.glass-panel .v-btn {
+  color: rgba(var(--v-theme-on-surface), 0.87) !important;
+}
+
+.v-app-bar.glass-panel .v-app-bar-nav-icon {
+  color: rgba(var(--v-theme-on-surface), 0.87) !important;
 }
 </style>

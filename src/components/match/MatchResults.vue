@@ -157,32 +157,58 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* AI가 수정/작성한 코드 - 2026-05-27 */
 .match-results-card {
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
-  background: #ffffff;
+  border: 1px solid rgba(var(--v-border-color), 0.08);
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
 }
 
 /* Cinzel 폰트 적용 */
 .cinzel-font {
   font-family: 'Cinzel', serif !important;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.5px;
 }
 
 .match-header {
-  background: linear-gradient(180deg, #fbba00 0%, #990a2c 100%);
-  border-bottom: none;
-  color: white;
+  background: transparent !important;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+  border-left: 4px solid #990a2c !important;
+  transition: border-left-color 0.2s ease;
+}
+
+.v-theme--dark .match-header {
+  border-left: 4px solid #ff3d60 !important;
+}
+
+.match-header .text-white {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+.match-header .v-icon {
+  color: #990a2c !important;
+}
+
+.v-theme--dark .match-header .v-icon {
+  color: #ff3d60 !important;
+}
+
+.match-header .v-btn {
+  color: rgba(var(--v-theme-on-surface), 0.7) !important;
 }
 
 .result-item {
   transition: background-color 0.2s;
+  background: transparent !important;
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .result-item:hover {
-  background-color: rgba(var(--v-theme-primary), 0.05);
+  background-color: rgba(var(--v-theme-primary), 0.04) !important;
 }
 
 .team-section {
@@ -197,7 +223,7 @@ onMounted(() => {
 }
 
 .score-number {
-  color: rgba(var(--v-theme-on-surface), 0.9);
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .match-info {

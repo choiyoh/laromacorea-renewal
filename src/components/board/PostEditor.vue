@@ -670,15 +670,14 @@ onUnmounted(() => {
 </style>
 
 <style scoped>
+/* AI가 수정/작성한 코드 - 2026-05-27 */
 .post-editor {
   max-width: 100%;
 }
 
 .custom-divider {
-  height: 2px;
-  background-image: url('/images/s_top_bg.gif');
-  background-repeat: repeat-x;
-  background-position: center;
+  height: 1px;
+  background: rgba(var(--v-border-color), 0.08);
   width: 100%;
 }
 
@@ -716,6 +715,7 @@ onUnmounted(() => {
   min-height: 250px;
   font-size: 14px;
   line-height: 1.6;
+  color: rgb(var(--v-theme-on-surface));
 }
 
 :deep(.ql-toolbar) {
@@ -741,12 +741,23 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  :deep(.ql-toolbar) {
-    padding: 8px;
+  :deep(.ql-toolbar.ql-snow) {
+    padding: 8px 4px;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  :deep(.ql-toolbar.ql-snow::-webkit-scrollbar) {
+    display: none; /* WebKit */
   }
 
   :deep(.ql-formats) {
-    margin-right: 8px;
+    margin-right: 6px;
+    display: inline-flex;
+    flex-shrink: 0;
   }
 
   :deep(.match-template-dialog) {

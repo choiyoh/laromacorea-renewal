@@ -176,32 +176,49 @@ function formatDate(timestamp) {
 </script>
 
 <style scoped>
+/* AI가 수정/작성한 코드 - 2026-05-27 */
 .avatar-aligned {
   margin-top: 2px; /* 텍스트 첫 번째 줄과 맞추기 위한 미세 조정 */
 }
 
 .post-list-item {
   cursor: pointer;
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.12);
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.06);
+  transition: background-color 0.2s ease, border-left-color 0.2s ease;
+  background: transparent !important;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.post-list-item:hover {
+  background-color: rgba(var(--v-theme-primary), 0.03) !important;
 }
 
 .post-list-item:hover .post-title,
 .post-list-item:hover .post-title-mobile {
-  color: rgba(var(--v-theme-primary), 1);
-  text-decoration: underline;
+  color: rgb(var(--v-theme-primary)) !important;
 }
 
 .pinned-post {
-  background-color: rgba(var(--v-theme-primary), 0.05);
+  background-color: rgba(153, 10, 44, 0.04) !important;
+  border-left: 3px solid #990a2c !important;
+  
+  .v-theme--dark & {
+    background-color: rgba(255, 61, 96, 0.04) !important;
+    border-left: 3px solid #ff3d60 !important;
+  }
 }
 
 .post-title {
+  font-size: 1rem !important;
   line-height: 1.4;
+  font-weight: 500 !important;
   transition: color 0.2s ease;
 }
 
 .post-title-mobile {
+  font-size: 0.95rem !important;
   line-height: 1.4;
+  font-weight: 500 !important;
   transition: color 0.2s ease;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -211,17 +228,17 @@ function formatDate(timestamp) {
 }
 
 .post-meta {
-  font-size: 0.875rem;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  font-size: 0.85rem;
+  color: rgba(var(--v-theme-on-surface), 0.65);
 }
 
 .post-meta-mobile {
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  color: rgba(var(--v-theme-on-surface), 0.55);
   font-size: 0.75rem;
 }
 
 .post-meta-mobile .v-avatar {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .post-meta-mobile .v-icon {

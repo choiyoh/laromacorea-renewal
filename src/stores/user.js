@@ -13,6 +13,7 @@ export const useUserStore = defineStore('user', () => {
   const loading = ref(false);
   const error = ref(null);
   const authInitialized = ref(false);
+  let authUnsubscribe = null;
 
   // Getters
   const isAuthenticated = computed(() => !!user.value);
@@ -240,7 +241,11 @@ export const useUserStore = defineStore('user', () => {
 
   // Initialize auth state listener
   function initializeAuth() {
-    return AuthService.onAuthStateChanged(async (firebaseUser) => {
+    if (authUnsubscribe) {
+      return authUnsubscribe;
+    }
+
+    const unsubscribe = AuthService.onAuthStateChanged(async (firebaseUser) => {
       errorStore.setLoading('auth-init', true);
 
       try {
@@ -273,6 +278,13 @@ export const useUserStore = defineStore('user', () => {
         authInitialized.value = true;
       }
     });
+
+    authUnsubscribe = () => {
+      unsubscribe();
+      authUnsubscribe = null;
+    };
+
+    return authUnsubscribe;
   }
 
   return {

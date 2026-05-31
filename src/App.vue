@@ -29,12 +29,9 @@ const drawer = ref(false);
 // Check if current route is splash screen
 const isSplashScreen = computed(() => route.name === 'splash');
 
-// Initialize authentication state listener
 onMounted(() => {
   // 캐시 관리 초기화
   initializeCacheManagement();
-
-  userStore.initializeAuth();
 
   // Add responsive classes to document (with safety check)
   nextTick(() => {
