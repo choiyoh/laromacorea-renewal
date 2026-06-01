@@ -29,3 +29,4 @@ coverage
 *.cache
 *.tsbuildinfo
 serviceAccountKey.json
+.omx

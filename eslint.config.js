@@ -31,6 +31,15 @@ export default defineConfig([
   },
 
   {
+    files: ['functions/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  {
     files: ['src/**/__tests__/**/*.js', 'src/**/*.spec.js'],
     languageOptions: {
       globals: {

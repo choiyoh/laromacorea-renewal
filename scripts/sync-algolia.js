@@ -51,6 +51,50 @@ function stripHtml(html) {
 }
 
 /**
+ * Algolia record size limit을 넘지 않도록 UTF-8 byte 기준으로 자름
+ */
+function truncateUtf8(value, maxBytes) {
+  if (!value || Buffer.byteLength(value, 'utf8') <= maxBytes) {
+    return value || '';
+  }
+
+  let output = '';
+  let bytes = 0;
+
+  for (const char of value) {
+    const charBytes = Buffer.byteLength(char, 'utf8');
+    if (bytes + charBytes > maxBytes) break;
+    output += char;
+    bytes += charBytes;
+  }
+
+  return output;
+}
+
+/**
+ * Firestore Timestamp/Date/number 값을 Algolia 정렬용 millis로 변환
+ */
+function toMillis(value) {
+  if (value && typeof value.toMillis === 'function') {
+    return value.toMillis();
+  }
+  if (value && typeof value.seconds === 'number') {
+    return value.seconds * 1000;
+  }
+  if (value && typeof value._seconds === 'number') {
+    return value._seconds * 1000;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  return Date.now();
+}
+
+/**
  * Firestore 문서를 Algolia 객체로 변환
  */
 function transformPost(doc) {
@@ -59,7 +103,7 @@ function transformPost(doc) {
   return {
     objectID: doc.id,
     title: data.title || '',
-    content: stripHtml(data.content || '').substring(0, 5000),
+    content: truncateUtf8(stripHtml(data.content || ''), 4000),
     authorName: data.authorName || '',
     authorId: data.authorId || '',
     boardType: data.boardType || '',
@@ -69,9 +113,20 @@ function transformPost(doc) {
     commentCount: data.commentCount || 0,
     isPinned: data.isPinned || false,
     isDeleted: data.isDeleted || false,
-    createdAt: data.createdAt?.toMillis?.() || Date.now(),
+    createdAt: toMillis(data.createdAt),
   };
 }
+
+const relevanceRankingCriteria = [
+  'typo',
+  'geo',
+  'words',
+  'filters',
+  'proximity',
+  'attribute',
+  'exact',
+  'custom',
+];
 
 /**
  * Algolia 인덱스 설정 구성
@@ -90,18 +145,11 @@ async function configureIndex() {
         // 필터링/패싯 가능한 속성
         attributesForFaceting: ['boardType', 'tags', 'isDeleted', 'isPinned'],
 
-        // 정렬 기준 (기본: createdAt 내림차순)
+        // 정렬 기준 (기본: 고정글 우선, 최신순)
         ranking: [
           'desc(isPinned)',
           'desc(createdAt)',
-          'typo',
-          'geo',
-          'words',
-          'filters',
-          'proximity',
-          'attribute',
-          'exact',
-          'custom',
+          ...relevanceRankingCriteria,
         ],
 
         // 하이라이팅 설정
@@ -139,15 +187,27 @@ async function configureIndex() {
     const replicas = [
       {
         name: 'posts_views_desc',
-        customRanking: ['desc(isPinned)', 'desc(viewCount)'],
+        ranking: [
+          'desc(isPinned)',
+          'desc(viewCount)',
+          ...relevanceRankingCriteria,
+        ],
       },
       {
         name: 'posts_likes_desc',
-        customRanking: ['desc(isPinned)', 'desc(likeCount)'],
+        ranking: [
+          'desc(isPinned)',
+          'desc(likeCount)',
+          ...relevanceRankingCriteria,
+        ],
       },
       {
         name: 'posts_comments_desc',
-        customRanking: ['desc(isPinned)', 'desc(commentCount)'],
+        ranking: [
+          'desc(isPinned)',
+          'desc(commentCount)',
+          ...relevanceRankingCriteria,
+        ],
       },
     ];
 
@@ -157,17 +217,7 @@ async function configureIndex() {
       await client.setSettings({
         indexName: replica.name,
         indexSettings: {
-          ranking: [
-            ...replica.customRanking,
-            'typo',
-            'geo',
-            'words',
-            'filters',
-            'proximity',
-            'attribute',
-            'exact',
-            'custom',
-          ],
+          ranking: replica.ranking,
         },
       });
       console.log(`  ✅ ${replica.name} 생성됨`);

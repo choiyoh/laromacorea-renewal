@@ -131,7 +131,7 @@ exports.resetUserPasswordAdmin = functions.https.onCall(
 // Algolia Search Sync - Firestore 트리거
 // ============================================
 
-const algoliasearch = require('algoliasearch');
+const {algoliasearch} = require('algoliasearch');
 
 // Algolia 클라이언트 초기화 (환경 변수에서 가져옴)
 // Firebase Functions 환경 변수 설정:
@@ -140,12 +140,12 @@ const algoliaAppId = functions.config().algolia?.app_id;
 const algoliaAdminKey = functions.config().algolia?.admin_key;
 
 let algoliaClient = null;
-let postsIndex = null;
+const ALGOLIA_POSTS_INDEX = 'posts';
 
 /**
  * Algolia 클라이언트 초기화 (지연 초기화)
  */
-function getAlgoliaIndex() {
+function getAlgoliaClient() {
   if (!algoliaAppId || !algoliaAdminKey) {
     console.warn('Algolia 설정이 없습니다. 동기화를 건너뜁니다.');
     return null;
@@ -153,10 +153,9 @@ function getAlgoliaIndex() {
 
   if (!algoliaClient) {
     algoliaClient = algoliasearch(algoliaAppId, algoliaAdminKey);
-    postsIndex = algoliaClient.initIndex('posts');
   }
 
-  return postsIndex;
+  return algoliaClient;
 }
 
 /**
@@ -168,13 +167,57 @@ function stripHtml(html) {
 }
 
 /**
+ * Algolia record size limit을 넘지 않도록 UTF-8 byte 기준으로 자름
+ */
+function truncateUtf8(value, maxBytes) {
+  if (!value || Buffer.byteLength(value, 'utf8') <= maxBytes) {
+    return value || '';
+  }
+
+  let output = '';
+  let bytes = 0;
+
+  for (const char of value) {
+    const charBytes = Buffer.byteLength(char, 'utf8');
+    if (bytes + charBytes > maxBytes) break;
+    output += char;
+    bytes += charBytes;
+  }
+
+  return output;
+}
+
+/**
+ * Firestore Timestamp/Date/number 값을 Algolia 정렬용 millis로 변환
+ */
+function toMillis(value) {
+  if (value && typeof value.toMillis === 'function') {
+    return value.toMillis();
+  }
+  if (value && typeof value.seconds === 'number') {
+    return value.seconds * 1000;
+  }
+  if (value && typeof value._seconds === 'number') {
+    return value._seconds * 1000;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  return Date.now();
+}
+
+/**
  * Firestore 게시물 데이터를 Algolia 형식으로 변환
  */
 function transformPostForAlgolia(postId, postData) {
   return {
     objectID: postId,
     title: postData.title || '',
-    content: stripHtml(postData.content || '').substring(0, 5000), // 콘텐츠 길이 제한
+    content: truncateUtf8(stripHtml(postData.content || ''), 4000),
     authorName: postData.authorName || '',
     authorId: postData.authorId || '',
     boardType: postData.boardType || '',
@@ -184,13 +227,39 @@ function transformPostForAlgolia(postId, postData) {
     commentCount: postData.commentCount || 0,
     isPinned: postData.isPinned || false,
     isDeleted: postData.isDeleted || false,
-    // Timestamp를 Unix timestamp로 변환
-    createdAt: postData.createdAt?.toMillis?.()
-      ? postData.createdAt.toMillis()
-      : postData.createdAt?._seconds
-        ? postData.createdAt._seconds * 1000
-        : Date.now(),
+    createdAt: toMillis(postData.createdAt),
   };
+}
+
+/**
+ * 게시물을 Algolia posts 인덱스에 저장
+ */
+async function savePostToAlgolia(postId, postData) {
+  const client = getAlgoliaClient();
+  if (!client) return false;
+
+  const body = transformPostForAlgolia(postId, postData);
+  await client.saveObject({
+    indexName: ALGOLIA_POSTS_INDEX,
+    body,
+  });
+
+  return true;
+}
+
+/**
+ * 게시물을 Algolia posts 인덱스에서 삭제
+ */
+async function deletePostFromAlgolia(postId) {
+  const client = getAlgoliaClient();
+  if (!client) return false;
+
+  await client.deleteObject({
+    indexName: ALGOLIA_POSTS_INDEX,
+    objectID: postId,
+  });
+
+  return true;
 }
 
 /**
@@ -199,9 +268,6 @@ function transformPostForAlgolia(postId, postData) {
 exports.onPostCreated = functions.firestore
   .document('posts/{postId}')
   .onCreate(async (snapshot, context) => {
-    const index = getAlgoliaIndex();
-    if (!index) return;
-
     const postId = context.params.postId;
     const postData = snapshot.data();
 
@@ -211,9 +277,10 @@ exports.onPostCreated = functions.firestore
     }
 
     try {
-      const algoliaObject = transformPostForAlgolia(postId, postData);
-      await index.saveObject(algoliaObject);
-      console.log(`Algolia에 게시물 추가됨: ${postId}`);
+      const saved = await savePostToAlgolia(postId, postData);
+      if (saved) {
+        console.log(`Algolia에 게시물 추가됨: ${postId}`);
+      }
     } catch (error) {
       console.error('Algolia 게시물 추가 실패:', error);
     }
@@ -225,22 +292,22 @@ exports.onPostCreated = functions.firestore
 exports.onPostUpdated = functions.firestore
   .document('posts/{postId}')
   .onUpdate(async (change, context) => {
-    const index = getAlgoliaIndex();
-    if (!index) return;
-
     const postId = context.params.postId;
     const newData = change.after.data();
 
     try {
       if (newData.isDeleted) {
         // 삭제된 경우 Algolia에서도 제거
-        await index.deleteObject(postId);
-        console.log(`Algolia에서 게시물 삭제됨 (soft delete): ${postId}`);
+        const deleted = await deletePostFromAlgolia(postId);
+        if (deleted) {
+          console.log(`Algolia에서 게시물 삭제됨 (soft delete): ${postId}`);
+        }
       } else {
         // 업데이트
-        const algoliaObject = transformPostForAlgolia(postId, newData);
-        await index.saveObject(algoliaObject);
-        console.log(`Algolia 게시물 업데이트됨: ${postId}`);
+        const saved = await savePostToAlgolia(postId, newData);
+        if (saved) {
+          console.log(`Algolia 게시물 업데이트됨: ${postId}`);
+        }
       }
     } catch (error) {
       console.error('Algolia 게시물 업데이트 실패:', error);
@@ -253,14 +320,13 @@ exports.onPostUpdated = functions.firestore
 exports.onPostDeleted = functions.firestore
   .document('posts/{postId}')
   .onDelete(async (snapshot, context) => {
-    const index = getAlgoliaIndex();
-    if (!index) return;
-
     const postId = context.params.postId;
 
     try {
-      await index.deleteObject(postId);
-      console.log(`Algolia에서 게시물 삭제됨: ${postId}`);
+      const deleted = await deletePostFromAlgolia(postId);
+      if (deleted) {
+        console.log(`Algolia에서 게시물 삭제됨: ${postId}`);
+      }
     } catch (error) {
       console.error('Algolia 게시물 삭제 실패:', error);
     }
