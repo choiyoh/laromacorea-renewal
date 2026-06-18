@@ -180,7 +180,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, shallowRef, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { postService } from '@/services/database';
 import { storageService } from '@/services/storage';
@@ -220,7 +220,7 @@ const editorContainer = ref(null);
 // State
 const valid = ref(false);
 const loading = ref(false);
-const quillEditor = ref(null);
+const quillEditor = shallowRef(null);
 const lastRange = ref(null);
 const contentError = ref('');
 const uploadedFiles = ref([]);
@@ -297,6 +297,21 @@ function initializeEditor() {
     },
     placeholder: '내용을 입력해주세요...', 
   });
+
+  // ★ Quill v2 Selection.update() null offset 크래시 방어 패치
+  // Quill v2에서 에디터가 포커스를 잃은 상태에서 insertEmbed/insertText 등을 호출하면
+  // 내부적으로 Selection.update() → normalizedToRange()가 호출되어 null.offset 에러 발생.
+  // 이 패치로 에러를 흡수하여 크래시를 방지함.
+  const selection = quillEditor.value.selection;
+  const originalUpdate = selection.update.bind(selection);
+  selection.update = function (source) {
+    try {
+      return originalUpdate(source);
+    } catch (e) {
+      // 포커스 손실 시 발생하는 null offset 에러를 조용히 흡수
+      return;
+    }
+  };
 
   // 내용 변경 감지
   quillEditor.value.on('text-change', () => {
@@ -414,17 +429,20 @@ async function uploadAndInsertImage(file) {
     return;
   }
 
-  // Quill selection 버그를 우회하기 위해 기록해 둔 최근 유효 커서 위치를 우선 적용
-  const insertIndex = lastRange.value ? lastRange.value.index : quillEditor.value.getLength();
-  const placeholderText = '[이미지 업로드 중...]\n';
+  // 삽입 위치 결정 (포커스 잃기 전에 기록해 둔 커서 위치 활용)
+  const insertIndex = lastRange.value
+    ? Math.min(lastRange.value.index, quillEditor.value.getLength() - 1)
+    : quillEditor.value.getLength() - 1;
+
+  const placeholderText = '📷 이미지 업로드 중...\n';
+
+  // 에디터에 업로드 진행 안내 문구 삽입
+  quillEditor.value.insertText(insertIndex, placeholderText, {
+    italic: true,
+    color: '#999999',
+  }, Quill.sources.SILENT);
 
   try {
-    // 에디터에 임시 업로드 알림 문구 추가 (Quill Delta 모델에 반영)
-    quillEditor.value.insertText(insertIndex, placeholderText, {
-      italic: true,
-      color: '#999999',
-    });
-
     // 이미지 파일일 경우 리사이징 압축 강제 적용 (움직이는 GIF 제외)
     let fileToUpload = file;
     if (file.type !== 'image/gif') {
@@ -444,26 +462,27 @@ async function uploadAndInsertImage(file) {
     const fileName = `posts/${Date.now()}_${file.name}`;
     const downloadURL = await storageService.uploadFile(fileToUpload, fileName);
 
-    // 업로드 진행 텍스트 제거 (Quill API deleteText 사용)
-    quillEditor.value.deleteText(insertIndex, placeholderText.length);
-
-    // CDN 주소로 우회 처리하여 본문에 이미지 링크 삽입 (상단에 정적 임포트된 toCdnUrl 사용)
+    // CDN 주소로 변환
     const cdnUrl = toCdnUrl(downloadURL);
 
-    // 이미지 태그 및 행 분리 문자열 삽입
-    quillEditor.value.insertEmbed(insertIndex, 'image', cdnUrl);
-    quillEditor.value.insertText(insertIndex + 1, '\n');
+    // 업로드 완료: placeholder 제거 후 이미지 삽입
+    quillEditor.value.deleteText(insertIndex, placeholderText.length, Quill.sources.SILENT);
+    quillEditor.value.insertEmbed(insertIndex, 'image', cdnUrl, Quill.sources.SILENT);
+    quillEditor.value.insertText(insertIndex + 1, '\n', Quill.sources.SILENT);
+
+    // 커서를 이미지 다음 줄로 이동하여 바로 타이핑 가능하도록
+    quillEditor.value.setSelection(insertIndex + 2, 0, Quill.sources.SILENT);
 
     // 내용 동기화
     formData.value.content = quillEditor.value.root.innerHTML;
   } catch (error) {
     console.error('Editor image upload and insert error:', error);
-    
-    // 실패 시 텍스트 정리 (Quill API deleteText 사용)
+
+    // 실패 시 placeholder 정리
     try {
-      quillEditor.value.deleteText(insertIndex, placeholderText.length);
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup upload text:', cleanupError);
+      quillEditor.value.deleteText(insertIndex, placeholderText.length, Quill.sources.SILENT);
+    } catch {
+      // placeholder 정리 실패해도 무시
     }
 
     alert('이미지 업로드에 실패했습니다. 네트워크 상태를 확인해 주세요.');
