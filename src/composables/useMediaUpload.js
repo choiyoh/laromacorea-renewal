@@ -10,7 +10,7 @@ export function useMediaUpload(options = {}) {
   const {
     maxSize = 10 * 1024 * 1024, // 10MB
     maxFiles = 10,
-    acceptedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'],
+    acceptedTypes = ['image/jpeg', 'image/png', 'image/gif'],
     uploadPath = 'uploads',
     autoUpload = true,
   } = options
@@ -29,6 +29,13 @@ export function useMediaUpload(options = {}) {
 
   // Methods
   function validateFile(file) {
+    // 동영상 직접 업로드 시도 차단
+    if (file.type.startsWith('video/')) {
+      return {
+        isValid: false,
+        errors: ['서버 유지 비용 절감을 위해 동영상 직접 업로드는 제한됩니다. YouTube나 Streamable 등의 외부 링크 임베드를 이용해 주세요.'],
+      }
+    }
     return storageService.validateFile(file, {
       maxSize,
       allowedTypes: acceptedTypes,
@@ -105,10 +112,26 @@ export function useMediaUpload(options = {}) {
 
     try {
       const fileName = `${uploadPath}/${Date.now()}_${fileData.name}`
+      let fileToUpload = fileData.file
+
+      // 이미지일 경우 클라이언트단 압축 강제 적용 (단, 움직이는 GIF는 압축 대상에서 제외)
+      if (fileData.type === 'image' && fileData.file.type !== 'image/gif') {
+        try {
+          console.log('Resizing image before upload:', fileData.name)
+          fileToUpload = await storageService.resizeImage(fileData.file, {
+            maxWidth: 1200,
+            maxHeight: 1200,
+            quality: 0.75,
+          })
+        } catch (resizeError) {
+          console.warn('Failed to resize image, uploading original instead:', resizeError)
+        }
+      }
+
       const uploadMethod =
         fileData.type === 'video' ? storageService.uploadVideo : storageService.uploadImage
 
-      const downloadURL = await uploadMethod(fileData.file, fileName, (progress) => {
+      const downloadURL = await uploadMethod(fileToUpload, fileName, (progress) => {
         progressItem.value = progress
       })
 

@@ -6,7 +6,7 @@
   >
     <v-img
       v-if="currentIcon?.url || photoURL"
-      :src="currentIcon?.url || photoURL"
+      :src="toCdnUrl(currentIcon?.url || photoURL)"
       :alt="displayName || '익명'"
       height="100%"
       width="100%"
@@ -19,6 +19,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useUserIcon } from '@/composables/useUserIcon';
+import { toCdnUrl } from '@/utils/image';
 
 const props = defineProps({
   userId: {

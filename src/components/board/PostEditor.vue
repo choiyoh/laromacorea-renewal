@@ -304,6 +304,13 @@ function initializeEditor() {
 
   // 이미지 업로드 핸들러
   quillEditor.value.getModule('toolbar').addHandler('image', handleImageInsert);
+
+  // 드래그앤드롭 및 복사붙여넣기 이벤트 감지 바인딩
+  const editorEl = editor.value;
+  if (editorEl) {
+    editorEl.addEventListener('drop', handleEditorDrop);
+    editorEl.addEventListener('paste', handleEditorPaste);
+  }
 }
 
 function validateContent() {
@@ -320,8 +327,40 @@ function validateContent() {
   }
 }
 
+// 에디터 이미지 붙여넣기(Paste) 가로채기
+async function handleEditorPaste(e) {
+  const clipboardData = e.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+
+  const items = clipboardData.items;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      // base64 기본 삽입 차단
+      e.preventDefault();
+      const file = items[i].getAsFile();
+      if (file) {
+        await uploadAndInsertImage(file);
+      }
+      break;
+    }
+  }
+}
+
+// 에디터 이미지 드롭(Drop) 가로채기
+async function handleEditorDrop(e) {
+  const files = e.dataTransfer?.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    if (file.type.startsWith('image/')) {
+      // 기본 드롭 동작 차단
+      e.preventDefault();
+      await uploadAndInsertImage(file);
+    }
+  }
+}
+
+// 에디터 이미지 선택 다이얼로그 호출
 async function handleImageInsert() {
-  // Quill 에디터가 초기화되었는지 확인
   if (!quillEditor.value) {
     alert('에디터가 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
     return;
@@ -335,74 +374,83 @@ async function handleImageInsert() {
   input.onchange = async () => {
     const file = input.files[0];
     if (!file) return;
-
-    // 사용자 로그인 확인
-    if (!userStore.user) {
-      alert('이미지 업로드를 위해 로그인이 필요합니다.');
-      return;
-    }
-
-    const validation = storageService.validateFile(file, {
-      maxSize: 5 * 1024 * 1024, // 5MB for editor images
-      allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
-    });
-
-    if (!validation.isValid) {
-      alert(validation.errors.join('\n'));
-      return;
-    }
-
-    try {
-      // 업로드 진행 상태를 HTML로 직접 추가 (Quill API 사용하지 않음)
-      const currentContent = quillEditor.value.root.innerHTML;
-      const uploadingHtml = '<p><em>이미지 업로드 중...</em></p>';
-      quillEditor.value.root.innerHTML = currentContent + uploadingHtml;
-
-      // 파일 업로드
-      const fileName = `posts/${Date.now()}_${file.name}`;
-      const downloadURL = await storageService.uploadFile(file, fileName);
-
-      // 업로드 완료 후 이미지로 교체
-      const imageHtml = `<p><img src="${downloadURL}" alt="업로드된 이미지"></p><p><br></p>`;
-      const updatedContent = quillEditor.value.root.innerHTML.replace(
-        uploadingHtml,
-        imageHtml,
-      );
-      quillEditor.value.root.innerHTML = updatedContent;
-
-      // 내용 변경 이벤트 트리거
-      formData.value.content = quillEditor.value.root.innerHTML;
-    } catch (error) {
-      console.error('Image upload error:', error);
-
-      // 업로드 중 텍스트 제거
-      try {
-        const currentContent = quillEditor.value.root.innerHTML;
-        const cleanedContent = currentContent.replace(
-          '<p><em>이미지 업로드 중...</em></p>',
-          '',
-        );
-        quillEditor.value.root.innerHTML = cleanedContent;
-      } catch (cleanupError) {
-        console.warn('Failed to cleanup upload text:', cleanupError);
-      }
-
-      // 에러 메시지 표시
-      let errorMessage = '이미지 업로드에 실패했습니다.';
-      if (error.code === 'storage/unauthorized') {
-        errorMessage =
-          '이미지 업로드 권한이 없습니다. 로그인 상태를 확인해주세요.';
-      } else if (error.code === 'storage/quota-exceeded') {
-        errorMessage = '저장 공간이 부족합니다.';
-      } else if (error.code === 'storage/invalid-format') {
-        errorMessage = '지원하지 않는 이미지 형식입니다.';
-      } else if (error.message) {
-        errorMessage += ` (${error.message})`;
-      }
-
-      alert(errorMessage);
-    }
+    await uploadAndInsertImage(file);
   };
+}
+
+// 이미지 리사이즈 압축 및 Firebase Storage 업로드 후 에디터에 삽입하는 공통 함수
+async function uploadAndInsertImage(file) {
+  if (!userStore.user) {
+    alert('이미지 업로드를 위해 로그인이 필요합니다.');
+    return;
+  }
+
+  const validation = storageService.validateFile(file, {
+    maxSize: 10 * 1024 * 1024, // 10MB
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+  });
+
+  if (!validation.isValid) {
+    alert(validation.errors.join('\n'));
+    return;
+  }
+
+  try {
+    // 업로드 중 임시 플레이스홀더 텍스트 삽입
+    const range = quillEditor.value.getSelection() || { index: quillEditor.value.getLength() };
+    const insertIndex = range.index;
+    
+    // 에디터에 임시 업로드 알림 문구 추가
+    quillEditor.value.insertText(insertIndex, '[이미지 업로드 중...]\n', 'italic', true);
+
+    // 이미지 파일일 경우 리사이징 압축 강제 적용 (움직이는 GIF 제외)
+    let fileToUpload = file;
+    if (file.type !== 'image/gif') {
+      try {
+        console.log('Resizing editor image before upload:', file.name);
+        fileToUpload = await storageService.resizeImage(file, {
+          maxWidth: 1200,
+          maxHeight: 1200,
+          quality: 0.75,
+        });
+      } catch (resizeError) {
+        console.warn('Failed to resize editor image, uploading original:', resizeError);
+      }
+    }
+
+    // 파일 업로드
+    const fileName = `posts/${Date.now()}_${file.name}`;
+    const downloadURL = await storageService.uploadFile(fileToUpload, fileName);
+
+    // 업로드 진행 텍스트 제거 및 이미지 태그 삽입
+    const currentContent = quillEditor.value.root.innerHTML;
+    const cleanedContent = currentContent.replace('[이미지 업로드 중...]', '');
+    quillEditor.value.root.innerHTML = cleanedContent;
+
+    // CDN 주소로 우회 처리하여 본문에 이미지 링크 삽입
+    const { toCdnUrl } = await import('@/utils/image');
+    const cdnUrl = toCdnUrl(downloadURL);
+
+    // 이미지 태그 및 행 분리 문자열 삽입
+    quillEditor.value.insertEmbed(insertIndex, 'image', cdnUrl);
+    quillEditor.value.insertText(insertIndex + 1, '\n');
+
+    // 내용 동기화
+    formData.value.content = quillEditor.value.root.innerHTML;
+  } catch (error) {
+    console.error('Editor image upload and insert error:', error);
+    
+    // 실패 시 텍스트 정리
+    try {
+      const currentContent = quillEditor.value.root.innerHTML;
+      const cleanedContent = currentContent.replace('[이미지 업로드 중...]', '');
+      quillEditor.value.root.innerHTML = cleanedContent;
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup upload text:', cleanupError);
+    }
+
+    alert('이미지 업로드에 실패했습니다. 네트워크 상태를 확인해 주세요.');
+  }
 }
 
 // Media upload event handlers

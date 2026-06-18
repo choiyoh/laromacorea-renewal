@@ -149,7 +149,7 @@
 
       <!-- 게시글 내용 -->
       <div class="post-content mb-4">
-        <div class="post-body mb-6" v-html="post.content"></div>
+        <div class="post-body mb-6" v-html="replaceHtmlStorageUrls(post.content)"></div>
 
         <!-- 트위터 임베드 -->
         <TweetEmbed v-if="post.tweetUrl" :tweet-url="post.tweetUrl" />
@@ -169,12 +169,12 @@
             >
               <v-img
                 v-if="isImage(mediaUrl)"
-                :src="mediaUrl"
+                :src="toCdnUrl(mediaUrl)"
                 class="rounded cursor-pointer"
                 cover
                 loading="lazy"
                 :eager="index < 2"
-                @click="openMediaViewer(mediaUrl)"
+                @click="openMediaViewer(toCdnUrl(mediaUrl))"
               />
               <video
                 v-else-if="isVideo(mediaUrl)"
@@ -455,6 +455,7 @@ import { useUserStore } from '@/stores/user';
 import { postService, commentService } from '@/services/database';
 import { useRouter } from 'vue-router';
 import { useMobileOptimization } from '@/composables/useMobileOptimization';
+import { toCdnUrl, replaceHtmlStorageUrls } from '@/utils/image';
 import CommentSystem from './CommentSystem.vue';
 import MatchCommentSystem from './MatchCommentSystem.vue';
 import MatchInfo from './MatchInfo.vue';

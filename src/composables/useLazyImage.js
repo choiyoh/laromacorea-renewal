@@ -3,6 +3,7 @@
  */
 
 import { ref, onMounted, onUnmounted } from 'vue'
+import { toCdnUrl } from '@/utils/image'
 
 export function useLazyImage(options = {}) {
   const imageRef = ref(null)
@@ -37,7 +38,7 @@ export function useLazyImage(options = {}) {
       const img = imageRef.value
       if (!img) return
 
-      const src = img.dataset.src
+      const src = toCdnUrl(img.dataset.src)
       if (!src) return
 
       try {
@@ -95,9 +96,11 @@ export const vLazyImage = {
   mounted(el, binding) {
     const { value: src, modifiers } = binding
 
+    const cdnSrc = toCdnUrl(src)
+
     // Set placeholder
     el.src = modifiers.placeholder || '/placeholder.jpg'
-    el.dataset.src = src
+    el.dataset.src = cdnSrc
 
     // Add loading class
     el.classList.add('lazy-image', 'loading')
@@ -105,7 +108,7 @@ export const vLazyImage = {
     // Use native lazy loading if supported
     if ('loading' in HTMLImageElement.prototype) {
       el.loading = 'lazy'
-      el.src = src
+      el.src = cdnSrc
       el.classList.remove('loading')
       el.classList.add('loaded')
       return
