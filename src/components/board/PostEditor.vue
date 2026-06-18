@@ -185,6 +185,7 @@ import { useUserStore } from '@/stores/user';
 import { postService } from '@/services/database';
 import { storageService } from '@/services/storage';
 import { matchService } from '@/services/match';
+import { toCdnUrl } from '@/utils/image';
 
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -220,6 +221,7 @@ const editorContainer = ref(null);
 const valid = ref(false);
 const loading = ref(false);
 const quillEditor = ref(null);
+const lastRange = ref(null);
 const contentError = ref('');
 const uploadedFiles = ref([]);
 const draftSaved = ref(false);
@@ -302,14 +304,21 @@ function initializeEditor() {
     validateContent();
   });
 
+  // 셀렉션 변경 감지 (최근 유효 커서 위치 기록)
+  quillEditor.value.on('selection-change', (range) => {
+    if (range) {
+      lastRange.value = range;
+    }
+  });
+
   // 이미지 업로드 핸들러
   quillEditor.value.getModule('toolbar').addHandler('image', handleImageInsert);
 
-  // 드래그앤드롭 및 복사붙여넣기 이벤트 감지 바인딩
+  // 드래그앤드롭 및 복사붙여넣기 이벤트 감지 바인딩 (캡처링 단계에서 가로채어 Quill의 기본 base64 삽입 차단)
   const editorEl = editor.value;
   if (editorEl) {
-    editorEl.addEventListener('drop', handleEditorDrop);
-    editorEl.addEventListener('paste', handleEditorPaste);
+    editorEl.addEventListener('drop', handleEditorDrop, true);
+    editorEl.addEventListener('paste', handleEditorPaste, true);
   }
 }
 
@@ -328,18 +337,23 @@ function validateContent() {
 }
 
 // 에디터 이미지 붙여넣기(Paste) 가로채기
-async function handleEditorPaste(e) {
+function handleEditorPaste(e) {
   const clipboardData = e.clipboardData || window.clipboardData;
   if (!clipboardData) return;
 
   const items = clipboardData.items;
   for (let i = 0; i < items.length; i++) {
     if (items[i].type.indexOf('image') !== -1) {
-      // base64 기본 삽입 차단
+      // 캡처링 단계에서 브라우저 전파와 기본 base64 삽입 동작 완전 차단
       e.preventDefault();
+      e.stopImmediatePropagation();
+      
       const file = items[i].getAsFile();
       if (file) {
-        await uploadAndInsertImage(file);
+        // 브라우저 이벤트 사이클이 끝난 후(다음 틱) 안전하게 에디터 조작 시작
+        setTimeout(() => {
+          uploadAndInsertImage(file);
+        }, 0);
       }
       break;
     }
@@ -347,14 +361,19 @@ async function handleEditorPaste(e) {
 }
 
 // 에디터 이미지 드롭(Drop) 가로채기
-async function handleEditorDrop(e) {
+function handleEditorDrop(e) {
   const files = e.dataTransfer?.files;
   if (files && files.length > 0) {
     const file = files[0];
     if (file.type.startsWith('image/')) {
-      // 기본 드롭 동작 차단
+      // 캡처링 단계에서 드롭 기본 동작 및 브라우저 전파 차단
       e.preventDefault();
-      await uploadAndInsertImage(file);
+      e.stopImmediatePropagation();
+      
+      // 브라우저 이벤트 사이클이 끝난 후(다음 틱) 안전하게 에디터 조작 시작
+      setTimeout(() => {
+        uploadAndInsertImage(file);
+      }, 0);
     }
   }
 }
@@ -395,13 +414,16 @@ async function uploadAndInsertImage(file) {
     return;
   }
 
+  // Quill selection 버그를 우회하기 위해 기록해 둔 최근 유효 커서 위치를 우선 적용
+  const insertIndex = lastRange.value ? lastRange.value.index : quillEditor.value.getLength();
+  const placeholderText = '[이미지 업로드 중...]\n';
+
   try {
-    // 업로드 중 임시 플레이스홀더 텍스트 삽입
-    const range = quillEditor.value.getSelection() || { index: quillEditor.value.getLength() };
-    const insertIndex = range.index;
-    
-    // 에디터에 임시 업로드 알림 문구 추가
-    quillEditor.value.insertText(insertIndex, '[이미지 업로드 중...]\n', 'italic', true);
+    // 에디터에 임시 업로드 알림 문구 추가 (Quill Delta 모델에 반영)
+    quillEditor.value.insertText(insertIndex, placeholderText, {
+      italic: true,
+      color: '#999999',
+    });
 
     // 이미지 파일일 경우 리사이징 압축 강제 적용 (움직이는 GIF 제외)
     let fileToUpload = file;
@@ -422,13 +444,10 @@ async function uploadAndInsertImage(file) {
     const fileName = `posts/${Date.now()}_${file.name}`;
     const downloadURL = await storageService.uploadFile(fileToUpload, fileName);
 
-    // 업로드 진행 텍스트 제거 및 이미지 태그 삽입
-    const currentContent = quillEditor.value.root.innerHTML;
-    const cleanedContent = currentContent.replace('[이미지 업로드 중...]', '');
-    quillEditor.value.root.innerHTML = cleanedContent;
+    // 업로드 진행 텍스트 제거 (Quill API deleteText 사용)
+    quillEditor.value.deleteText(insertIndex, placeholderText.length);
 
-    // CDN 주소로 우회 처리하여 본문에 이미지 링크 삽입
-    const { toCdnUrl } = await import('@/utils/image');
+    // CDN 주소로 우회 처리하여 본문에 이미지 링크 삽입 (상단에 정적 임포트된 toCdnUrl 사용)
     const cdnUrl = toCdnUrl(downloadURL);
 
     // 이미지 태그 및 행 분리 문자열 삽입
@@ -440,11 +459,9 @@ async function uploadAndInsertImage(file) {
   } catch (error) {
     console.error('Editor image upload and insert error:', error);
     
-    // 실패 시 텍스트 정리
+    // 실패 시 텍스트 정리 (Quill API deleteText 사용)
     try {
-      const currentContent = quillEditor.value.root.innerHTML;
-      const cleanedContent = currentContent.replace('[이미지 업로드 중...]', '');
-      quillEditor.value.root.innerHTML = cleanedContent;
+      quillEditor.value.deleteText(insertIndex, placeholderText.length);
     } catch (cleanupError) {
       console.warn('Failed to cleanup upload text:', cleanupError);
     }

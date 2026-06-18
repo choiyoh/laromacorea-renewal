@@ -13,13 +13,13 @@ service firebase.storage {
     }
     
     function isValidImageFile() {
-      return resource.contentType.matches('image/.*') &&
-             resource.size < 5 * 1024 * 1024; // 5MB limit
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB limit
     }
     
     function isValidVideoFile() {
-      return resource.contentType.matches('video/.*') &&
-             resource.size < 50 * 1024 * 1024; // 50MB limit
+      return request.resource.contentType.matches('video/.*') &&
+             request.resource.size < 50 * 1024 * 1024; // 50MB limit
     }
 
     // User profile images
