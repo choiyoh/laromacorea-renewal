@@ -20,7 +20,12 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   setDoc: vi.fn(),
   getDoc: vi.fn(),
+  getDocs: vi.fn(),
   updateDoc: vi.fn(),
+  collection: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn(),
+  limit: vi.fn(),
   serverTimestamp: vi.fn(() => ({ _serverTimestamp: true })),
 }))
 
@@ -263,6 +268,11 @@ describe('Authentication Integration Tests', () => {
   describe('Password Reset Flow', () => {
     it('should send password reset email', async () => {
       mockAuth.sendPasswordResetEmail.mockResolvedValue()
+      // Mock Firestore query to find the user
+      mockFirestore.getDocs.mockResolvedValue({
+        empty: false,
+        docs: [{ id: 'some-uid', data: () => ({ email: 'user@example.com' }) }],
+      })
 
       const result = await userStore.resetPassword('user@example.com')
 
@@ -278,11 +288,16 @@ describe('Authentication Integration Tests', () => {
       const authError = new Error('User not found')
       authError.code = 'auth/user-not-found'
 
-      mockAuth.sendPasswordResetEmail.mockRejectedValue(authError)
+      // Mock Firestore query to return empty (user not found)
+      mockFirestore.getDocs.mockResolvedValue({
+        empty: true,
+        docs: [],
+      })
 
-      const result = await userStore.resetPassword('nonexistent@example.com')
+      await expect(
+        userStore.resetPassword('nonexistent@example.com'),
+      ).rejects.toThrow()
 
-      expect(result).toBe(false)
       expect(userStore.error).toBe('등록되지 않은 이메일입니다.')
     })
   })

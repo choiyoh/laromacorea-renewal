@@ -35,7 +35,7 @@ export class AuthService {
         if (!userInfo) {
           throw new Error('존재하지 않는 아이디입니다.');
         }
-        email = userInfo.tempEmail || userInfo.email;
+        email = userInfo.email;
       }
 
       const userCredential = await signInWithEmailAndPassword(
@@ -134,11 +134,11 @@ export class AuthService {
   }
 
   // Create new user account with username
-  static async signUp(tempEmail, password, displayName, username, realEmail) {
+  static async signUp(email, password, displayName, username) {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        tempEmail,
+        email,
         password,
       );
       const user = userCredential.user;
@@ -148,17 +148,8 @@ export class AuthService {
         await updateProfile(user, { displayName });
       }
 
-      // Create user document in Firestore with username and real email
-      await this.createUserDocument(
-        user,
-        displayName,
-        username,
-        realEmail,
-        tempEmail,
-      );
-
-      // Note: Email verification is skipped for username-based accounts
-      // as they use temporary emails
+      // Create user document in Firestore with username and email
+      await this.createUserDocument(user, displayName, username, email);
 
       return user;
     } catch (error) {
@@ -178,6 +169,12 @@ export class AuthService {
   // Send password reset email
   static async resetPassword(email) {
     try {
+      // Firestore에서 실제 이메일로 사용자 확인
+      const q = query(collection(db, 'users'), where('email', '==', email), limit(1));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        throw { code: 'auth/user-not-found' };
+      }
       await sendPasswordResetEmail(auth, email);
     } catch (error) {
       throw this.handleAuthError(error);
@@ -224,15 +221,13 @@ export class AuthService {
     user,
     displayName = null,
     username = null,
-    realEmail = null,
-    tempEmail = null,
+    email = null,
   ) {
     try {
       const userRef = doc(db, 'users', user.uid);
       const userData = {
         uid: user.uid,
-        email: realEmail || user.email, // 실제 이메일 저장
-        tempEmail: tempEmail || user.email, // Firebase Auth용 임시 이메일
+        email: email || user.email, // 실제 이메일 저장
         username: username || null, // 아이디
         displayName:
           displayName || user.displayName || user.email.split('@')[0],

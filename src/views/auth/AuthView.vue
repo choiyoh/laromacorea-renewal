@@ -485,14 +485,12 @@ const handleSubmit = async () => {
         return;
       }
 
-      // 회원가입 진행 - 아이디 기반으로 임시 이메일 생성
-      const tempEmail = `${username.value}@laromacorea.temp`;
+      // 회원가입 진행
       const user = await AuthService.signUp(
-        tempEmail,
+        email.value,
         password.value,
         displayName.value,
         username.value,
-        email.value,
       );
 
       successMessage.value = '회원가입이 완료되었습니다!';
