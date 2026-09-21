@@ -1,7 +1,12 @@
 /**
  * Match Service
- * TheSportsDB API를 통한 AS 로마 경기 일정 연동 서비스
+ * Next Match: TheSportsDB
+ * Recent Match + Serie A table: Firestore cache filled by Cloud Functions
+ * from Big Balls Sports Data.
  */
+
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 // AS 로마 팀 ID (TheSportsDB 기준)
 const AS_ROMA_TEAM_ID = '133682';
@@ -10,6 +15,20 @@ const HOME_TEAM_ID = '133682';
 const THESPORTSDB_CONFIG = {
   baseUrl: 'https://www.thesportsdb.com/api/v1/json/123',
 };
+
+const SERIE_A_MEMORY_TTL_MS = 5 * 60 * 1000;
+let serieAMemory = { data: null, timestamp: 0 };
+
+function getRefreshFunctionUrl() {
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  if (
+    import.meta.env.VITE_APP_ENV === 'development' &&
+    import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true'
+  ) {
+    return `http://localhost:5001/${projectId}/us-central1/refreshSerieACache`;
+  }
+  return `https://us-central1-${projectId}.cloudfunctions.net/refreshSerieACache`;
+}
 
 export const matchService = {
   /**
@@ -192,22 +211,80 @@ export const matchService = {
   },
 
   /**
-   * AS 로마의 지난 경기 결과 조회 (1경기만)
+   * Firestore + Functions 캐시에서 Serie A 스냅샷 조회
    */
-  async getRecentResults() {
+  async getSerieASnapshot(forceRefresh = false) {
+    const now = Date.now();
+    if (
+      !forceRefresh &&
+      serieAMemory.data &&
+      now - serieAMemory.timestamp < SERIE_A_MEMORY_TTL_MS
+    ) {
+      return serieAMemory.data;
+    }
+
+    try {
+      const snapshot = await getDoc(doc(db, 'cache', 'serieA'));
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        serieAMemory = { data, timestamp: now };
+        return data;
+      }
+    } catch (error) {
+      console.warn('Serie A Firestore cache read failed:', error.message);
+    }
+
+    try {
+      const response = await fetch(getRefreshFunctionUrl());
+      if (!response.ok) {
+        throw new Error(`refreshSerieACache ${response.status}`);
+      }
+      const data = await response.json();
+      serieAMemory = { data, timestamp: Date.now() };
+      return data;
+    } catch (error) {
+      console.warn('Serie A function refresh failed:', error.message);
+      return serieAMemory.data;
+    }
+  },
+
+  /**
+   * AS 로마의 이번 시즌 최근 경기 결과 (최대 5경기)
+   */
+  async getRecentResults(forceRefresh = false) {
+    try {
+      const snapshot = await this.getSerieASnapshot(forceRefresh);
+      if (snapshot?.recentResults?.length) {
+        return snapshot.recentResults;
+      }
+    } catch (error) {
+      console.warn('Serie A recent results cache failed:', error.message);
+    }
+
     try {
       const result = await this.fetchRecentResult();
-
       if (result) {
-        return [result]; // 1경기만 배열로 반환
+        return [result];
       }
     } catch (error) {
       console.warn('TheSportsDB recent results API failed:', error.message);
     }
 
-    // API 실패 시 빈 배열 반환
     console.info('No recent results available');
     return [];
+  },
+
+  /**
+   * Serie A 순위표
+   */
+  async getStandings(forceRefresh = false) {
+    try {
+      const snapshot = await this.getSerieASnapshot(forceRefresh);
+      return snapshot?.standings || [];
+    } catch (error) {
+      console.warn('Serie A standings cache failed:', error.message);
+      return [];
+    }
   },
 
   /**

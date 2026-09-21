@@ -265,3 +265,90 @@ exports.onPostDeleted = functions.firestore
       console.error('Algolia 게시물 삭제 실패:', error);
     }
   });
+
+// ============================================
+// Serie A cache (Big Balls Sports Data)
+// API key lives in functions/.env as BBS_API_KEY
+// ============================================
+
+const {buildSerieACache} = require('./serieA');
+
+const SERIE_A_CACHE_MAX_AGE_MS = 10 * 60 * 1000;
+
+function getBbsApiKey() {
+  if (process.env.BBS_API_KEY) {
+    return process.env.BBS_API_KEY;
+  }
+  try {
+    return functions.config().bigballs?.key || '';
+  } catch {
+    return '';
+  }
+}
+
+function setCors(res) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+async function readSerieACacheDoc() {
+  const snap = await admin.firestore().collection('cache').doc('serieA').get();
+  if (!snap.exists) {
+    return null;
+  }
+  return snap.data();
+}
+
+function isCacheFresh(data, maxAgeMs = SERIE_A_CACHE_MAX_AGE_MS) {
+  if (!data?.updatedAt) return false;
+  const updated = new Date(data.updatedAt).getTime();
+  if (Number.isNaN(updated)) return false;
+  return Date.now() - updated < maxAgeMs;
+}
+
+async function refreshSerieACache({force = false} = {}) {
+  if (!force) {
+    const existing = await readSerieACacheDoc();
+    if (existing && isCacheFresh(existing)) {
+      return existing;
+    }
+  }
+
+  const apiKey = getBbsApiKey();
+  if (!apiKey) {
+    throw new Error(
+        'BBS_API_KEY is missing. Add it to functions/.env as BBS_API_KEY=bbs_live_...',
+    );
+  }
+
+  const payload = await buildSerieACache(apiKey);
+  await admin.firestore().collection('cache').doc('serieA').set(payload);
+  return payload;
+}
+
+exports.syncSerieACache = functions.pubsub
+    .schedule('every 30 minutes')
+    .onRun(async () => {
+      await refreshSerieACache({force: true});
+      console.log('Serie A cache refreshed');
+    });
+
+exports.refreshSerieACache = functions.https.onRequest(async (req, res) => {
+  setCors(res);
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  try {
+    const payload = await refreshSerieACache({force: req.query.force === '1'});
+    res.status(200).json(payload);
+  } catch (error) {
+    console.error('Serie A cache refresh failed:', error);
+    res.status(500).json({
+      error: 'Failed to refresh Serie A cache',
+      message: error.message,
+    });
+  }
+});
