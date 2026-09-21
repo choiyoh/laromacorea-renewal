@@ -120,5 +120,11 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
+
+    // Public sports cache written only by Admin SDK (Cloud Functions)
+    match /cache/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }

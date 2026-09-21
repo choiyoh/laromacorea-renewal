@@ -19,6 +19,15 @@ vi.mock('@/stores/user', () => ({
   useUserStore: () => mockUserStore,
 }))
 
+vi.mock('@/services/firebase', () => ({
+  db: {},
+}))
+
+vi.mock('firebase/firestore', () => ({
+  doc: vi.fn(),
+  getDoc: vi.fn(),
+}))
+
 vi.mock('@/services/database', () => ({
   commentService: {
     getComments: vi.fn().mockResolvedValue([]),
@@ -105,9 +114,25 @@ describe('Match Components', () => {
   })
 
   describe('Match Service Functions', () => {
-    it('creates sample match data correctly', async () => {
-      const { createSampleMatchData } = await import('@/services/match')
-      const sampleData = createSampleMatchData()
+    it('reads cached recent results from Firestore', async () => {
+      const { getDoc } = await import('firebase/firestore')
+      getDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          recentResults: [
+            {
+              id: 'm1',
+              homeTeam: { name: 'AS Roma' },
+              awayTeam: { name: 'Como 1907' },
+              competition: { name: 'Serie A' },
+            },
+          ],
+          standings: [],
+        }),
+      })
+
+      const { matchService } = await import('@/services/match')
+      const sampleData = await matchService.getRecentResults(true)
 
       expect(Array.isArray(sampleData)).toBe(true)
       expect(sampleData.length).toBeGreaterThan(0)

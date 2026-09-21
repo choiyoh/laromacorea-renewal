@@ -16,7 +16,7 @@
         </v-col>
       </v-row>
 
-      <!-- 첫 번째 줄: Next Match, Recent Match, Notice -->
+      <!-- 첫 번째 줄: Next Match, Recent Match, Serie A -->
       <v-row class="mb-4 info-cards-row">
         <!-- 다음 경기 -->
         <v-col cols="12" md="4" class="mb-3">
@@ -32,107 +32,15 @@
           </div>
         </v-col>
 
-        <!-- Notice 게시판 -->
+        <!-- Serie A 리그 테이블 -->
         <v-col cols="12" md="4" class="mb-3">
-          <v-card class="board-section" variant="outlined" height="100%">
-            <!-- 게시판 헤더 -->
-            <v-card-title
-              class="board-header-roma d-flex align-center py-2 px-4"
-            >
-              <v-icon
-                icon="mdi-bullhorn"
-                color="white"
-                class="mr-3"
-                size="28"
-              />
-              <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold text-white cinzel-font">
-                  Notice
-                </div>
-              </div>
-              <v-btn
-                to="/board/notice"
-                variant="text"
-                size="small"
-                color="white"
-                class="text-white"
-              >
-                더보기
-                <v-icon icon="mdi-chevron-right" end color="white" />
-              </v-btn>
-            </v-card-title>
-
-            <v-divider />
-
-            <!-- 최근 게시물 목록 -->
-            <v-card-text class="pa-0">
-              <v-list class="py-0 post-list-fixed">
-                <!-- 5줄 고정 표시 -->
-                <template v-for="index in 5" :key="`notice-${index}`">
-                  <v-list-item
-                    v-if="
-                      boardPosts['notice'] && boardPosts['notice'][index - 1]
-                    "
-                    class="post-item"
-                    @click="
-                      handlePostClick(
-                        'notice',
-                        boardPosts['notice'][index - 1].id,
-                      )
-                    "
-                  >
-                    <v-list-item-title
-                      class="d-flex align-center justify-space-between post-title-row"
-                    >
-                      <div class="post-title-content">
-                        <span
-                          v-if="boardPosts['notice'][index - 1].isPinned"
-                          class="pinned-badge"
-                        >
-                          <v-icon icon="mdi-pin" size="14" color="error" />
-                        </span>
-                        <span class="post-title">{{
-                          boardPosts['notice'][index - 1].title
-                        }}</span>
-                        <span
-                          v-if="
-                            boardPosts['notice'][index - 1].commentCount > 0
-                          "
-                          class="comment-count"
-                        >
-                          [{{ boardPosts['notice'][index - 1].commentCount }}]
-                        </span>
-                      </div>
-                      <div class="post-date">
-                        <span class="text-caption">{{
-                          formatDate(boardPosts['notice'][index - 1].createdAt)
-                        }}</span>
-                      </div>
-                    </v-list-item-title>
-                  </v-list-item>
-
-                  <!-- 게시물이 없는 경우 빈 슬롯 -->
-                  <v-list-item v-else class="post-item post-item-empty">
-                    <v-list-item-title
-                      class="d-flex align-center justify-space-between"
-                    >
-                      <span class="text-medium-emphasis">
-                        <span v-if="index === 1">아직 게시물이 없습니다</span>
-                        <span v-else>-</span>
-                      </span>
-                    </v-list-item-title>
-                  </v-list-item>
-
-                  <!-- 구분선 (마지막 항목 제외) -->
-                  <v-divider v-if="index < 5" class="post-divider" />
-                </template>
-              </v-list>
-            </v-card-text>
-          </v-card>
+          <div class="info-card-wrapper">
+            <LeagueTable />
+          </div>
         </v-col>
       </v-row>
 
-      <!-- 게시판별 최근 게시물 (Notice 제외) -->
+      <!-- 게시판별 최근 게시물 (Squad 제외, Notice는 여기로 이동) -->
       <v-row>
         <v-col
           v-for="board in filteredBoardTypes"
@@ -259,6 +167,7 @@ import { useUserStore } from '@/stores/user';
 import { statsService } from '@/services/stats';
 import MatchSchedule from '@/components/match/MatchSchedule.vue';
 import MatchResults from '@/components/match/MatchResults.vue';
+import LeagueTable from '@/components/match/LeagueTable.vue';
 
 const router = useRouter();
 const boardsStore = useBoardsStore();
@@ -281,9 +190,9 @@ const boardTypes = computed(() =>
   })),
 );
 
-// Notice를 제외한 게시판 목록 (3-3 배치용)
+// Squad만 메인 그리드에서 제외. Notice는 리그 테이블 아래로 한 칸 이동.
 const filteredBoardTypes = computed(() =>
-  boardTypes.value.filter((board) => board.id !== 'notice'),
+  boardTypes.value.filter((board) => board.id !== 'squad'),
 );
 
 // 게시판별 색상 설정
