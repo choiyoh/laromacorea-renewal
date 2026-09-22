@@ -11,6 +11,14 @@ export default mergeConfig(
       root: fileURLToPath(new URL('./', import.meta.url)),
       css: true,
       globals: true,
+      server: {
+        deps: {
+          // Vuetify ships .css imports from its ESM entrypoints; without inlining
+          // Node tries to load them directly and every spec fails to collect with
+          // "Unknown file extension .css".
+          inline: ['vuetify'],
+        },
+      },
       setupFiles: ['src/__tests__/setup.js'],
     },
   }),

@@ -94,6 +94,32 @@ describe('Serie A cache helpers', () => {
     expect(roma.pts).toBe(13)
     expect(roma.shortName).toBe('Roma')
   })
+
+  it('maps the live standings row shape (points_for/points_against/ties)', () => {
+    // Captured verbatim from GET /v1/standings?league=seriea&season=2026.
+    const liveRow = {
+      team_id: ROMA_TEAM_ID,
+      team_name: 'AS Roma',
+      logo_url: 'https://api.bigballsdata.com/v1/assets/example',
+      rank: 1,
+      wins: 4,
+      losses: 0,
+      ties: 1,
+      win_pct: null,
+      games_played: 5,
+      points_for: 14,
+      points_against: 3,
+      streak: null,
+      updated_at: '2026-09-22T01:01:54.161Z',
+    }
+
+    const roma = normalizeStandingRow(liveRow)
+    expect(roma.gf).toBe(14)
+    expect(roma.ga).toBe(3)
+    expect(roma.gd).toBe(11)
+    expect(roma.drawn).toBe(1)
+    expect(roma.pts).toBe(13)
+  })
 })
 
 function roma() {

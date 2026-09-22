@@ -212,11 +212,18 @@ function normalizeStandingRow(row) {
   const won = toNumber(row.wins ?? row.won ?? row.w);
   const lost = toNumber(row.losses ?? row.lost ?? row.l);
   const drawn = toNumber(
-      row.draws ?? row.drawn ?? row.d,
+      row.draws ?? row.drawn ?? row.d ?? row.ties,
       Math.max(played - won - lost, 0),
   );
-  const gf = toNumber(row.goals_for ?? row.gf ?? row.goals_scored);
-  const ga = toNumber(row.goals_against ?? row.ga ?? row.goals_conceded);
+  // The live standings endpoint ships a basketball-shaped row: goals arrive as
+  // points_for/points_against and draws as ties. Without these aliases every
+  // team's GD collapsed to 0-0.
+  const gf = toNumber(
+      row.goals_for ?? row.gf ?? row.goals_scored ?? row.points_for,
+  );
+  const ga = toNumber(
+      row.goals_against ?? row.ga ?? row.goals_conceded ?? row.points_against,
+  );
   const gd = toNumber(row.goal_difference ?? row.gd ?? row.goal_diff, gf - ga);
   const pts = toNumber(row.points ?? row.pts, won * 3 + drawn);
   const teamName = row.team_name || row.name || '';

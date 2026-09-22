@@ -43,7 +43,7 @@ describe('Layout Components', () => {
   describe('AppHeader', () => {
     it('renders the logo and title', () => {
       const wrapper = createWrapper(AppHeader)
-      expect(wrapper.text()).toContain('AS 로마 코리아')
+      expect(wrapper.text()).toContain('La Roma Corea')
     })
 
     it('emits toggle-drawer event when nav icon is clicked', async () => {
@@ -65,7 +65,7 @@ describe('Layout Components', () => {
   describe('AppFooter', () => {
     it('renders footer content', () => {
       const wrapper = createWrapper(AppFooter)
-      expect(wrapper.text()).toContain('AS 로마 코리아')
+      expect(wrapper.text()).toContain('La Roma Corea')
       expect(wrapper.text()).toContain('All rights reserved')
     })
   })

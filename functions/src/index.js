@@ -131,7 +131,12 @@ exports.resetUserPasswordAdmin = functions.https.onCall(
 // Algolia Search Sync - Firestore 트리거
 // ============================================
 
-const algoliasearch = require('algoliasearch');
+// algoliasearch v5 dropped the callable default export and the v4 index handle
+// API. The previous `require('algoliasearch')(...)` + initIndex() shape threw
+// "algoliasearch is not a function" on every post write, so nothing was indexed.
+const { algoliasearch } = require('algoliasearch');
+
+const ALGOLIA_INDEX_NAME = 'posts';
 
 // Algolia 클라이언트 초기화 (환경 변수에서 가져옴)
 // Firebase Functions 환경 변수 설정:
@@ -140,12 +145,12 @@ const algoliaAppId = functions.config().algolia?.app_id;
 const algoliaAdminKey = functions.config().algolia?.admin_key;
 
 let algoliaClient = null;
-let postsIndex = null;
 
 /**
  * Algolia 클라이언트 초기화 (지연 초기화)
+ * v5 keeps no per-index handle: every call carries indexName instead.
  */
-function getAlgoliaIndex() {
+function getAlgoliaClient() {
   if (!algoliaAppId || !algoliaAdminKey) {
     console.warn('Algolia 설정이 없습니다. 동기화를 건너뜁니다.');
     return null;
@@ -153,10 +158,9 @@ function getAlgoliaIndex() {
 
   if (!algoliaClient) {
     algoliaClient = algoliasearch(algoliaAppId, algoliaAdminKey);
-    postsIndex = algoliaClient.initIndex('posts');
   }
 
-  return postsIndex;
+  return algoliaClient;
 }
 
 /**
@@ -199,9 +203,6 @@ function transformPostForAlgolia(postId, postData) {
 exports.onPostCreated = functions.firestore
   .document('posts/{postId}')
   .onCreate(async (snapshot, context) => {
-    const index = getAlgoliaIndex();
-    if (!index) return;
-
     const postId = context.params.postId;
     const postData = snapshot.data();
 
@@ -211,8 +212,14 @@ exports.onPostCreated = functions.firestore
     }
 
     try {
+      const client = getAlgoliaClient();
+      if (!client) return;
+
       const algoliaObject = transformPostForAlgolia(postId, postData);
-      await index.saveObject(algoliaObject);
+      await client.saveObject({
+        indexName: ALGOLIA_INDEX_NAME,
+        body: algoliaObject,
+      });
       console.log(`Algolia에 게시물 추가됨: ${postId}`);
     } catch (error) {
       console.error('Algolia 게시물 추가 실패:', error);
@@ -225,21 +232,27 @@ exports.onPostCreated = functions.firestore
 exports.onPostUpdated = functions.firestore
   .document('posts/{postId}')
   .onUpdate(async (change, context) => {
-    const index = getAlgoliaIndex();
-    if (!index) return;
-
     const postId = context.params.postId;
     const newData = change.after.data();
 
     try {
+      const client = getAlgoliaClient();
+      if (!client) return;
+
       if (newData.isDeleted) {
         // 삭제된 경우 Algolia에서도 제거
-        await index.deleteObject(postId);
+        await client.deleteObject({
+          indexName: ALGOLIA_INDEX_NAME,
+          objectID: postId,
+        });
         console.log(`Algolia에서 게시물 삭제됨 (soft delete): ${postId}`);
       } else {
         // 업데이트
         const algoliaObject = transformPostForAlgolia(postId, newData);
-        await index.saveObject(algoliaObject);
+        await client.saveObject({
+          indexName: ALGOLIA_INDEX_NAME,
+          body: algoliaObject,
+        });
         console.log(`Algolia 게시물 업데이트됨: ${postId}`);
       }
     } catch (error) {
@@ -253,13 +266,16 @@ exports.onPostUpdated = functions.firestore
 exports.onPostDeleted = functions.firestore
   .document('posts/{postId}')
   .onDelete(async (snapshot, context) => {
-    const index = getAlgoliaIndex();
-    if (!index) return;
-
     const postId = context.params.postId;
 
     try {
-      await index.deleteObject(postId);
+      const client = getAlgoliaClient();
+      if (!client) return;
+
+      await client.deleteObject({
+        indexName: ALGOLIA_INDEX_NAME,
+        objectID: postId,
+      });
       console.log(`Algolia에서 게시물 삭제됨: ${postId}`);
     } catch (error) {
       console.error('Algolia 게시물 삭제 실패:', error);

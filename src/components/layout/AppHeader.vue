@@ -62,8 +62,9 @@
       <div v-if="userStore.isAuthenticated" class="d-flex align-center">
         <!-- User Points -->
         <div class="d-flex align-center me-3">
-          <v-icon class="roma-yellow me-1">mdi-star</v-icon>
-          <span class="roma-yellow font-weight-bold"
+          <!-- Bar is secondary (#fbba00); .roma-yellow would be 1:1 invisible -->
+          <v-icon class="text-black me-1">mdi-star</v-icon>
+          <span class="text-black font-weight-bold"
             >{{ userStore.user?.points || 0 }}P</span
           >
         </div>
@@ -125,6 +126,7 @@
         <!-- Left: Hamburger Menu -->
         <div class="mobile-left">
           <v-app-bar-nav-icon
+            aria-label="메뉴 열기"
             @click="$emit('toggle-drawer')"
             class="touch-friendly"
             size="large"
@@ -133,7 +135,10 @@
 
         <!-- Center: Logo -->
         <div class="mobile-center">
-          <router-link to="/home" class="text-decoration-none text-black">
+          <router-link
+            to="/home"
+            class="text-decoration-none text-black d-inline-flex align-center touch-friendly"
+          >
             <span class="font-weight-bold mobile-title cinzel-font">La Roma Corea</span>
           </router-link>
         </div>
@@ -143,7 +148,13 @@
           <div v-if="userStore.isAuthenticated">
             <v-menu offset-y>
               <template v-slot:activator="{ props }">
-                <v-btn icon v-bind="props" class="touch-friendly" size="large">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  class="touch-friendly"
+                  size="large"
+                  aria-label="계정 메뉴"
+                >
                   <v-avatar size="36">
                     <v-img
                       v-if="userStore.user?.photoURL"

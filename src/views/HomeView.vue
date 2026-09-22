@@ -1,6 +1,7 @@
 <template>
   <div class="home">
     <v-container fluid class="home-container">
+      <h1 class="sr-only">AS 로마 코리아 | La Roma Corea</h1>
       <!-- 헤더 섹션 -->
       <v-row class="mb-6">
         <v-col cols="12">
@@ -69,7 +70,7 @@
                 variant="text"
                 size="small"
                 color="white"
-                class="text-white"
+                class="text-white touch-friendly"
               >
                 더보기
                 <v-icon icon="mdi-chevron-right" end color="white" />
@@ -301,7 +302,7 @@ async function loadBoardPosts(forceRefresh = false) {
 
 // SEO 메타 태그 설정
 useHead({
-  title: 'La Roma Corea - AS 로마 한국 팬 커뮤니티',
+  title: 'AS 로마 코리아 | La Roma Corea',
   meta: [
     {
       name: 'description',

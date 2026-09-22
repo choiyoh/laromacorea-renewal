@@ -106,7 +106,8 @@
               <v-btn
                 color="primary"
                 size="small"
-                :disabled="!canSubmitComment"
+                :loading="submittingComment"
+                :disabled="!canSubmitComment || submittingComment"
                 @click="handleSubmitComment"
               >
                 응원하기
@@ -183,8 +184,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
+import { useErrorStore } from '@/stores/error';
 import { commentService } from '@/services/database';
 import MatchCommentItem from './MatchCommentItem.vue';
+
+const errorStore = useErrorStore();
 
 const props = defineProps({
   postId: {
@@ -215,6 +219,7 @@ const comments = ref([]);
 const lastCommentDoc = ref(null); // 댓글 페이지네이션을 위한 마지막 문서 참조
 const loading = ref(false);
 const loadingMore = ref(false);
+const submittingComment = ref(false);
 const hasMoreComments = ref(false);
 const newComment = ref('');
 const commentType = ref('general');
@@ -299,7 +304,7 @@ async function fetchComments(loadMore = false) {
 }
 
 async function handleSubmitComment() {
-  if (!canSubmitComment.value) return;
+  if (!canSubmitComment.value || submittingComment.value) return;
 
   const commentData = {
     postId: props.postId,
@@ -311,6 +316,7 @@ async function handleSubmitComment() {
     isQuickCheer: false,
   };
 
+  submittingComment.value = true;
   try {
     const commentId = await commentService.createComment(commentData);
     const newCommentObj = {
@@ -327,7 +333,9 @@ async function handleSubmitComment() {
     newComment.value = '';
     commentType.value = 'general';
   } catch (error) {
-    // Error creating comment
+    errorStore.handleFirebaseError(error, '응원 메시지 작성');
+  } finally {
+    submittingComment.value = false;
   }
 }
 

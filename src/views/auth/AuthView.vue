@@ -5,7 +5,7 @@
         <v-col cols="12" sm="8" md="6" lg="4">
           <v-card class="pa-4">
             <v-card-title class="text-center">
-              <h2 class="text-h5">{{ isSignUp ? '회원가입' : '로그인' }}</h2>
+              <h1 class="text-h5">{{ isSignUp ? '회원가입' : '로그인' }}</h1>
             </v-card-title>
 
             <v-card-text>

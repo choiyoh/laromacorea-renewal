@@ -38,7 +38,9 @@ const boardConfig = computed(() => boardsStore.getBoardConfig(props.boardType));
 // SEO 메타 태그 설정
 const boardTitle = computed(() => {
   const config = boardConfig.value;
-  return config ? `${config.name} - La Roma Corea` : 'La Roma Corea';
+  return config
+    ? `${config.name} - AS 로마 코리아 | La Roma Corea`
+    : 'AS 로마 코리아 | La Roma Corea';
 });
 
 const boardDescription = computed(() => {

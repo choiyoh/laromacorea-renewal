@@ -4,11 +4,12 @@
       <v-row>
         <v-col cols="12">
           <div v-if="isAuthenticated">
+            <h1 class="sr-only">사용자 프로필</h1>
             <UserProfile @go-to-icon-shop="goToIconShop" />
           </div>
           <div v-else class="text-center py-8">
             <v-icon size="64" class="mb-4 text-medium-emphasis">mdi-account-circle</v-icon>
-            <h2 class="text-h5 mb-4">로그인이 필요합니다</h2>
+            <h1 class="text-h5 mb-4">로그인이 필요합니다</h1>
             <p class="text-body-1 text-medium-emphasis mb-4">
               프로필을 확인하려면 먼저 로그인해주세요.
             </p>

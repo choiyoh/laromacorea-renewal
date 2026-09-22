@@ -1,6 +1,14 @@
 <template>
   <div class="splash-container">
-    <div class="splash-content" @click="enterSite">
+    <div
+      class="splash-content"
+      role="button"
+      tabindex="0"
+      aria-label="사이트로 들어가기"
+      @click="enterSite"
+      @keydown.enter.prevent="enterSite"
+      @keydown.space.prevent="enterSite"
+    >
       <img
         src="/images/totti.jpg"
         alt="Francesco Totti"

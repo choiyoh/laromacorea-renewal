@@ -76,13 +76,16 @@ const head = createHead();
 app.use(pinia);
 app.use(router);
 
-// Add Google Analytics
-app.use(VueGtag, {
-  property: {
-    id: firebaseConfig.measurementId
-  },
-  router
-});
+// Google Analytics: opt-in only. Unconditional install floods dev/prod with
+// failing beacon requests and disables VITE_ENABLE_ANALYTICS entirely.
+if (import.meta.env.VITE_ENABLE_ANALYTICS === 'true' && firebaseConfig.measurementId) {
+  app.use(VueGtag, {
+    property: {
+      id: firebaseConfig.measurementId
+    },
+    router
+  });
+}
 
 app.use(vuetify);
 app.use(head);

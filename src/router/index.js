@@ -102,6 +102,16 @@ const router = createRouter({
           },
         ]
       : []),
+    // Catch-all: unknown URLs must not render an empty shell.
+    // Keep this entry last so it never shadows a real route.
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () =>
+        import(
+          /* webpackChunkName: "not-found" */ '@/views/NotFoundView.vue'
+        ),
+    },
   ],
 });
 

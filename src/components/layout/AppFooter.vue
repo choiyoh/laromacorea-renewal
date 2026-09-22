@@ -36,10 +36,12 @@
               :key="social.name"
               :href="social.url"
               target="_blank"
+              rel="noopener"
               icon
               variant="text"
               class="me-1"
               size="x-small"
+              :aria-label="social.name"
             >
               <v-icon size="16">{{ social.icon }}</v-icon>
             </v-btn>
@@ -61,7 +63,7 @@
       <!-- Mobile Footer - Copyright Only -->
       <div class="d-md-none text-center mobile-footer-minimal">
         <p class="text-caption mb-0">
-          © {{ currentYear }} www.laromacorea.co.kr All Rights reserved.
+          © {{ currentYear }} www.laromacorea.co.kr All rights reserved.
         </p>
       </div>
 
@@ -71,7 +73,7 @@
         <v-row>
           <v-col cols="12" class="text-center py-1">
             <p class="text-caption mt-1">
-              © {{ currentYear }} www.laromacorea.co.kr All Rights reserved.
+              © {{ currentYear }} www.laromacorea.co.kr All rights reserved.
             </p>
           </v-col>
         </v-row>

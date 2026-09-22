@@ -11,7 +11,8 @@
         variant="text"
         size="small"
         color="white"
-        class="text-white"
+        class="text-white touch-friendly"
+        aria-label="리그 순위 새로고침"
         @click="refreshStandings"
         :loading="loading"
       >

@@ -11,7 +11,8 @@
         variant="text"
         size="small"
         color="white"
-        class="text-white"
+        class="text-white touch-friendly"
+        aria-label="경기 결과 새로고침"
         @click="refreshResults"
         :loading="loading"
       >

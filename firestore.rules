@@ -23,8 +23,25 @@ service cloud.firestore {
       allow create: if isOwner(userId) && 
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.role == 'user';
-      allow update: if isOwner(userId) || (isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
-      allow delete: if isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Owners may edit their own profile, but privilege-bearing fields stay
+      // admin-only: without this any signed-in user could set role: 'admin' on
+      // their own document and inherit admin writes across the whole database.
+      // Verified against the emulator - see the role/isActive cases.
+      allow update: if isAdmin() ||
+                       (isOwner(userId) &&
+                        !request.resource.data
+                          .diff(resource.data)
+                          .affectedKeys()
+                          .hasAny([
+                            'role',
+                            'isActive',
+                            'verified',
+                            'uid',
+                            'createdAt',
+                            'passwordResetRequired',
+                            'passwordResetAt',
+                          ]));
+      allow delete: if isAdmin();
     }
 
     // Posts collection

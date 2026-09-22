@@ -6,7 +6,7 @@
         <!-- Board Title (Left) -->
         <div class="d-flex align-center">
           <v-icon :icon="boardConfig?.icon" size="large" class="me-2" />
-          <h2 class="text-h5">{{ boardConfig?.name }}</h2>
+          <h1 class="text-h5">{{ boardConfig?.name }}</h1>
         </div>
 
         <!-- Search and Write Button (Right) -->

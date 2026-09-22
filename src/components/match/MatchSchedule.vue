@@ -10,7 +10,8 @@
           variant="text"
           size="small"
           color="white"
-          class="text-white"
+          class="text-white touch-friendly"
+          aria-label="경기 일정 새로고침"
           @click="refreshMatches"
           :loading="loading"
         >

@@ -46,6 +46,7 @@
           color="primary"
           variant="flat"
           block
+          class="touch-friendly"
           @click="$router.push('/auth')"
         >
           로그인
@@ -133,7 +134,9 @@
     <template v-slot:append>
       <div class="pa-4 text-center">
         <div class="text-caption text-grey">AS 로마 코리아 커뮤니티</div>
-        <div class="text-caption text-grey">© 2024 All rights reserved</div>
+        <div class="text-caption text-grey">
+          © {{ new Date().getFullYear() }} All rights reserved
+        </div>
       </div>
     </template>
   </v-navigation-drawer>

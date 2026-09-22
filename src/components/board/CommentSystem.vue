@@ -271,10 +271,13 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useUserStore } from '@/stores/user';
+import { useErrorStore } from '@/stores/error';
 import { commentService } from '@/services/database';
 import { useUserInfo } from '@/composables/useUserInfo';
 import CommentItem from './CommentItem.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+
+const errorStore = useErrorStore();
 
 const props = defineProps({
   postId: {
@@ -387,7 +390,7 @@ async function handleSubmitComment() {
     // 댓글 추가 이벤트 발생
     emit('comment-added', commentId);
   } catch (err) {
-    // Show error message
+    errorStore.handleFirebaseError(err, '댓글 작성');
   } finally {
     submittingComment.value = false;
   }

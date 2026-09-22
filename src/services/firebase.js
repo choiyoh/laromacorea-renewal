@@ -1,6 +1,5 @@
 // Firebase configuration and initialization
 import { initializeApp } from 'firebase/app';
-import { getAnalytics, logEvent } from 'firebase/analytics';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
@@ -43,7 +42,11 @@ export const firebaseConfig = validateConfig({
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+// Firebase Analytics is intentionally NOT initialized here. It is opt-in via
+// VITE_ENABLE_ANALYTICS, which installs VueGtag in main.js. Calling getAnalytics()
+// unconditionally opened a second, unconfigurable pipeline that fired beacons in
+// dev and double-counted in production.
 
 // Initialize Firebase services
 export const auth = getAuth(app);

@@ -1,5 +1,8 @@
 <template>
   <div class="post-editor">
+    <h1 class="sr-only">
+      {{ isEdit ? '게시글 수정' : '게시글 작성' }}
+    </h1>
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
         <div class="d-flex align-center">
