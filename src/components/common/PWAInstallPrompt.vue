@@ -12,8 +12,12 @@
     </div>
 
     <template #actions>
-      <v-btn variant="text" color="white" @click="installApp"> 설치 </v-btn>
-      <v-btn variant="text" color="white" @click="dismissInstall"> 취소 </v-btn>
+      <v-btn variant="text" color="white" class="touch-friendly" @click="installApp">
+        설치
+      </v-btn>
+      <v-btn variant="text" color="white" class="touch-friendly" @click="dismissInstall">
+        취소
+      </v-btn>
     </template>
   </v-snackbar>
 </template>
